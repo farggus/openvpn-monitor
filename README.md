@@ -18,28 +18,28 @@
 git clone https://github.com/your-username/openvpn-monitor.git
 cd openvpn-monitor
 docker-compose up --build -d
-
+```
 Make sure to mount your OpenVPN log directory (/var/log/openvpn) as a volume in Docker.
 
 File Structure
-app/ – Flask backend
+app/ â€“ Flask backend
 
-templates/index.html – Frontend UI
+templates/index.html â€“ Frontend UI
 
-parser.py – OpenVPN log parser
+parser.py â€“ OpenVPN log parser
 
-logger.py – Background parser loop
+logger.py â€“ Background parser loop
 
-supervisord.conf – Process manager for app and logger
+supervisord.conf â€“ Process manager for app and logger
 
-docker-compose.yml – Deployment configuration
+docker-compose.yml â€“ Deployment configuration
 
 API Endpoints
-/api/clients – Live client list
+/api/clients â€“ Live client list
 
-/api/server-status – Server status info
+/api/server-status â€“ Server status info
 
-/api/history – Session history
+/api/history â€“ Session history
 
 License
 Private project for internal use.
