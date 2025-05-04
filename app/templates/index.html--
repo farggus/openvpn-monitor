@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>OpenVPN Management panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+  <!-- ???????? ????????? (????????) -->
+  <h2>OpenVPN - Server</h2>
+  <table class="table table-sm table-bordered" id="server-status-table">
+    <thead class="table-light">
+      <tr>
+        <th>VPN Mode</th><th>Status</th><th>Pingable</th><th>Clients</th>
+        <th>Total Bytes In</th><th>Total Bytes Out</th><th>Up Since</th>
+        <th>Local IP</th><th>Public IP</th>
+      </tr>
+    </thead>
+    <tbody id="server-status-body"><tr><td colspan="9">Loading...</td></tr></tbody>
+  </table>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <button class="btn btn-outline-primary me-2" id="toggleGraphBtn">Charts</button>
+      <button class="btn btn-outline-primary me-2" id="toggleMapBtn">Map View</button>
+      <button class="btn btn-outline-secondary" id="historyBtn">Connection history</button>
+    </div>
+    <button class="btn btn-outline-secondary" id="themeToggle">Switch Theme</button>
+  </div>
+
+  <!-- ????????? ???????, ??????? ? ??????? ????? ?????????? ???????? -->
+</div>
+
+<!-- ??????????? ????????? -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<!-- ??????????? ?????? -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const isDarkMode = () => document.body.classList.contains("bg-dark");
+
+  function toggleTheme() {
+    const isDark = isDarkMode();
+    document.body.classList.toggle("bg-dark", !isDark);
+    document.body.classList.toggle("bg-light", isDark);
+    document.querySelectorAll("table, thead, tfoot, .modal-content, .modal-header, .modal-body, input, select, textarea")
+      .forEach(el => {
+        el.classList.toggle("bg-dark", !isDark);
+        el.classList.toggle("text-light", !isDark);
+        el.classList.toggle("bg-light", isDark);
+        el.classList.toggle("text-dark", isDark);
+        el.classList.toggle("border-light", !isDark);
+        el.classList.toggle("border-dark", isDark);
+      });
+  }
+
+  function fetchServerStatus() {
+    fetch("/api/server-status")
+      .then(r => r.json())
+      .then(data => {
+        const uptime = formatUptime(data.uptime);
+        const row = `<tr>
+          <td>${data.mode}</td><td>${data.status}</td><td>${data.pingable}</td>
+          <td>${data.clients}</td><td>${data.total_rx} MB</td><td>${data.total_tx} MB</td>
+          <td>${uptime}</td><td>${data.local_ip}</td><td>${data.public_ip}</td>
+        </tr>`;
+        document.getElementById("server-status-body").innerHTML = row;
+      });
+  }
+
+  function formatUptime(uptimeStr) {
+    const uptime = new Date(uptimeStr);
+    const now = new Date();
+    const diffMs = now - uptime;
+    if (isNaN(uptime.getTime()) || diffMs < 0) return "Unknown";
+    const minutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    return `${days > 0 ? days + "d " : ""}${hours % 24}h ${minutes % 60}m`;
+  }
+
+  function initMap() {
+    let mapInstance = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data © OpenStreetMap contributors'
+    }).addTo(mapInstance);
+
+    fetch("/api/clients")
+      .then(r => r.json())
+      .then(data => {
+        data.clients.forEach(c => {
+          if (!c.real_ip) return;
+          fetch(`https://ipapi.co/${c.real_ip}/json/`)
+            .then(res => res.json())
+            .then(loc => {
+              if (loc.latitude && loc.longitude) {
+                L.marker([loc.latitude, loc.longitude])
+                  .addTo(mapInstance)
+                  .bindPopup(`<strong>${c.common_name}</strong><br>${loc.city}, ${loc.country_name}`);
+              }
+            });
+        });
+      });
+  }
+
+  document.getElementById("themeToggle").addEventListener("click", toggleTheme);
+  document.getElementById("toggleMapBtn").addEventListener("click", () => {
+    const section = document.getElementById("map-section");
+    if (!section) return;
+    section.style.display = section.style.display === "block" ? "none" : "block";
+    if (section.style.display === "block") initMap();
+  });
+
+  fetchServerStatus();
+  setInterval(fetchServerStatus, 3000);
+});
+</script>
+</body>
+</html>

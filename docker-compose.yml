@@ -1,0 +1,26 @@
+---
+
+services:
+  openvpn-admin:
+    build: .
+    container_name: openvpn-admin
+    volumes:
+      - /var/log/openvpn:/var/log/openvpn:rw  # Монтируем логи в контейнер
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.openvpn.entrypoints=http"
+      - "traefik.http.routers.openvpn.rule=Host(`openvpn.nuvosys.eu`)"
+      - "traefik.http.middlewares.openvpn-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.openvpn.middlewares=openvpn-https-redirect"
+      - "traefik.http.routers.openvpn-secure.entrypoints=https"
+      - "traefik.http.routers.openvpn-secure.rule=Host(`openvpn.nuvosys.eu`)"
+      - "traefik.http.routers.openvpn-secure.tls=true"
+      - "traefik.http.routers.openvpn-secure.service=openvpn"
+      - "traefik.http.services.openvpn.loadbalancer.server.port=5000"
+      - "traefik.docker.network=proxy"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
