@@ -1,0 +1,38 @@
+
+---
+
+### ? `.gitignore`
+```gitignore
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+*.log
+
+# Environments
+.env
+venv/
+env/
+
+# Docker
+*.pid
+*.sock
+
+# System
+.DS_Store
+Thumbs.db
+
+# Editor configs
+.vscode/
+.idea/
+
+# Python wheels
+*.whl
+
+# PyInstaller
+*.spec
+
+# Flask cache
+instance/
