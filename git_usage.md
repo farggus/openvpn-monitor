@@ -65,14 +65,4 @@ cat ~/.ssh/id_rsa.pub
 ssh -T git@github.com
 ```
 
----
 
-## 🧰 Additional Resources
-
-- [Markdown Syntax Guide](./markdown_guide.md)
-- [GitHub Docs: Working with Git](https://docs.github.com/en/get-started)
-
----
-
-Author: Farggus  
-Project: OpenVPN Monitor  
