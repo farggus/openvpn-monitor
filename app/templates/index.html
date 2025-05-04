@@ -51,14 +51,32 @@
 <button class="btn btn-outline-secondary" id="historyBtn">Connection history</button>
 </div>
 </div>
+
+<!--
 <div class="mt-5" id="graph-section" style="display: none;">
 <h2>Traffic Graph (MB/s)</h2>
 <canvas class="w-100" height="100" id="trafficChart"></canvas>
 </div>
+
 <div class="mb-4" id="map-section" style="display:none;">
 <h2>Client Locations</h2>
 <div id="map" style="height: 400px;"></div>
+</div>  -->
+
+<!-- НОВЫЙ ОБЪЕДИНЁННЫЙ БЛОК ДЛЯ ГРАФИКА И КАРТЫ -->
+<div class="d-flex flex-wrap justify-content-between gap-3 mb-5" id="visual-section">
+  <div id="graph-subsection" class="flex-fill" style="min-width: 300px; flex: 1;">
+    <h2>Traffic Graph (MB/s)</h2>
+    <canvas id="trafficChart" style="width: 100%; height: 300px;"></canvas>
+  </div>
+  <div id="map-subsection" class="flex-fill" style="min-width: 300px; flex: 1;">
+    <h2>Client Locations</h2>
+    <div id="map" style="height: 300px;"></div>
+  </div>
 </div>
+<!-- /НОВЫЙ ОБЪЕДИНЁННЫЙ БЛОК -->
+
+  
 </div>
 <div aria-hidden="true" class="modal fade" id="historyModal" tabindex="-1">
 <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
@@ -119,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function () {
   fetchServerStatus();
   setInterval(fetchServerStatus, 3000);
 
-  document.getElementById("toggleGraphBtn").addEventListener("click", () => {
+/*  document.getElementById("toggleGraphBtn").addEventListener("click", () => {
     const graphSection = document.getElementById("graph-section");
     graphSection.style.display = graphSection.style.display === "none" ? "block" : "none";
   });
@@ -128,8 +146,32 @@ document.addEventListener("DOMContentLoaded", function () {
     const section = document.getElementById("map-section");
     const shown = section.style.display === "block";
     section.style.display = shown ? "none" : "block";
+*/
 
-    if (!mapInitialized && !shown) {
+  document.getElementById("toggleGraphBtn").addEventListener("click", () => {
+  const graphSection = document.getElementById("graph-subsection");
+  graphSection.style.display = graphSection.style.display === "none" ? "block" : "none";
+});
+
+document.getElementById("toggleMapBtn").addEventListener("click", () => {
+  const mapSection = document.getElementById("map-subsection");
+  const shown = mapSection.style.display === "block";
+  mapSection.style.display = shown ? "none" : "block";
+
+  if (!mapInitialized && !shown) {
+    mapInstance = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data © OpenStreetMap contributors'
+    }).addTo(mapInstance);
+    mapInitialized = true;
+  }
+  if (!shown) loadClientMarkers();
+});
+
+  
+  
+  
+  if (!mapInitialized && !shown) {
       mapInstance = L.map('map').setView([20, 0], 2);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data © OpenStreetMap contributors'
