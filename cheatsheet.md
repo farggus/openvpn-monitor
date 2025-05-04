@@ -55,3 +55,14 @@ ssh-keygen -t rsa -b 4096 -C "your.email@example.com"
 ```
 ssh -T git@github.com
 ```
+---
+
+## 🧰 Additional Resources
+
+- [Markdown Syntax Guide](./markdown_guide.md)
+- [GitHub Docs: Working with Git](https://docs.github.com/en/get-started)
+
+---
+
+Author: Farggus  
+Project: OpenVPN Monitor  
