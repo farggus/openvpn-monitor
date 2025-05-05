@@ -52,7 +52,7 @@
 </div>
 </div>
 
-<!--
+
 <div class="mt-5" id="graph-section" style="display: none;">
 <h2>Traffic Graph (MB/s)</h2>
 <canvas class="w-100" height="100" id="trafficChart"></canvas>
@@ -61,9 +61,9 @@
 <div class="mb-4" id="map-section" style="display:none;">
 <h2>Client Locations</h2>
 <div id="map" style="height: 400px;"></div>
-</div>  -->
+</div>  
 
-<!-- НОВЫЙ ОБЪЕДИНЁННЫЙ БЛОК ДЛЯ ГРАФИКА И КАРТЫ -->
+<!-- НОВЫЙ ОБЪЕДИНЁННЫЙ БЛОК ДЛЯ ГРАФИКА И КАРТЫ 
 <div class="d-flex flex-wrap justify-content-between gap-3 mb-5" id="visual-section">
   <div id="graph-subsection" class="flex-fill" style="min-width: 300px; flex: 1;">
     <h2>Traffic Graph (MB/s)</h2>
@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function () {
   fetchServerStatus();
   setInterval(fetchServerStatus, 3000);
 
-/*  document.getElementById("toggleGraphBtn").addEventListener("click", () => {
+  document.getElementById("toggleGraphBtn").addEventListener("click", () => {
     const graphSection = document.getElementById("graph-section");
     graphSection.style.display = graphSection.style.display === "none" ? "block" : "none";
   });
@@ -146,8 +146,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const section = document.getElementById("map-section");
     const shown = section.style.display === "block";
     section.style.display = shown ? "none" : "block";
-*/
-
+    
+/* // Modified block
   document.getElementById("toggleGraphBtn").addEventListener("click", () => {
   const graphSection = document.getElementById("graph-subsection");
   graphSection.style.display = graphSection.style.display === "none" ? "block" : "none";
@@ -166,10 +166,9 @@ document.getElementById("toggleMapBtn").addEventListener("click", () => {
     mapInitialized = true;
   }
   if (!shown) loadClientMarkers();
-});
+}); */
 
   
-/*  
   
   if (!mapInitialized && !shown) {
       mapInstance = L.map('map').setView([20, 0], 2);
@@ -180,7 +179,6 @@ document.getElementById("toggleMapBtn").addEventListener("click", () => {
     }
     if (!shown) loadClientMarkers();
   });
-*/
   
   document.getElementById("themeToggle").addEventListener("click", toggleTheme);
 
