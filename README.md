@@ -22,7 +22,7 @@
 ```
 openvpn-monitor/
 ├── app/
-│   ├── __init__.py             # Flask app init
+│   ├── __init__.py            # Flask app init
 │   ├── routes.py              # API endpoints and views
 │   ├── parser.py              # Log parsing and session tracking
 │   └── templates/index.html   # Frontend interface
