@@ -13,13 +13,23 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.openvpn.entrypoints=http"
       - "traefik.http.routers.openvpn.rule=Host(`openvpn.nuvosys.eu`)"
+#      - "traefik.http.middlewares.openvpn-auth.basicauth.users=scuruci:$$apr1$$x.lN5PaD$$bKTbjAv.Z0KLTKA.VMFNp/" # Auth
+#      - "traefik.http.middlewares.openvpn-auth.basicauth.users=openvpn:$$apr1$$AxHp9Acv$$so9EImC8Jv7YULdyknjHQ., scuruci:$$apr1$$x.lN5PaD$$bKTbjAv.Z0KLTKA.VMFNp/"
       - "traefik.http.middlewares.openvpn-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.openvpn-auth.basicauth.removeheader=false"
       - "traefik.http.routers.openvpn.middlewares=openvpn-https-redirect"
       - "traefik.http.routers.openvpn-secure.entrypoints=https"
       - "traefik.http.routers.openvpn-secure.rule=Host(`openvpn.nuvosys.eu`)"
+      - "traefik.http.routers.openvpn-secure.middlewares=traefik-auth"   # Authentification
       - "traefik.http.routers.openvpn-secure.tls=true"
       - "traefik.http.routers.openvpn-secure.service=openvpn"
       - "traefik.http.services.openvpn.loadbalancer.server.port=5000"
+
+      # NEW: локальный middleware
+      - "traefik.http.middlewares.openvpn-user-auth.basicauth.users=openvpn:$$apr1$$AxHp9Acv$$so9EImC8Jv7YULdyknjHQ."
+      # подвесить его на https-роутер
+      - "traefik.http.routers.openvpn-secure.middlewares=openvpn-user-auth"
+
       - "traefik.docker.network=proxy"
     networks:
       - proxy

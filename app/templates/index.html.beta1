@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <title>OpenVPN Management panel</title>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+
+  <!-- Leaflet -->
+  <link href="https://unpkg.com/leaflet/dist/leaflet.css" rel="stylesheet"/>
+
+  <style>
+    body { background: #f8f9fa; }
+    .table-sm td, .table-sm th { vertical-align: middle; }
+    .modal-fullscreen-sm-down .modal-content { border-radius: .5rem; }
+  </style>
+</head>
+<body>
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">OpenVPN — Server</h2>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-primary" id="chartsBtn">Charts</button>
+      <button class="btn btn-outline-primary" id="mapBtn">Map View</button>
+      <button class="btn btn-outline-secondary" id="historyBtn">Connection history</button>
+    </div>
+  </div>
+
+  <!-- Server status -->
+  <div class="table-responsive mb-4">
+    <table class="table table-sm table-bordered text-nowrap" id="server-status-table">
+      <thead class="table-light">
+        <tr>
+          <th>VPN Mode</th><th>Status</th><th>Pingable</th><th>Clients</th>
+          <th>Total Bytes In</th><th>Total Bytes Out</th><th>Up Since</th><th>Local IP Address</th>
+        </tr>
+      </thead>
+      <tbody id="server-status-body">
+        <tr><td colspan="8" class="text-center text-muted">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Clients -->
+  <h4 class="mt-4">Connected clients</h4>
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered text-nowrap" id="vpn-clients-table">
+      <thead class="table-light">
+        <tr>
+          <th>Common Name</th>
+          <th>VPN IP Address</th>
+          <th>Real Address</th>
+          <th>Port</th>
+          <th>Connected Since</th>
+          <th>Time Online</th>
+          <th>Speed (Rx / Tx)</th>
+          <th>Bytes Received</th>
+          <th>Bytes Sent</th>
+        </tr>
+      </thead>
+      <tbody id="vpn-clients-body">
+        <tr><td colspan="9" class="text-center text-muted">Loading…</td></tr>
+      </tbody>
+      <tfoot>
+        <tr class="table-light">
+          <th colspan="7" class="text-end">Total:</th>
+          <th id="total-received">0 MB</th>
+          <th id="total-sent">0 MB</th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- History Modal -->
+<div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Connection history</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered text-nowrap">
+            <thead class="table-light">
+              <tr>
+                <th>Common Name</th>
+                <th>Real Address</th>
+                <th>Connected Since</th>
+                <th>Disconnected At</th>
+                <th>Time Online</th>
+                <th>Bytes Received</th>
+                <th>Bytes Sent</th>
+              </tr>
+            </thead>
+            <tbody id="history-body">
+              <tr><td colspan="7" class="text-center text-muted">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Modal -->
+<div class="modal fade" id="chartsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Traffic Charts (MB/s)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <canvas id="trafficChartModal" height="120" class="w-100"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Map View Modal -->
+<div class="modal fade" id="mapModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Client Locations</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <div id="mapModalMap" style="height: 500px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+  // -------------------- State --------------------
+  let lastStats = {};
+  let chart = null;
+  let chartData = { labels: [], datasets: [] };
+  let chartCanvas = null;
+
+  let mapInitialized = false;
+  let mapInstance;
+  let mapMarkers = [];
+  const geoCache = {};
+
+  // -------------------- UI: Buttons / Modals --------------------
+  document.getElementById("historyBtn").addEventListener("click", () => {
+    const el = document.getElementById('historyModal');
+    const modal = new bootstrap.Modal(el);
+    modal.show();
+    loadHistory();
+  });
+
+  document.getElementById("chartsBtn").addEventListener("click", () => {
+    const el = document.getElementById('chartsModal');
+    const modal = new bootstrap.Modal(el);
+    modal.show();
+  });
+
+  document.getElementById('chartsModal').addEventListener('shown.bs.modal', () => {
+    chartCanvas = document.getElementById('trafficChartModal');
+    if (!chart) {
+      fetchData(true); // форсим инициализацию
+    } else {
+      chart.resize();
+      chart.update();
+    }
+  });
+
+  document.getElementById("mapBtn").addEventListener("click", () => {
+    const el = document.getElementById('mapModal');
+    const modal = new bootstrap.Modal(el);
+    modal.show();
+  });
+
+  document.getElementById('mapModal').addEventListener('shown.bs.modal', () => {
+    if (!mapInitialized) {
+      mapInstance = L.map('mapModalMap').setView([20, 0], 2);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data © OpenStreetMap contributors'
+      }).addTo(mapInstance);
+      mapInitialized = true;
+    } else {
+      mapInstance.invalidateSize();
+    }
+    loadClientAndServerMarkers();
+  });
+
+  // -------------------- Data loaders --------------------
+  function loadServerStatus() {
+    fetch("/api/server-status")
+      .then(r => r.json())
+      .then(s => {
+        const row = `
+          <tr>
+            <td>${s.vpn_mode ?? ''}</td>
+            <td>${s.status ?? ''}</td>
+            <td>${s.pingable ? 'Yes' : 'No'}</td>
+            <td>${s.clients ?? 0}</td>
+            <td>${formatMB(s.total_bytes_in)}</td>
+            <td>${formatMB(s.total_bytes_out)}</td>
+            <td>${s.up_since ?? ''}</td>
+            <td>${s.local_ip ?? ''}</td>
+          </tr>`;
+        document.getElementById("server-status-body").innerHTML = row;
+      })
+      .catch(() => {
+        document.getElementById("server-status-body").innerHTML =
+          `<tr><td colspan="8" class="text-center text-danger">Failed to load server status</td></tr>`;
+      });
+  }
+
+  function loadHistory() {
+    fetch("/api/history")
+      .then(r => r.json())
+      .then(data => {
+        const rows = (data.history || []).map(h => `
+          <tr>
+            <td>${h.common_name ?? ''}</td>
+            <td>${h.real_address ?? ''}</td>
+            <td>${h.connected_since ?? ''}</td>
+            <td>${h.disconnected_at ?? ''}</td>
+            <td>${h.time_online ?? ''}</td>
+            <td>${formatMB(h.bytes_received)}</td>
+            <td>${formatMB(h.bytes_sent)}</td>
+          </tr>
+        `).join("");
+        document.getElementById("history-body").innerHTML = rows || `<tr><td colspan="7" class="text-center text-muted">No data</td></tr>`;
+      })
+      .catch(() => {
+        document.getElementById("history-body").innerHTML =
+          `<tr><td colspan="7" class="text-center text-danger">Failed to load history</td></tr>`;
+      });
+  }
+
+  // Клиенты + таблица + график
+  function fetchData(forceInitChart = false) {
+    $.getJSON("/api/clients", function(data) {
+      const now = Date.now();
+      const timeLabel = new Date().toLocaleTimeString();
+      let total_received = 0, total_sent = 0;
+      const clients = data.clients || [];
+      const users = clients.map(c => c.common_name);
+
+      // Инициализация/переинициализация графика (в модальном canvas)
+      if (forceInitChart || !chart || chartData.datasets.length !== users.length * 2) {
+        if (chart) chart.destroy();
+        chartData = { labels: [], datasets: [] };
+        // Цвета — базовые; Chart.js сам подберёт, но зададим несколько
+        const colors = ['#ff6384','#36a2eb','#4bc0c0','#ff9f40','#9966ff','#ffcd56'];
+
+        users.forEach((user, i) => {
+          chartData.datasets.push(
+            { label: `${user} Rx`, data: [], borderColor: colors[i % colors.length], fill: false, tension: 0.2 },
+            { label: `${user} Tx`, data: [], borderColor: colors[(i + 1) % colors.length], borderDash: [5,5], fill: false, tension: 0.2 }
+          );
+        });
+
+        if (chartCanvas) {
+          chart = new Chart(chartCanvas, {
+            type: 'line',
+            data: chartData,
+            options: {
+              responsive: true,
+              animation: false,
+              scales: {
+                y: { title: { display: true, text: 'MB/s' } },
+                x: { ticks: { maxRotation: 0 } }
+              },
+              plugins: { legend: { position: 'bottom' } }
+            }
+          });
+        }
+      }
+
+      // labels
+      if (chartData.labels) {
+        chartData.labels.push(timeLabel);
+        if (chartData.labels.length > 20) chartData.labels.shift();
+      }
+
+      const dsMap = {};
+      (chartData.datasets || []).forEach(ds => dsMap[ds.label] = ds.data);
+
+      const rows = clients.map(client => {
+        total_received += client.bytes_received;
+        total_sent += client.bytes_sent;
+
+        let speed_rx = 0, speed_tx = 0;
+        const last = lastStats[client.common_name];
+        if (last) {
+          const dt = (now - last.timestamp) / 1000;
+          if (dt > 0) {
+            speed_rx = (client.bytes_received - last.rx) / dt / 1024 / 1024;
+            speed_tx = (client.bytes_sent - last.tx) / dt / 1024 / 1024;
+          }
+        }
+        lastStats[client.common_name] = { rx: client.bytes_received, tx: client.bytes_sent, timestamp: now };
+
+        if (dsMap[`${client.common_name} Rx`]) {
+          dsMap[`${client.common_name} Rx`].push(speed_rx);
+          if (dsMap[`${client.common_name} Rx`].length > 20) dsMap[`${client.common_name} Rx`].shift();
+        }
+        if (dsMap[`${client.common_name} Tx`]) {
+          dsMap[`${client.common_name} Tx`].push(speed_tx);
+          if (dsMap[`${client.common_name} Tx`].length > 20) dsMap[`${client.common_name} Tx`].shift();
+        }
+
+        return `<tr>
+          <td>${client.common_name}</td>
+          <td>${client.vpn_ip ?? ""}</td>
+          <td>${client.real_ip ?? ""}</td>
+          <td>${client.port ?? ""}</td>
+          <td>${client.connected_since ?? ""}</td>
+          <td>${client.time_online ?? ""}</td>
+          <td>${speed_rx.toFixed(2)} / ${speed_tx.toFixed(2)} MB/s</td>
+          <td>${formatMB(client.bytes_received)}</td>
+          <td>${formatMB(client.bytes_sent)}</td>
+        </tr>`;
+      }).join("");
+
+      $("#vpn-clients-body").html(rows || `<tr><td colspan="9" class="text-center text-muted">No active clients</td></tr>`);
+      $("#total-received").text(formatMB(total_received));
+      $("#total-sent").text(formatMB(total_sent));
+
+      if (chart) chart.update();
+    });
+  }
+
+  // Маркеры клиентов + КРАСНЫЙ маркер сервера (только если pingable=true)
+  function loadClientAndServerMarkers() {
+    // очистить старые
+    mapMarkers.forEach(m => mapInstance.removeLayer(m));
+    mapMarkers = [];
+    const bounds = [];
+
+    // 1) Клиенты
+    fetch("/api/clients")
+      .then(res => res.json())
+      .then(data => {
+        const clients = data.clients || [];
+        clients.forEach(c => {
+          const ip = c.real_ip;
+          if (!ip) return;
+
+          const onLoc = (loc) => {
+            if (!loc || !loc.latitude || !loc.longitude) return;
+            const marker = L.marker([loc.latitude, loc.longitude])
+              .addTo(mapInstance)
+              .bindPopup(`<strong>${c.common_name}</strong><br>${loc.city || ''} ${loc.country_name || ''}`);
+            mapMarkers.push(marker);
+            bounds.push([loc.latitude, loc.longitude]);
+          };
+
+          if (geoCache[ip]) {
+            onLoc(geoCache[ip]);
+          } else {
+            fetch(`https://ipapi.co/${ip}/json/`)
+              .then(r => r.json())
+              .then(loc => { geoCache[ip] = loc; onLoc(loc); })
+              .catch(() => {});
+          }
+        });
+      })
+      .finally(() => {
+        // 2) Сервер (красный маркер только если pingable = true)
+        fetch("/api/server-status")
+          .then(r => r.json())
+          .then(s => {
+            if (!s || !s.pingable || !s.public_ip) return;
+
+            const serverIp = s.public_ip;
+            const placeServer = (loc) => {
+              if (!loc || !loc.latitude || !loc.longitude) return;
+              const serverMarker = L.circleMarker([loc.latitude, loc.longitude], {
+                radius: 8,
+                color: 'red',
+                fillColor: 'red',
+                fillOpacity: 0.85,
+                weight: 2
+              })
+              .addTo(mapInstance)
+              .bindPopup(`<strong>OpenVPN Server</strong><br>${serverIp}`);
+              mapMarkers.push(serverMarker);
+              bounds.push([loc.latitude, loc.longitude]);
+
+              if (bounds.length) {
+                mapInstance.fitBounds(bounds, { padding: [30, 30] });
+              }
+            };
+
+            if (geoCache[serverIp]) {
+              placeServer(geoCache[serverIp]);
+            } else {
+              fetch(`https://ipapi.co/${serverIp}/json/`)
+                .then(r => r.json())
+                .then(loc => { geoCache[serverIp] = loc; placeServer(loc); })
+                .catch(() => {});
+            }
+          })
+          .finally(() => {
+            if (bounds.length) {
+              mapInstance.fitBounds(bounds, { padding: [30, 30] });
+            }
+          });
+      });
+  }
+
+  // -------------------- Helpers --------------------
+  function formatMB(bytes) {
+    if (!Number.isFinite(bytes)) return '0 MB';
+    return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+  }
+
+  // -------------------- Init loops --------------------
+  // Первичная загрузка
+  loadServerStatus();
+  fetchData();
+
+  // Периодическое обновление
+  setInterval(loadServerStatus, 5000);
+  setInterval(fetchData, 3000);
+</script>
+
+</body>
+</html>
