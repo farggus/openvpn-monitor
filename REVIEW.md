@@ -17,6 +17,7 @@
 - There is no validation around `active_sessions.json`: when the file becomes corrupted (e.g., truncated by concurrent writes) `json.load` will raise and clear all active state. Adding atomic writes (temporary files + rename) and schema validation would prevent data loss. 【F:app/parser.py†L18-L25】
 - Add automated tests for parser edge cases (IPv6, reconnects, malformed rows). Currently there are no tests to guard against regressions when log formats change.
 
+
 ## Основные проблемы и направления улучшений
 
 - Вся конфигурация парсера (таймзона, пути к логам) захардкожена, поэтому при развёртывании в других регионах время сессий рассчитывается неверно; стоит вынести это в переменные окружения/конфиг. 
