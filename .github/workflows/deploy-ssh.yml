@@ -2,100 +2,27 @@ name: Deploy via SSH
 
 on:
   workflow_dispatch:
-    inputs:
-      target_ref:
-        description: "Git branch to deploy"
-        default: main
-        required: false
-
-permissions:
-  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      # Рабочая директория на прод-сервере (обязательная)
-      PROD_WORKDIR: ${{ secrets.PROD_WORKDIR }}
-      # Опционально: путь к compose-файлу на сервере (например, docker-compose.prod.yml)
-      #DEPLOY_COMPOSE: ${{ secrets.DEPLOY_COMPOSE }}
-      # Целевая ветка для деплоя (по умолчанию — текущая ветка запуска workflow)
-      TARGET_REF: ${{ inputs.target_ref || github.ref_name }}
+
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.PROD_HOST }}
-          username: ${{ secrets.PROD_USER }}
-          key: ${{ secrets.PROD_SSH_KEY }}
-          # Если секрет не задан — у appleboy/ssh-action порт по умолчанию 22
-          port: ${{ secrets.PROD_SSH_PORT || 22 }}
-          # Пробрасываем переменные окружения на удалённый хост
-          envs: PROD_WORKDIR,DEPLOY_COMPOSE,TARGET_REF
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # passphrase: ${{ secrets.SSH_PASSPHRASE }}   # если ключ с паролем
+          script_stop: true
+          # можно зафиксировать host key (безопаснее):
+          # host_key: ${{ secrets.SSH_HOST_FINGERPRINT }}
           script: |
-            set -euo pipefail
-
-            echo "==> Validating required envs"
-            : "${PROD_WORKDIR:?PROD_WORKDIR is required}"
-            : "${TARGET_REF:?TARGET_REF is required}"
-
-            echo "==> Whoami & env"
-            whoami
-            id || true
-
-            echo "==> Changing to workdir: ${PROD_WORKDIR}"
-            cd "${PROD_WORKDIR}"
-
-            echo "==> Detect docker compose binary"
-            if docker compose version >/dev/null 2>&1; then
-              DC="docker compose"
-            elif command -v docker-compose >/dev/null 2>&1; then
-              DC="docker-compose"
-            else
-              echo "❌ Neither 'docker compose' nor 'docker-compose' found"
-              exit 1
-            fi
-            echo "Using: ${DC}"
-
-            echo "==> Git safe.directory & repo check"
-            git config --global --add safe.directory "$(pwd)" || true
-            if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-              echo "==> Sync with origin/${TARGET_REF} (fast & clean)"
-              git fetch origin --tags --prune
-              git checkout -B "${TARGET_REF}" "origin/${TARGET_REF}"
-              git reset --hard "origin/${TARGET_REF}"
-              # ВНИМАНИЕ: не чистим -x, чтобы не удалить .env и локальные файлы
-              # git clean -fd
-            else
-              echo "⚠️  Current folder is not a git repo. Skipping GIT SYNC."
-            fi
-
-            echo "==> Resolve compose file"
-            FILE="docker-compose.yml"
-            if [ -n "${DEPLOY_COMPOSE:-}" ] && [ -f "${DEPLOY_COMPOSE}" ]; then
-              FILE="${DEPLOY_COMPOSE}"
-            fi
-            echo "Compose file: ${FILE}"
-
-            echo "==> Compose config validation"
-            ${DC} -f "${FILE}" config -q
-
-            echo "==> Pull images (if available)"
-            ${DC} -f "${FILE}" pull || true
-
-            echo "==> Build & Up"
-            ${DC} -f "${FILE}" build --pull
-            ${DC} -f "${FILE}" up -d --remove-orphans
-
-            echo "==> Optional DB migrations (Alembic) in 'backend' service"
-            if ${DC} -f "${FILE}" ps --services | grep -qx backend; then
-              if ${DC} -f "${FILE}" exec -T backend bash -lc 'command -v alembic' >/dev/null 2>&1; then
-                ${DC} -f "${FILE}" exec -T backend alembic upgrade head || true
-              else
-                echo "No alembic in backend — skipping migrations."
-              fi
-            else
-              echo "No 'backend' service — skipping migrations."
-            fi
-
+            set -e
+            cd /home/app_data/docker/openvpn-monitor
+            git pull
+            docker compose pull
+            docker compose up -d --remove-orphans
             echo "✅ Deploy finished"
