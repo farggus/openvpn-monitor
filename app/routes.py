@@ -118,9 +118,15 @@ def get_history():
                         continue
 
                     timestamp = parts[0]
-                    session_end = (
-                        parts[8] if len(parts) > 8 and is_valid_datetime(parts[8]) else None
-                    )
+
+                    vpn_ip_legacy = parts[6].strip() if len(parts) > 6 else ""
+                    port = parts[7].strip() if len(parts) > 7 else ""
+                    raw_session_end = parts[8].strip() if len(parts) > 8 else ""
+                    session_end = raw_session_end if is_valid_datetime(raw_session_end) else None
+                    vpn_ipv4 = parts[9].strip() if len(parts) > 9 else ""
+                    vpn_ipv6 = parts[10].strip() if len(parts) > 10 else ""
+
+                    vpn_ip = vpn_ip_legacy or vpn_ipv4 or vpn_ipv6
 
                     entry: Dict[str, Any] = {
                         "timestamp": timestamp,
@@ -129,11 +135,17 @@ def get_history():
                         "session_id": parts[3],
                         "rx": _parse_optional_float(parts, 4),
                         "tx": _parse_optional_float(parts, 5),
-                        "vpn_ip": parts[6] if len(parts) > 6 else "",
-                        "port": parts[7] if len(parts) > 7 else "",
+                        "vpn_ip": vpn_ip,
+                        "vpn_ipv4": vpn_ipv4,
+                        "vpn_ipv6": vpn_ipv6,
+                        "port": port,
                         "session_end": session_end,
                         "duration": _calculate_duration(timestamp, session_end),
                     }
+                    if not entry["vpn_ipv4"] and vpn_ip and "." in vpn_ip:
+                        entry["vpn_ipv4"] = vpn_ip
+                    if not entry["vpn_ipv6"] and vpn_ip and ":" in vpn_ip:
+                        entry["vpn_ipv6"] = vpn_ip
                     entries.append(entry)
     except Exception:  # pragma: no cover - defensive logging
         logger.exception("Error reading history log")

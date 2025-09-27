@@ -220,6 +220,8 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                         active_sessions[common_name] = {
                             "ip": real_ip,
                             "vpn_ip": None,
+                            "vpn_ipv4": None,
+                            "vpn_ipv6": None,
                             "connected_at": connected_dt.strftime("%Y-%m-%d %H:%M:%S"),
                             "bytes_received": bytes_received,
                             "bytes_sent": bytes_sent,
@@ -248,6 +250,8 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
 
             if common_name in active_sessions:
                 active_sessions[common_name]["vpn_ip"] = vpn_ip
+                active_sessions[common_name]["vpn_ipv4"] = vpn_ipv4
+                active_sessions[common_name]["vpn_ipv6"] = vpn_ipv6
 
         for common_name in new_sessions:
             session = active_sessions.get(common_name)
@@ -256,16 +260,29 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
 
             vpn_ip_entry = vpn_ip_map.get(common_name)
             if isinstance(vpn_ip_entry, dict):
-                vpn_ip = vpn_ip_entry.get("ipv4") or vpn_ip_entry.get("ipv6") or ""
+                vpn_ipv4 = vpn_ip_entry.get("ipv4") or ""
+                vpn_ipv6 = vpn_ip_entry.get("ipv6") or ""
             else:
-                vpn_ip = vpn_ip_entry or ""
+                value = vpn_ip_entry or ""
+                vpn_ipv4 = value
+                vpn_ipv6 = ""
+                try:
+                    if value:
+                        ip_obj = ip_address(value)
+                        if ip_obj.version == 6:
+                            vpn_ipv4, vpn_ipv6 = "", value
+                except ValueError:
+                    pass
+            vpn_ip = vpn_ipv4 or vpn_ipv6 or ""
             port = session.get("port") or ""
 
             session["vpn_ip"] = vpn_ip or None
+            session["vpn_ipv4"] = vpn_ipv4 or None
+            session["vpn_ipv6"] = vpn_ipv6 or None
 
             with history_log() as logf:
                 logf.write(
-                    f"{session['connected_at']},{common_name},{session['ip']},{session['session_id']},,,,{vpn_ip},{port}\n"
+                    f"{session['connected_at']},{common_name},{session['ip']},{session['session_id']},,,,{vpn_ip},{port},,{vpn_ipv4},{vpn_ipv6}\n"
                 )
 
         disconnected = [cn for cn in list(active_sessions) if cn not in current_common_names]
@@ -276,10 +293,23 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
             disconnect_time = now.strftime("%Y-%m-%d %H:%M:%S")
             vpn_ip = session.get("vpn_ip") or ""
             port = session.get("port") or ""
+            vpn_ipv4 = session.get("vpn_ipv4") or ""
+            vpn_ipv6 = session.get("vpn_ipv6") or ""
+
+            if not vpn_ipv4 and not vpn_ipv6 and vpn_ip:
+                try:
+                    ip_obj = ip_address(vpn_ip)
+                except ValueError:
+                    pass
+                else:
+                    if ip_obj.version == 4:
+                        vpn_ipv4 = vpn_ip
+                    else:
+                        vpn_ipv6 = vpn_ip
 
             with history_log() as logf:
                 logf.write(
-                    f"{session['connected_at']},{cn},{session['ip']},{session['session_id']},{rx},{tx},{vpn_ip},{port},{disconnect_time}\n"
+                    f"{session['connected_at']},{cn},{session['ip']},{session['session_id']},{rx},{tx},{vpn_ip},{port},{disconnect_time},{vpn_ipv4},{vpn_ipv6}\n"
                 )
 
             del active_sessions[cn]

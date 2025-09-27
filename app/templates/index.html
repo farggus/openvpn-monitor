@@ -132,7 +132,8 @@
               <tr>
                 <th>Session Opened</th>
                 <th>Client</th>
-                <th>VPN IP</th>
+                <th>VPN IPV4</th>
+                <th>VPN IPV6</th>
                 <th>Client IP</th>
                 <th>Port</th>
                 <th>Session Closed</th>
@@ -478,13 +479,20 @@ function applyFilters() {
 }
 
 function renderHistoryTable(data) {
-  const rows = data.map(e => `
-    <tr>
-      <td>${e.timestamp}</td><td>${e.name}</td><td>${e.vpn_ip ?? ""}</td><td>${e.ip}</td>
-      <td>${e.port ?? ""}</td><td>${e.session_end ?? ""}</td>
-      <td>${e.duration ?? ""}</td><td>${e.rx ?? ""}</td><td>${e.tx ?? ""}</td>
-    </tr>
-  `).join("");
+  const rows = data.map(e => {
+    const legacyVpnIp = e.vpn_ip ?? "";
+    const vpnIpv4 = e.vpn_ipv4 || (legacyVpnIp && legacyVpnIp.includes('.') ? legacyVpnIp : "");
+    const rawIpv6 = e.vpn_ipv6 || (legacyVpnIp && legacyVpnIp.includes(':') ? legacyVpnIp : "");
+    const vpnIpv6 = rawIpv6 || "—";
+
+    return `
+      <tr>
+        <td>${e.timestamp}</td><td>${e.name}</td><td>${vpnIpv4}</td><td>${vpnIpv6}</td><td>${e.ip}</td>
+        <td>${e.port ?? ""}</td><td>${e.session_end ?? ""}</td>
+        <td>${e.duration ?? ""}</td><td>${e.rx ?? ""}</td><td>${e.tx ?? ""}</td>
+      </tr>
+    `;
+  }).join("");
   document.getElementById("history-body").innerHTML = rows;
 }
 
