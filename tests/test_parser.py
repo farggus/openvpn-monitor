@@ -92,6 +92,8 @@ ROUTING TABLE
 
     assert data["client1"]["port"] == "443"
     assert data["client1"]["vpn_ip"] == "10.8.0.2"
+    assert data["client1"]["vpn_ipv4"] == "10.8.0.2"
+    assert data["client1"]["vpn_ipv6"] == "2001:db8:abcd::100"
 
     history_entries = history_path.read_text().strip().split(",")
     assert history_entries == [
@@ -104,6 +106,9 @@ ROUTING TABLE
         "",
         "10.8.0.2",
         "443",
+        "",
+        "10.8.0.2",
+        "2001:db8:abcd::100",
     ]
 
 
@@ -145,8 +150,7 @@ ROUTING TABLE
     history_line = history_path.read_text().strip()
     assert history_line == (
         "2024-01-01 09:00:00,alice,198.51.100.10,existing-session,1.0,2.0,"
-        "10.8.0.5,443,"
-        "2024-01-01 13:00:00"
+        "10.8.0.5,443,2024-01-01 13:00:00,10.8.0.5,"
     )
 
 
@@ -188,6 +192,8 @@ ROUTING TABLE
         "alice": {
             "ip": "198.51.100.20",
             "vpn_ip": "10.8.0.6",
+            "vpn_ipv4": "10.8.0.6",
+            "vpn_ipv6": None,
             "connected_at": "2024-01-01 11:45:00",
             "bytes_received": 2048,
             "bytes_sent": 1024,
