@@ -142,6 +142,7 @@ def test_parse_status_log_recovers_from_corrupted_state(parser_module, monkeypat
 
     active_path.write_text("{")
 
+
     status_path.write_text(
         """
 Common Name,Real Address,Bytes Received,Bytes Sent,Connected Since
