@@ -47,7 +47,8 @@
       <thead class="table-light">
         <tr>
           <th>Client</th>
-          <th>VPN IP</th>
+          <th>VPN IPV4</th>
+          <th>VPN IPV6</th>
           <th>Client IP</th>
           <th>Port</th>
           <th>Session Opened</th>
@@ -61,7 +62,7 @@
       <tbody id="vpn-clients-body"></tbody>
       <tfoot class="table-light">
         <tr>
-          <th colspan="7">Total</th>
+          <th colspan="8">Total</th>
           <th id="total-received">0 MB</th>
           <th id="total-sent">0 MB</th>
         </tr>
@@ -554,8 +555,25 @@ function fetchData(forceInitChart = false) {
         if (datasetMap[`${client.common_name} Tx`].length > 20) datasetMap[`${client.common_name} Tx`].shift();
       }
 
+      const ipv4Candidate = client.vpn_ipv4 ?? null;
+      const ipv6Candidate = client.vpn_ipv6 ?? null;
+
+      let vpnIPv4 = ipv4Candidate;
+      let vpnIPv6 = ipv6Candidate;
+
+      if (vpnIPv4 == null && vpnIPv6 == null && client.vpn_ip) {
+        if (client.vpn_ip.includes(':')) {
+          vpnIPv6 = client.vpn_ip;
+        } else {
+          vpnIPv4 = client.vpn_ip;
+        }
+      }
+
+      const displayIPv4 = vpnIPv4 ?? "";
+      const displayIPv6 = vpnIPv6 && vpnIPv6.trim() ? vpnIPv6 : "—";
+
       return `<tr>
-        <td>${client.common_name}</td><td>${client.vpn_ip ?? ""}</td><td>${client.real_ip}</td><td>${client.port ?? ""}</td>
+        <td>${client.common_name}</td><td>${displayIPv4}</td><td>${displayIPv6}</td><td>${client.real_ip}</td><td>${client.port ?? ""}</td>
         <td>${client.connected_since}</td><td>${client.time_online}</td>
         <td>${speed_rx.toFixed(2)} / ${speed_tx.toFixed(2)} MB/s</td>
         <td>${(client.bytes_received / 1024 / 1024).toFixed(2)} MB</td>

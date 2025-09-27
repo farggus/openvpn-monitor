@@ -161,9 +161,29 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                 if section == "routing":
                     parts = line.split(",")
                     if len(parts) >= 2:
-                        vpn_ip = parts[0]
-                        common_name = parts[1]
-                        vpn_ip_map[common_name] = vpn_ip
+                        vpn_ip = parts[0].strip()
+                        common_name = parts[1].strip()
+
+                        entry = vpn_ip_map.setdefault(
+                            common_name, {"ipv4": None, "ipv6": None}
+                        )
+
+                        try:
+                            ip_obj = ip_address(vpn_ip)
+                        except ValueError:
+                            # Fallback to the previous behaviour – store the value in the
+                            # first available slot so we don't lose potentially useful
+                            # information even if it isn't a valid IP.
+                            if entry["ipv4"] is None:
+                                entry["ipv4"] = vpn_ip
+                            elif entry["ipv6"] is None:
+                                entry["ipv6"] = vpn_ip
+                            continue
+
+                        if ip_obj.version == 4:
+                            entry["ipv4"] = vpn_ip
+                        else:
+                            entry["ipv6"] = vpn_ip
                     continue
 
                 if section == "clients":
@@ -215,8 +235,15 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
 
         for record in client_records:
             common_name = record["common_name"]
-            vpn_ip = vpn_ip_map.get(common_name)
+            vpn_ip_entry = vpn_ip_map.get(common_name, {})
+            vpn_ipv4 = vpn_ip_entry.get("ipv4") if isinstance(vpn_ip_entry, dict) else None
+            vpn_ipv6 = vpn_ip_entry.get("ipv6") if isinstance(vpn_ip_entry, dict) else None
+
+            vpn_ip = vpn_ipv4 or vpn_ipv6
+
             record["vpn_ip"] = vpn_ip
+            record["vpn_ipv4"] = vpn_ipv4
+            record["vpn_ipv6"] = vpn_ipv6
             clients.append(record)
 
             if common_name in active_sessions:
@@ -227,7 +254,11 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
             if not session:
                 continue
 
-            vpn_ip = vpn_ip_map.get(common_name) or ""
+            vpn_ip_entry = vpn_ip_map.get(common_name)
+            if isinstance(vpn_ip_entry, dict):
+                vpn_ip = vpn_ip_entry.get("ipv4") or vpn_ip_entry.get("ipv6") or ""
+            else:
+                vpn_ip = vpn_ip_entry or ""
             port = session.get("port") or ""
 
             session["vpn_ip"] = vpn_ip or None
