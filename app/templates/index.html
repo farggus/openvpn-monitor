@@ -220,10 +220,13 @@ let chartCanvas = null;
 
 // ИНИЦИАЛИЗАЦИЯ
 document.addEventListener("DOMContentLoaded", function () {
-  fetchData();
-  setInterval(fetchData, 2000);
-  fetchServerStatus();
-  setInterval(fetchServerStatus, 3000);
+  const refreshAll = () => {
+    fetchData();
+    fetchServerStatus();
+  };
+
+  refreshAll();
+  setInterval(refreshAll, 1000);
   
   /*
   document.getElementById("toggleGraphBtn").addEventListener("click", () => {
