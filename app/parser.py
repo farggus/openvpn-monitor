@@ -1,4 +1,3 @@
-
 # parser.py
 import datetime
 import json
@@ -20,8 +19,10 @@ from .config import (
 
 logger = logging.getLogger(__name__)
 
+
 def format_duration(seconds):
     return str(datetime.timedelta(seconds=seconds))
+
 
 def validate_active_sessions(data):
     if not isinstance(data, dict):
@@ -94,6 +95,7 @@ def history_log(path: str = HISTORY_LOG_PATH):
             os.fsync(logf.fileno())
             fcntl.flock(logf, fcntl.LOCK_UN)
 
+
 def _split_real_address(address: str):
     if not address:
         return "", ""
@@ -137,7 +139,9 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
             for raw_line in f:
                 line = raw_line.strip()
 
-                if raw_line.startswith("Common Name,Real Address,Bytes Received,Bytes Sent,Connected Since"):
+                if raw_line.startswith(
+                    "Common Name,Real Address,Bytes Received,Bytes Sent,Connected Since"
+                ):
                     section = "clients"
                     continue
 
