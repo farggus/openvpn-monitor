@@ -93,6 +93,26 @@ Make sure:
 - Your domain DNS points to the host
 - Traefik is configured with TLS/SSL (e.g., Let's Encrypt)
 
+### 4. Environment variables
+
+You can override default log locations and timezone with environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENVPN_MONITOR_TZ` | `Europe/Bucharest` | Timezone used to compute session durations. |
+| `OPENVPN_STATUS_LOG` | `/var/log/openvpn/status.log` | Path to the OpenVPN status log parsed for active clients. |
+| `OPENVPN_HISTORY_LOG` | `/var/log/openvpn/session_history.log` | File used to persist session history entries. |
+| `OPENVPN_ACTIVE_SESSIONS` | `/var/log/openvpn/active_sessions.json` | JSON file storing in-progress sessions. |
+| `OPENVPN_SERVER_STATUS` | `/var/log/openvpn/server_status.json` | Optional JSON file with aggregated server status information. |
+
+Example `docker-compose.yml` override:
+
+```yaml
+environment:
+  OPENVPN_MONITOR_TZ: "Europe/Prague"
+  OPENVPN_STATUS_LOG: "/data/openvpn/status.log"
+```
+
 ---
 
 ## 🌐 Access the Interface

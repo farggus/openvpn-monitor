@@ -1,5 +1,6 @@
 #routes.py
 from flask import Flask, render_template, jsonify
+from .config import HISTORY_LOG_PATH, SERVER_STATUS_PATH
 from .parser import parse_status_log
 import os
 import json
@@ -41,10 +42,9 @@ def api_clients():
 @app.route('/api/history')
 def get_history():
     entries = []
-    log_path = "/var/log/openvpn/session_history.log"
     try:
-        if os.path.exists(log_path):
-            with open(log_path, "r") as f:
+        if os.path.exists(HISTORY_LOG_PATH):
+            with open(HISTORY_LOG_PATH, "r") as f:
                 for line in f:
                     parts = line.strip().split(',')[:9]
                     if len(parts) == 9 and parts[4] and parts[5] and is_valid_datetime(parts[8]):
@@ -71,7 +71,7 @@ def get_history():
 @app.route('/api/server-status')
 def get_server_status():
     try:
-        with open("/var/log/openvpn/server_status.json", "r") as f:
+        with open(SERVER_STATUS_PATH, "r") as f:
             data = json.load(f)
 
         # ?? ????????? ?????? "Yes" ? ?????? ????????
