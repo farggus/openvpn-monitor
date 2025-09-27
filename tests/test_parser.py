@@ -34,7 +34,16 @@ def parser_module(tmp_path, monkeypatch):
     return parser, status_path, history_path, active_path
 
 
-def _freeze_time(monkeypatch, parser, year=2024, month=1, day=1, hour=12, minute=0, second=0):
+def _freeze_time(
+    monkeypatch,
+    parser,
+    year=2024,
+    month=1,
+    day=1,
+    hour=12,
+    minute=0,
+    second=0,
+):
     class FixedDateTime(RealDateTime):
         @classmethod
         def now(cls, tz=None):
@@ -132,12 +141,15 @@ ROUTING TABLE
 
     history_line = history_path.read_text().strip()
     assert history_line == (
-        "2024-01-01 09:00:00,alice,198.51.100.10,existing-session,1.0,2.0,10.8.0.5,443,"
+        "2024-01-01 09:00:00,alice,198.51.100.10,existing-session,1.0,2.0,"
+        "10.8.0.5,443,"
         "2024-01-01 13:00:00"
     )
 
 
-def test_parse_status_log_recovers_from_corrupted_state(parser_module, monkeypatch):
+def test_parse_status_log_recovers_from_corrupted_state(
+    parser_module, monkeypatch
+):
     parser, status_path, history_path, active_path = parser_module
 
     active_path.write_text("{")
