@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from flask import Flask, g, jsonify, render_template
@@ -64,6 +64,169 @@ def _get_cached_clients() -> List[Dict[str, Any]]:
     return g.parsed_clients
 
 
+def _parse_history_line(parts: List[str]) -> Optional[Dict[str, Any]]:
+    if len(parts) < 4:
+        return None
+
+    timestamp = parts[0]
+
+    vpn_ip_legacy = parts[6].strip() if len(parts) > 6 else ""
+    port = parts[7].strip() if len(parts) > 7 else ""
+    raw_session_end = parts[8].strip() if len(parts) > 8 else ""
+    session_end = raw_session_end if is_valid_datetime(raw_session_end) else None
+    vpn_ipv4 = parts[9].strip() if len(parts) > 9 else ""
+    vpn_ipv6 = parts[10].strip() if len(parts) > 10 else ""
+
+    vpn_ip = vpn_ip_legacy or vpn_ipv4 or vpn_ipv6
+
+    entry: Dict[str, Any] = {
+        "timestamp": timestamp,
+        "name": parts[1],
+        "ip": parts[2],
+        "session_id": parts[3],
+        "rx": _parse_optional_float(parts, 4),
+        "tx": _parse_optional_float(parts, 5),
+        "vpn_ip": vpn_ip,
+        "vpn_ipv4": vpn_ipv4,
+        "vpn_ipv6": vpn_ipv6,
+        "port": port,
+        "session_end": session_end,
+        "duration": _calculate_duration(timestamp, session_end),
+    }
+
+    if not entry["vpn_ipv4"] and vpn_ip and "." in vpn_ip:
+        entry["vpn_ipv4"] = vpn_ip
+    if not entry["vpn_ipv6"] and vpn_ip and ":" in vpn_ip:
+        entry["vpn_ipv6"] = vpn_ip
+
+    return entry
+
+
+def _load_history_entries() -> List[Dict[str, Any]]:
+    entries: List[Dict[str, Any]] = []
+
+    if not os.path.exists(HISTORY_LOG_PATH):
+        return entries
+
+    with open(HISTORY_LOG_PATH, "r") as f:
+        for raw_line in f:
+            parts = raw_line.strip().split(",")
+            entry = _parse_history_line(parts)
+            if entry:
+                entries.append(entry)
+
+    return entries
+
+
+def _parse_datetime(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+
+    try:
+        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+    except (TypeError, ValueError):
+        return None
+
+
+def _aggregate_client_stats() -> List[Dict[str, Any]]:
+    history_entries = _load_history_entries()
+    clients_map: Dict[str, Dict[str, Any]] = {}
+
+    def _ensure_client(name: str) -> Dict[str, Any]:
+        if name not in clients_map:
+            clients_map[name] = {
+                "name": name,
+                "is_online": False,
+                "sessions": 0,
+                "total_rx_mb": 0.0,
+                "total_tx_mb": 0.0,
+                "total_duration_seconds": 0,
+                "last_seen": None,
+            }
+        return clients_map[name]
+
+    for entry in history_entries:
+        info = _ensure_client(entry["name"])
+        info["sessions"] += 1
+
+        if entry["rx"] is not None:
+            info["total_rx_mb"] += entry["rx"]
+        if entry["tx"] is not None:
+            info["total_tx_mb"] += entry["tx"]
+
+        start_dt = _parse_datetime(entry["timestamp"])
+        end_dt = _parse_datetime(entry["session_end"])
+        if start_dt and end_dt and end_dt >= start_dt:
+            info["total_duration_seconds"] += int((end_dt - start_dt).total_seconds())
+
+        for candidate in (entry.get("session_end"), entry.get("timestamp")):
+            candidate_dt = _parse_datetime(candidate)
+            if not candidate_dt:
+                continue
+            current_last_seen = info.get("last_seen")
+            if current_last_seen is None or candidate_dt > current_last_seen:
+                info["last_seen"] = candidate_dt
+
+    active_clients = _get_cached_clients()
+    now = datetime.now()
+
+    for client in active_clients:
+        name = client.get("common_name")
+        if not name:
+            continue
+
+        info = _ensure_client(name)
+        info["is_online"] = True
+
+        connected_since = _parse_datetime(client.get("connected_since"))
+        if connected_since and now >= connected_since:
+            info["total_duration_seconds"] += int((now - connected_since).total_seconds())
+
+        bytes_received = client.get("bytes_received", 0)
+        bytes_sent = client.get("bytes_sent", 0)
+
+        info["total_rx_mb"] += bytes_received / (1024 * 1024)
+        info["total_tx_mb"] += bytes_sent / (1024 * 1024)
+
+        info["last_seen"] = now
+
+        if info.get("sessions", 0) == 0:
+            info["sessions"] = 1
+
+        info["current_session"] = {
+            "connected_since": client.get("connected_since"),
+            "time_online": client.get("time_online"),
+            "ip": client.get("real_ip"),
+            "port": client.get("port"),
+            "vpn_ip": client.get("vpn_ip"),
+            "vpn_ipv4": client.get("vpn_ipv4"),
+            "vpn_ipv6": client.get("vpn_ipv6"),
+            "bytes_received_gb": round(bytes_received / (1024 ** 3), 3),
+            "bytes_sent_gb": round(bytes_sent / (1024 ** 3), 3),
+        }
+
+    clients_list: List[Dict[str, Any]] = []
+
+    for client in clients_map.values():
+        total_duration = client.get("total_duration_seconds", 0)
+        client["total_duration_human"] = str(timedelta(seconds=total_duration))
+        client["total_rx_gb"] = round(client.get("total_rx_mb", 0.0) / 1024, 3)
+        client["total_tx_gb"] = round(client.get("total_tx_mb", 0.0) / 1024, 3)
+
+        last_seen_dt = client.get("last_seen")
+        client["last_seen"] = (
+            last_seen_dt.strftime("%Y-%m-%d %H:%M:%S") if isinstance(last_seen_dt, datetime) else None
+        )
+
+        client.pop("total_rx_mb", None)
+        client.pop("total_tx_mb", None)
+
+        clients_list.append(client)
+
+    clients_list.sort(key=lambda c: c["name"].lower())
+    return clients_list
+
+
 def _load_server_status() -> Dict[str, Any]:
     try:
         with open(SERVER_STATUS_PATH, "r") as f:
@@ -108,45 +271,8 @@ def api_clients():
 
 @app.route("/api/history")
 def get_history():
-    entries: List[Dict[str, Any]] = []
     try:
-        if os.path.exists(HISTORY_LOG_PATH):
-            with open(HISTORY_LOG_PATH, "r") as f:
-                for line in f:
-                    parts = line.strip().split(",")
-                    if len(parts) < 4:
-                        continue
-
-                    timestamp = parts[0]
-
-                    vpn_ip_legacy = parts[6].strip() if len(parts) > 6 else ""
-                    port = parts[7].strip() if len(parts) > 7 else ""
-                    raw_session_end = parts[8].strip() if len(parts) > 8 else ""
-                    session_end = raw_session_end if is_valid_datetime(raw_session_end) else None
-                    vpn_ipv4 = parts[9].strip() if len(parts) > 9 else ""
-                    vpn_ipv6 = parts[10].strip() if len(parts) > 10 else ""
-
-                    vpn_ip = vpn_ip_legacy or vpn_ipv4 or vpn_ipv6
-
-                    entry: Dict[str, Any] = {
-                        "timestamp": timestamp,
-                        "name": parts[1],
-                        "ip": parts[2],
-                        "session_id": parts[3],
-                        "rx": _parse_optional_float(parts, 4),
-                        "tx": _parse_optional_float(parts, 5),
-                        "vpn_ip": vpn_ip,
-                        "vpn_ipv4": vpn_ipv4,
-                        "vpn_ipv6": vpn_ipv6,
-                        "port": port,
-                        "session_end": session_end,
-                        "duration": _calculate_duration(timestamp, session_end),
-                    }
-                    if not entry["vpn_ipv4"] and vpn_ip and "." in vpn_ip:
-                        entry["vpn_ipv4"] = vpn_ip
-                    if not entry["vpn_ipv6"] and vpn_ip and ":" in vpn_ip:
-                        entry["vpn_ipv6"] = vpn_ip
-                    entries.append(entry)
+        entries = _load_history_entries()
     except Exception:  # pragma: no cover - defensive logging
         logger.exception("Error reading history log")
         return _json_error("Failed to read history log")
@@ -177,6 +303,17 @@ def get_server_status():
     )
 
     return jsonify(data)
+
+
+@app.route("/api/clients/summary")
+def get_clients_summary():
+    try:
+        clients = _aggregate_client_stats()
+    except Exception:  # pragma: no cover - defensive logging
+        logger.exception("[clients-summary] Failed to build clients summary")
+        return _json_error("Failed to build clients summary")
+
+    return jsonify({"clients": clients})
 
 
 if __name__ == "__main__":
