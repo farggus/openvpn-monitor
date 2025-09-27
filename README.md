@@ -133,6 +133,13 @@ https://openvpn.example.com
 | GET    | `/api/history`      | Session history log            |
 | GET    | `/api/server-status`| Current OpenVPN server status  |
 
+### Automating provisioning with `openvpn-install.sh`
+
+If you plan to issue or revoke VPN profiles programmatically, avoid invoking the bundled
+`openvpn-install.sh` directly from the Flask process. Instead, run it from a privileged backend
+helper that exposes a hardened API to the web app. See [Docs/openvpn-install-integration.md](Docs/openvpn-install-integration.md)
+for a step-by-step outline, including an `expect` example and security considerations.
+
 ---
 
 ## 🧪 What You Should See
