@@ -1,24 +1,88 @@
 #routes.py
-from flask import Flask, render_template, jsonify
+from __future__ import annotations
+
+import json
+import logging
+import os
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from flask import Flask, g, jsonify, render_template
+
 from .config import HISTORY_LOG_PATH, SERVER_STATUS_PATH
 from .parser import parse_status_log
-import os
-import json
-from datetime import datetime
-
-#app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
-
-app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'), static_folder=None)
-app.config['PROPAGATE_EXCEPTIONS'] = True
-app.config['DEBUG'] = True
 
 
-def is_valid_datetime(value):
+logger = logging.getLogger(__name__)
+
+app = Flask(
+    __name__,
+    template_folder=os.path.join(os.path.dirname(__file__), "templates"),
+    static_folder=None,
+)
+
+
+def is_valid_datetime(value: str) -> bool:
     try:
         datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
         return True
-    except:
+    except ValueError:
         return False
+
+
+def _parse_optional_float(parts: List[str], index: int) -> Optional[float]:
+    if len(parts) <= index:
+        return None
+
+    value = parts[index].strip()
+    if not value:
+        return None
+
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def _calculate_duration(start: str, end: Optional[str]) -> Optional[str]:
+    if not (is_valid_datetime(start) and end and is_valid_datetime(end)):
+        return None
+
+    start_dt = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+    end_dt = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+    return str(end_dt - start_dt)
+
+
+def _json_error(message: str, status_code: int = 500, *, code: str = "internal_error"):
+    payload = {"error": {"code": code, "message": message}}
+    return jsonify(payload), status_code
+
+
+def _get_cached_clients() -> List[Dict[str, Any]]:
+    if "parsed_clients" not in g:
+        g.parsed_clients = parse_status_log()
+    return g.parsed_clients
+
+
+def _load_server_status() -> Dict[str, Any]:
+    try:
+        with open(SERVER_STATUS_PATH, "r") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        logger.exception("[server-status] Failed to read or parse JSON")
+        return {
+            "status": "Unknown",
+            "uptime": "Unknown",
+            "local_ip": "0.0.0.0",
+            "public_ip": "0.0.0.0",
+            "pingable": False,
+        }
+
+    pingable = data.get("pingable")
+    if isinstance(pingable, str):
+        data["pingable"] = pingable.lower() == "yes"
+
+    return data
 
 @app.route('/')
 def index():
@@ -32,82 +96,69 @@ def index():
 @app.route('/api/clients')
 def api_clients():
     try:
-        clients = parse_status_log()
+        clients = _get_cached_clients()
         return jsonify({"clients": clients})
-    except Exception as e:
-        print(f"[api_clients] Error: {e}")
-        return jsonify({"error": "Failed to fetch clients"}), 500
+    except Exception:  # pragma: no cover - defensive logging
+        logger.exception("[api_clients] Error while fetching clients")
+        return _json_error("Failed to fetch clients")
 
 
 @app.route('/api/history')
 def get_history():
-    entries = []
+    entries: List[Dict[str, Any]] = []
     try:
         if os.path.exists(HISTORY_LOG_PATH):
             with open(HISTORY_LOG_PATH, "r") as f:
                 for line in f:
-                    parts = line.strip().split(',')[:9]
-                    if len(parts) == 9 and parts[4] and parts[5] and is_valid_datetime(parts[8]):
-                        entry = {
-                            "timestamp": parts[0],
-                            "name": parts[1],
-                            "ip": parts[2],
-                            "session_id": parts[3],
-                            "rx": parts[4],
-                            "tx": parts[5],
-                            "vpn_ip": parts[6],
-                            "port": parts[7],
-                            "session_end": parts[8],
-                            "duration": str(
-                                datetime.strptime(parts[8], "%Y-%m-%d %H:%M:%S") -
-                                datetime.strptime(parts[0], "%Y-%m-%d %H:%M:%S")
-                            )
-                        }
-                        entries.append(entry)
-    except Exception as e:
-        print(f"Error reading history log: {e}")
+                    parts = line.strip().split(",")
+                    if len(parts) < 4:
+                        continue
+
+                    timestamp = parts[0]
+                    session_end = parts[8] if len(parts) > 8 and is_valid_datetime(parts[8]) else None
+
+                    entry: Dict[str, Any] = {
+                        "timestamp": timestamp,
+                        "name": parts[1],
+                        "ip": parts[2],
+                        "session_id": parts[3],
+                        "rx": _parse_optional_float(parts, 4),
+                        "tx": _parse_optional_float(parts, 5),
+                        "vpn_ip": parts[6] if len(parts) > 6 else "",
+                        "port": parts[7] if len(parts) > 7 else "",
+                        "session_end": session_end,
+                        "duration": _calculate_duration(timestamp, session_end),
+                    }
+                    entries.append(entry)
+    except Exception:  # pragma: no cover - defensive logging
+        logger.exception("Error reading history log")
+        return _json_error("Failed to read history log")
+
     return jsonify(entries)
 
 @app.route('/api/server-status')
 def get_server_status():
-    try:
-        with open(SERVER_STATUS_PATH, "r") as f:
-            data = json.load(f)
-
-        # ?? ????????? ?????? "Yes" ? ?????? ????????
-        pingable = data.get("pingable")
-        if isinstance(pingable, str):
-            data["pingable"] = pingable.lower() == "yes"
-
-    except Exception as e:
-        print(f"[server-status] Failed to read or parse JSON: {e}")
-        data = {
-            "status": "Unknown",
-            "uptime": "Unknown",
-            "local_ip": "0.0.0.0",
-            "pingable": False
-        }
+    data = _load_server_status()
 
     try:
-        clients = parse_status_log()
-        total_rx = sum(c.get("bytes_received", 0) for c in clients)
-        total_tx = sum(c.get("bytes_sent", 0) for c in clients)
-    except Exception as e:
-        print(f"[server-status] Failed to parse status log: {e}")
+        clients = _get_cached_clients()
+    except Exception:  # pragma: no cover - defensive logging
+        logger.exception("[server-status] Failed to parse status log")
         clients = []
-        total_rx = 0
-        total_tx = 0
 
-    data.update({
-        "mode": "server",
-        "clients": len(clients),
-        "total_rx": round(total_rx / 1024 / 1024, 2),
-        "total_tx": round(total_tx / 1024 / 1024, 2),
-    })
+    total_rx = sum(c.get("bytes_received", 0) for c in clients)
+    total_tx = sum(c.get("bytes_sent", 0) for c in clients)
+
+    data.update(
+        {
+            "mode": "server",
+            "clients": len(clients),
+            "total_rx": round(total_rx / 1024 / 1024, 2),
+            "total_tx": round(total_tx / 1024 / 1024, 2),
+        }
+    )
 
     return jsonify(data)
 
 if __name__ == "__main__":
-    app.run(debug=True)
-
-## test
+    app.run()
