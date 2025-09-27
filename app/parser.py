@@ -4,27 +4,27 @@ import datetime
 import json
 import os
 import uuid
-import pytz
-
-LOCAL_TZ = pytz.timezone("Europe/Bucharest")
-STATUS_LOG = "/var/log/openvpn/status.log"
-HISTORY_LOG = "/var/log/openvpn/session_history.log"
-ACTIVE_SESSIONS_FILE = "/var/log/openvpn/active_sessions.json"
+from .config import (
+    ACTIVE_SESSIONS_PATH,
+    HISTORY_LOG_PATH,
+    LOCAL_TZ,
+    STATUS_LOG_PATH,
+)
 
 def format_duration(seconds):
     return str(datetime.timedelta(seconds=seconds))
 
-def load_active_sessions():
-    if os.path.exists(ACTIVE_SESSIONS_FILE):
-        with open(ACTIVE_SESSIONS_FILE, "r") as f:
+def load_active_sessions(path: str = ACTIVE_SESSIONS_PATH):
+    if os.path.exists(path):
+        with open(path, "r") as f:
             return json.load(f)
     return {}
 
-def save_active_sessions(sessions):
-    with open(ACTIVE_SESSIONS_FILE, "w") as f:
+def save_active_sessions(sessions, path: str = ACTIVE_SESSIONS_PATH):
+    with open(path, "w") as f:
         json.dump(sessions, f)
 
-def parse_status_log(filepath=STATUS_LOG):
+def parse_status_log(filepath=STATUS_LOG_PATH):
     clients = []
     active_sessions = load_active_sessions()
     current_common_names = set()
@@ -100,7 +100,7 @@ def parse_status_log(filepath=STATUS_LOG):
                             "port": port,
                             "session_id": session_id
                         }
-                        with open(HISTORY_LOG, "a") as logf:
+                        with open(HISTORY_LOG_PATH, "a") as logf:
                             logf.write(f"{active_sessions[common_name]['connected_at']},{common_name},{real_ip},{session_id},,,,{vpn_ip},{port}\n")
                     else:
                         active_sessions[common_name]["bytes_received"] = bytes_received
@@ -112,7 +112,7 @@ def parse_status_log(filepath=STATUS_LOG):
             rx = round(session["bytes_received"] / (1024 * 1024), 2)
             tx = round(session["bytes_sent"] / (1024 * 1024), 2)
             disconnect_time = now.strftime("%Y-%m-%d %H:%M:%S")
-            with open(HISTORY_LOG, "a") as logf:
+            with open(HISTORY_LOG_PATH, "a") as logf:
                 logf.write(f"{session['connected_at']},{cn},{session['ip']},{session['session_id']},{rx},{tx},{session.get('vpn_ip')},{session.get('port')},{disconnect_time}\n")
 #               logf.write(f"{session['connected_at']},{cn},{session['ip']},{session['session_id']},{rx},{tx},{session.get('vpn_ip')},{session.get('port')},{disconnect_time}\n")
             del active_sessions[cn]
