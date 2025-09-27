@@ -7,6 +7,23 @@
   <meta content="width=device-width, initial-scale=1" name="viewport"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://unpkg.com/leaflet/dist/leaflet.css" rel="stylesheet"></link>
+  <style>
+    .status-dot {
+      display: inline-block;
+      width: 0.75rem;
+      height: 0.75rem;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+    }
+
+    .status-dot-online {
+      background-color: #198754;
+    }
+
+    .status-dot-offline {
+      background-color: #dc3545;
+    }
+  </style>
 </head>
 
 <body class="bg-light">
@@ -15,7 +32,8 @@
   <button class="btn btn-outline-primary me-2" id="mapBtn">Map View</button>
   <button class="btn btn-outline-primary me-2" id="chartsBtn">Charts</button>
   <button class="btn btn-outline-primary me-1" id="historyBtn">Connection history</button>
-  <button class="btn btn-outline-secondary" id="themeToggle">Switch Theme</button>  
+  <button class="btn btn-outline-primary me-2" id="clientsBtn">Clients</button>
+  <button class="btn btn-outline-secondary" id="themeToggle">Switch Theme</button>
 </div>
 
 
@@ -151,6 +169,39 @@
 </div>
 
 
+<!-- Clients Modal -->
+<div class="modal fade" id="clientsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Clients</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <div class="list-group" id="clientsList">
+          <div class="text-center text-muted py-3">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Client Details Modal -->
+<div class="modal fade" id="clientDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="clientDetailsTitle">Client details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body" id="clientDetailsBody">
+        <div class="text-muted">Select a client to see details.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <!-- Charts (Traffic) Modal -->
 <div class="modal fade" id="chartsModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
@@ -210,6 +261,9 @@ let lastStats = {};
 let chart = null;
 let chartData = { labels: [], datasets: [] };
 let fullHistoryData = [];
+let clientsSummary = [];
+let clientsModalInstance = null;
+let clientDetailsModalInstance = null;
 
 // Для карты в модалке
 let mapInitialized = false;
@@ -345,7 +399,42 @@ document.getElementById('mapModal').addEventListener('shown.bs.modal', () => {
         setHistoryControlsDisabled(false);
       });
   });
-  
+
+  const clientsModalEl = document.getElementById('clientsModal');
+  if (clientsModalEl) {
+    clientsModalInstance = new bootstrap.Modal(clientsModalEl);
+  }
+
+  const clientDetailsModalEl = document.getElementById('clientDetailsModal');
+  if (clientDetailsModalEl) {
+    clientDetailsModalInstance = new bootstrap.Modal(clientDetailsModalEl);
+  }
+
+  const clientsBtn = document.getElementById('clientsBtn');
+  if (clientsBtn) {
+    clientsBtn.addEventListener('click', () => {
+      showClientsStatus('Loading clients...', { spinner: true });
+      if (clientsModalInstance) {
+        clientsModalInstance.show();
+      }
+      fetchClientsSummary();
+    });
+  }
+
+  const clientsListEl = document.getElementById('clientsList');
+  if (clientsListEl) {
+    clientsListEl.addEventListener('click', (event) => {
+      const item = event.target.closest('[data-client-name]');
+      if (!item) return;
+
+      const clientName = item.getAttribute('data-client-name');
+      const client = clientsSummary.find(c => c.name === clientName);
+      if (!client) return;
+
+      renderClientDetails(client);
+    });
+  }
+
   document.getElementById("filterDate").addEventListener("input", applyFilters);
   document.getElementById("filterUser").addEventListener("input", applyFilters);
   document.getElementById("resetFilters").addEventListener("click", () => {
@@ -389,6 +478,186 @@ function toggleTheme() {
     toggle(".dropdown-menu, .select2-dropdown, datalist, .datepicker, .flatpickr-calendar, .ui-datepicker", "bg-dark", "bg-light");
     toggle(".dropdown-menu, .select2-dropdown, datalist, .datepicker, .flatpickr-calendar, .ui-datepicker", "text-light", "text-dark");
   }, 100);
+}
+
+
+function showClientsStatus(message, { spinner = false, tone = 'muted' } = {}) {
+  const listEl = document.getElementById('clientsList');
+  if (!listEl) return;
+
+  const toneClass = tone === 'danger' ? 'text-danger' : tone === 'success' ? 'text-success' : 'text-muted';
+  const safeMessage = escapeHtml(message);
+  const content = spinner
+    ? `<div class="d-flex align-items-center justify-content-center gap-2"><div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div><span>${safeMessage}</span></div>`
+    : safeMessage;
+
+  listEl.innerHTML = `<div class="text-center py-3 ${toneClass}">${content}</div>`;
+}
+
+
+function fetchClientsSummary() {
+  fetch('/api/clients/summary')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to fetch');
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (!data || !Array.isArray(data.clients)) {
+        throw new Error('Invalid response');
+      }
+      clientsSummary = data.clients;
+      renderClientsList(clientsSummary);
+    })
+    .catch(error => {
+      console.error('Failed to load clients summary', error);
+      showClientsStatus('Failed to load clients', { tone: 'danger' });
+    });
+}
+
+
+function renderClientsList(clients) {
+  const listEl = document.getElementById('clientsList');
+  if (!listEl) return;
+
+  if (!Array.isArray(clients) || clients.length === 0) {
+    showClientsStatus('No clients yet');
+    return;
+  }
+
+  const itemsHtml = clients.map(client => {
+    const name = client.name || 'Unknown';
+    const statusClass = client.is_online ? 'status-dot-online' : 'status-dot-offline';
+    const statusLabel = client.is_online ? 'Connected' : 'Disconnected';
+    const subtitleParts = [];
+
+    if (typeof client.sessions === 'number' && client.sessions > 0) {
+      subtitleParts.push(`${client.sessions} session${client.sessions === 1 ? '' : 's'}`);
+    }
+    if (client.total_duration_human) {
+      subtitleParts.push(`Total time: ${escapeHtml(client.total_duration_human)}`);
+    }
+    if (typeof client.total_rx_gb === 'number' && typeof client.total_tx_gb === 'number') {
+      subtitleParts.push(`Traffic: ${formatGb(client.total_rx_gb)} / ${formatGb(client.total_tx_gb)}`);
+    }
+    if (client.last_seen) {
+      subtitleParts.push(`Last seen: ${escapeHtml(client.last_seen)}`);
+    }
+
+    const subtitle = subtitleParts.join(' · ');
+
+    return `
+      <button type="button" class="list-group-item list-group-item-action d-flex flex-column align-items-start gap-1" data-client-name="${escapeHtml(name)}">
+        <div class="d-flex align-items-center">
+          <span class="status-dot ${statusClass}"></span>
+          <span>${escapeHtml(name)}</span>
+          <span class="badge ms-2 ${client.is_online ? 'bg-success' : 'bg-secondary'}">${statusLabel}</span>
+        </div>
+        ${subtitle ? `<div class="small text-muted">${subtitle}</div>` : ''}
+      </button>
+    `;
+  }).join('');
+
+  listEl.innerHTML = itemsHtml;
+}
+
+
+function renderClientDetails(client) {
+  const titleEl = document.getElementById('clientDetailsTitle');
+  const bodyEl = document.getElementById('clientDetailsBody');
+  if (!titleEl || !bodyEl) return;
+
+  const name = client.name || 'Client details';
+  titleEl.textContent = name;
+
+  const statusClass = client.is_online ? 'status-dot-online' : 'status-dot-offline';
+  const statusLabel = client.is_online ? 'Connected' : 'Disconnected';
+  const sessions = typeof client.sessions === 'number' ? client.sessions : 0;
+  const totalTime = client.total_duration_human ? escapeHtml(client.total_duration_human) : '0:00:00';
+  const lastSeen = client.last_seen ? escapeHtml(client.last_seen) : 'Unknown';
+  const totalRx = formatGb(client.total_rx_gb);
+  const totalTx = formatGb(client.total_tx_gb);
+
+  let currentSessionHtml = '';
+  if (client.current_session) {
+    const session = client.current_session;
+    const infoItems = [];
+    const connectedSince = session.connected_since ? escapeHtml(session.connected_since) : 'Unknown';
+    const timeOnline = session.time_online ? escapeHtml(session.time_online) : 'Unknown';
+    infoItems.push(`<li><strong>Connected since:</strong> ${connectedSince}</li>`);
+    infoItems.push(`<li><strong>Time online:</strong> ${timeOnline}</li>`);
+
+    if (session.ip) {
+      const withPort = session.port ? `${escapeHtml(session.ip)}:${escapeHtml(session.port)}` : escapeHtml(session.ip);
+      infoItems.push(`<li><strong>Client IP:</strong> ${withPort}</li>`);
+    }
+    if (session.vpn_ipv4) {
+      infoItems.push(`<li><strong>VPN IPv4:</strong> ${escapeHtml(session.vpn_ipv4)}</li>`);
+    }
+    if (session.vpn_ipv6) {
+      infoItems.push(`<li><strong>VPN IPv6:</strong> ${escapeHtml(session.vpn_ipv6)}</li>`);
+    }
+    if (!session.vpn_ipv4 && !session.vpn_ipv6 && session.vpn_ip) {
+      infoItems.push(`<li><strong>VPN IP:</strong> ${escapeHtml(session.vpn_ip)}</li>`);
+    }
+
+    infoItems.push(`<li><strong>Received:</strong> ${formatGb(session.bytes_received_gb)}</li>`);
+    infoItems.push(`<li><strong>Sent:</strong> ${formatGb(session.bytes_sent_gb)}</li>`);
+
+    currentSessionHtml = `
+      <div class="mt-4">
+        <h6>Current session</h6>
+        <ul class="list-unstyled mb-0">
+          ${infoItems.join('')}
+        </ul>
+      </div>
+    `;
+  }
+
+  bodyEl.innerHTML = `
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="status-dot ${statusClass}"></span>
+      <h5 class="mb-0">${escapeHtml(name)}</h5>
+      <span class="badge ${client.is_online ? 'bg-success' : 'bg-secondary'}">${statusLabel}</span>
+    </div>
+    <dl class="row mb-0">
+      <dt class="col-sm-5">Sessions</dt>
+      <dd class="col-sm-7">${sessions}</dd>
+      <dt class="col-sm-5">Total connected time</dt>
+      <dd class="col-sm-7">${totalTime}</dd>
+      <dt class="col-sm-5">Data received</dt>
+      <dd class="col-sm-7">${totalRx}</dd>
+      <dt class="col-sm-5">Data sent</dt>
+      <dd class="col-sm-7">${totalTx}</dd>
+      <dt class="col-sm-5">Last seen</dt>
+      <dd class="col-sm-7">${lastSeen}</dd>
+    </dl>
+    ${currentSessionHtml}
+  `;
+
+  if (clientDetailsModalInstance) {
+    clientDetailsModalInstance.show();
+  }
+}
+
+
+function formatGb(value) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '0.00 GB';
+  }
+  return `${value.toFixed(2)} GB`;
+}
+
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 
