@@ -63,6 +63,7 @@ client1,[2001:db8::1]:443,1024,2048,2024-01-01 12:00:00
 
 ROUTING TABLE
 10.8.0.2,client1
+2001:db8:abcd::100,client1
 """.strip()
     )
 
@@ -82,6 +83,8 @@ ROUTING TABLE
     assert client["bytes_sent"] == 2048
     assert client["connected_since"] == "2024-01-01 12:00:00"
     assert client["vpn_ip"] == "10.8.0.2"
+    assert client["vpn_ipv4"] == "10.8.0.2"
+    assert client["vpn_ipv6"] == "2001:db8:abcd::100"
     assert client["time_online"].startswith("0:")
 
     with active_path.open() as fh:
@@ -173,6 +176,8 @@ ROUTING TABLE
 
     assert clients[0]["common_name"] == "alice"
     assert clients[0]["vpn_ip"] == "10.8.0.6"
+    assert clients[0]["vpn_ipv4"] == "10.8.0.6"
+    assert clients[0]["vpn_ipv6"] is None
     assert clients[0]["real_ip"] == "198.51.100.20"
     assert clients[0]["port"] == "51820"
 
