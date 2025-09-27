@@ -294,17 +294,57 @@ document.getElementById('mapModal').addEventListener('shown.bs.modal', () => {
   loadClientAndServerMarkers();
 });
 
-document.getElementById("historyBtn").addEventListener("click", () => {
-  $.getJSON("/api/history", function (entries) {
-    if (!Array.isArray(entries)) return alert("Ошибка: " + (entries.error || "Не удалось загрузить историю"));
-    fullHistoryData = entries.filter(e => e.rx !== null && e.tx !== null);
-    const names = [...new Set(fullHistoryData.map(e => e.name))];
-    document.getElementById("userList").innerHTML = names.map(n => `<option value="${n}">`).join("");
-    document.getElementById("filterDate").value = new Date().toISOString().split('T')[0];
-    applyFilters();
-    new bootstrap.Modal(document.getElementById('historyModal')).show();
-  }).fail(() => alert("Ошибка при запросе к серверу"));
-});
+  const historyModalEl = document.getElementById('historyModal');
+  const historyModal = new bootstrap.Modal(historyModalEl);
+  const historyControls = [
+    document.getElementById('filterDate'),
+    document.getElementById('filterUser'),
+    document.getElementById('resetFilters'),
+    document.getElementById('viewOnMap')
+  ];
+
+  const setHistoryControlsDisabled = (disabled) => {
+    historyControls.forEach(ctrl => {
+      if (ctrl) ctrl.disabled = disabled;
+    });
+  };
+
+  const showHistoryStatus = (message, { spinner = false, tone = 'muted' } = {}) => {
+    const toneClass = tone === 'danger' ? 'text-danger' : tone === 'muted' ? 'text-muted' : '';
+    const content = spinner
+      ? `<div class="d-flex align-items-center justify-content-center gap-2"><div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div><span>${message}</span></div>`
+      : message;
+    document.getElementById('history-body').innerHTML = `<tr><td colspan="10" class="text-center py-4 ${toneClass}">${content}</td></tr>`;
+  };
+
+  document.getElementById("historyBtn").addEventListener("click", () => {
+    fullHistoryData = [];
+    document.getElementById("userList").innerHTML = "";
+    showHistoryStatus("Loading history...", { spinner: true });
+    setHistoryControlsDisabled(true);
+    historyModal.show();
+
+    $.getJSON("/api/history")
+      .done(entries => {
+        if (!Array.isArray(entries)) {
+          const errorMessage = entries && entries.error ? entries.error : "Failed to load history";
+          showHistoryStatus(errorMessage, { tone: 'danger' });
+          return;
+        }
+
+        fullHistoryData = entries.filter(e => e.rx !== null && e.tx !== null);
+        const names = [...new Set(fullHistoryData.map(e => e.name))];
+        document.getElementById("userList").innerHTML = names.map(n => `<option value="${n}">`).join("");
+        document.getElementById("filterDate").value = new Date().toISOString().split('T')[0];
+        applyFilters();
+      })
+      .fail(() => {
+        showHistoryStatus("Failed to load history", { tone: 'danger' });
+      })
+      .always(() => {
+        setHistoryControlsDisabled(false);
+      });
+  });
   
   document.getElementById("filterDate").addEventListener("input", applyFilters);
   document.getElementById("filterUser").addEventListener("input", applyFilters);
@@ -479,6 +519,11 @@ function applyFilters() {
 }
 
 function renderHistoryTable(data) {
+  if (!data.length) {
+    document.getElementById("history-body").innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">No history records</td></tr>`;
+    return;
+  }
+
   const rows = data.map(e => {
     const legacyVpnIp = e.vpn_ip ?? "";
     const vpnIpv4 = e.vpn_ipv4 || (legacyVpnIp && legacyVpnIp.includes('.') ? legacyVpnIp : "");
