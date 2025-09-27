@@ -164,9 +164,7 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                         vpn_ip = parts[0].strip()
                         common_name = parts[1].strip()
 
-                        entry = vpn_ip_map.setdefault(
-                            common_name, {"ipv4": None, "ipv6": None}
-                        )
+                        entry = vpn_ip_map.setdefault(common_name, {"ipv4": None, "ipv6": None})
 
                         try:
                             ip_obj = ip_address(vpn_ip)
