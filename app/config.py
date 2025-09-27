@@ -1,4 +1,5 @@
 """Application configuration helpers for log parsing and API."""
+
 import os
 
 import pytz
@@ -23,5 +24,7 @@ def _load_path(env_var: str, default: str) -> str:
 LOCAL_TZ = _load_timezone()
 STATUS_LOG_PATH = _load_path("OPENVPN_STATUS_LOG", "/var/log/openvpn/status.log")
 HISTORY_LOG_PATH = _load_path("OPENVPN_HISTORY_LOG", "/var/log/openvpn/session_history.log")
-ACTIVE_SESSIONS_PATH = _load_path("OPENVPN_ACTIVE_SESSIONS", "/var/log/openvpn/active_sessions.json")
+ACTIVE_SESSIONS_PATH = _load_path(
+    "OPENVPN_ACTIVE_SESSIONS", "/var/log/openvpn/active_sessions.json"
+)
 SERVER_STATUS_PATH = _load_path("OPENVPN_SERVER_STATUS", "/var/log/openvpn/server_status.json")

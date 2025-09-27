@@ -162,6 +162,26 @@ Uses CDN libraries:
 
 ---
 
+## ✅ Local verification
+
+For local development outside Docker install both runtime and development dependencies:
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+```
+
+Then run the quality checks and tests:
+
+```bash
+black --check .
+flake8
+pytest
+```
+
+These are the same commands executed in CI.
+
+---
+
 ## 👤 Author
 
 Developed by **Farggus**  
