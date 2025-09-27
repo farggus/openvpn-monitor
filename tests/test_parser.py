@@ -140,7 +140,8 @@ ROUTING TABLE
 def test_parse_status_log_recovers_from_corrupted_state(parser_module, monkeypatch):
     parser, status_path, history_path, active_path = parser_module
 
-    active_path.write_text("{" )
+    active_path.write_text("{")
+
 
     status_path.write_text(
         """

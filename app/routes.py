@@ -1,4 +1,4 @@
-#routes.py
+# routes.py
 from __future__ import annotations
 
 import json
@@ -84,16 +84,19 @@ def _load_server_status() -> Dict[str, Any]:
 
     return data
 
-@app.route('/')
+
+@app.route("/")
 def index():
     return render_template("index.html")
 
-#@app.route('/api/clients')
-#def api_clients():
+
+# @app.route('/api/clients')
+# def api_clients():
 #    clients = parse_status_log()
 #    return jsonify({"clients": clients})
 
-@app.route('/api/clients')
+
+@app.route("/api/clients")
 def api_clients():
     try:
         clients = _get_cached_clients()
@@ -103,7 +106,7 @@ def api_clients():
         return _json_error("Failed to fetch clients")
 
 
-@app.route('/api/history')
+@app.route("/api/history")
 def get_history():
     entries: List[Dict[str, Any]] = []
     try:
@@ -115,7 +118,9 @@ def get_history():
                         continue
 
                     timestamp = parts[0]
-                    session_end = parts[8] if len(parts) > 8 and is_valid_datetime(parts[8]) else None
+                    session_end = (
+                        parts[8] if len(parts) > 8 and is_valid_datetime(parts[8]) else None
+                    )
 
                     entry: Dict[str, Any] = {
                         "timestamp": timestamp,
@@ -136,7 +141,8 @@ def get_history():
 
     return jsonify(entries)
 
-@app.route('/api/server-status')
+
+@app.route("/api/server-status")
 def get_server_status():
     data = _load_server_status()
 
@@ -159,6 +165,7 @@ def get_server_status():
     )
 
     return jsonify(data)
+
 
 if __name__ == "__main__":
     app.run()
