@@ -4,13 +4,13 @@ services:
   openvpn-admin:
     build: .
     container_name: openvpn-admin
-    environment:
-      OPENVPN_MONITOR_TZ: "Europe/Bucharest"
-      OPENVPN_STATUS_LOG: "/var/log/openvpn/status.log"
-      OPENVPN_HISTORY_LOG: "./data/session_history.json"
-      OPENVPN_ACTIVE_SESSIONS: "./data/active_sessions.json"
-      OPENVPN_SERVER_STATUS: "./data/server_status.json"
-      OPENVPN_CLIENT_GEO_DB: "./data/client_geolocation.json"
+#    environment:
+#      OPENVPN_MONITOR_TZ: "Europe/Bucharest"
+#      OPENVPN_STATUS_LOG: "/var/log/openvpn/status.log"
+#      OPENVPN_HISTORY_LOG: "./data/session_history.json"
+#      OPENVPN_ACTIVE_SESSIONS: "./data/active_sessions.json"
+#      OPENVPN_SERVER_STATUS: "./data/server_status.json"
+#      OPENVPN_CLIENT_GEO_DB: "./data/client_geolocation.json"
     volumes:
       - /var/log/openvpn:/var/log/openvpn:rw  # Mounting OpenVPN logs into a container
       - ./data:/app/data:rw  # Persist application state files
