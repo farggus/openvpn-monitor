@@ -529,7 +529,6 @@ function renderClientsList(clients) {
   const itemsHtml = clients.map(client => {
     const name = client.name || 'Unknown';
     const statusClass = client.is_online ? 'status-dot-online' : 'status-dot-offline';
-    const statusLabel = client.is_online ? 'Connected' : 'Disconnected';
     const subtitleParts = [];
 
     if (typeof client.sessions === 'number' && client.sessions > 0) {
@@ -552,7 +551,6 @@ function renderClientsList(clients) {
         <div class="d-flex align-items-center">
           <span class="status-dot ${statusClass}"></span>
           <span>${escapeHtml(name)}</span>
-          <span class="badge ms-2 ${client.is_online ? 'bg-success' : 'bg-secondary'}">${statusLabel}</span>
         </div>
         ${subtitle ? `<div class="small text-muted">${subtitle}</div>` : ''}
       </button>
@@ -572,7 +570,6 @@ function renderClientDetails(client) {
   titleEl.textContent = name;
 
   const statusClass = client.is_online ? 'status-dot-online' : 'status-dot-offline';
-  const statusLabel = client.is_online ? 'Connected' : 'Disconnected';
   const sessions = typeof client.sessions === 'number' ? client.sessions : 0;
   const totalTime = client.total_duration_human ? escapeHtml(client.total_duration_human) : '0:00:00';
   const lastSeen = client.last_seen ? escapeHtml(client.last_seen) : 'Unknown';
@@ -619,7 +616,6 @@ function renderClientDetails(client) {
     <div class="d-flex align-items-center gap-2 mb-3">
       <span class="status-dot ${statusClass}"></span>
       <h5 class="mb-0">${escapeHtml(name)}</h5>
-      <span class="badge ${client.is_online ? 'bg-success' : 'bg-secondary'}">${statusLabel}</span>
     </div>
     <dl class="row mb-0">
       <dt class="col-sm-5">Sessions</dt>
