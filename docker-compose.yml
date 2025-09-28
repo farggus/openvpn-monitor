@@ -6,7 +6,7 @@ services:
     container_name: openvpn-admin
     volumes:
       - /var/log/openvpn:/var/log/openvpn:rw  # Mounting OpenVPN logs into a container
-      - ./data:/var/log/openvpn/data:rw  # Data folder 
+      - ./data:/app/data:rw  # Persist application state files
     #ports:
     #  - 5000:5000
     labels:

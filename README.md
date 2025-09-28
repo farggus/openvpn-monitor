@@ -46,7 +46,9 @@ cd openvpn-monitor
 
 ### 2. Start the container
 
-Ensure OpenVPN logs are accessible at `/var/log/openvpn/status.log`.
+Ensure OpenVPN logs are accessible at `/var/log/openvpn/status.log`. The application stores its
+state files (history, active sessions, geolocation cache, server status) under the repository
+`data/` directory, which is created automatically on first launch if it does not exist.
 
 ```bash
 docker-compose up --build -d
@@ -58,19 +60,21 @@ docker-compose up --build -d
 
 ### 1. Log directory mount
 
-Verify this volume is properly set in `docker-compose.yml`:
+Verify these volumes are properly set in `docker-compose.yml`:
 
 ```yaml
 volumes:
   - /var/log/openvpn:/var/log/openvpn:rw
+  - ./data:/app/data:rw
 ```
 
 This allows the container to access:
 
 - `status.log`
-- `session_history.log`
-- `active_sessions.json`
-- `server_status.json`
+- `data/active_sessions.json`
+- `data/client_geolocation.json`
+- `data/server_status.json`
+- `data/session_history.log`
 
 ### 2. Traefik domain setup
 
@@ -101,9 +105,10 @@ You can override default log locations and timezone with environment variables:
 |----------|---------|-------------|
 | `OPENVPN_MONITOR_TZ` | `Europe/Bucharest` | Timezone used to compute session durations. |
 | `OPENVPN_STATUS_LOG` | `/var/log/openvpn/status.log` | Path to the OpenVPN status log parsed for active clients. |
-| `OPENVPN_HISTORY_LOG` | `/var/log/openvpn/session_history.log` | File used to persist session history entries. |
-| `OPENVPN_ACTIVE_SESSIONS` | `/var/log/openvpn/active_sessions.json` | JSON file storing in-progress sessions. |
-| `OPENVPN_SERVER_STATUS` | `/var/log/openvpn/server_status.json` | Optional JSON file with aggregated server status information. |
+| `OPENVPN_HISTORY_LOG` | `<project_root>/data/session_history.log` | File used to persist session history entries. |
+| `OPENVPN_ACTIVE_SESSIONS` | `<project_root>/data/active_sessions.json` | JSON file storing in-progress sessions. |
+| `OPENVPN_SERVER_STATUS` | `<project_root>/data/server_status.json` | Optional JSON file with aggregated server status information. |
+| `OPENVPN_CLIENT_GEO_DB` | `<project_root>/data/client_geolocation.json` | Local cache of IP geolocation metadata. |
 
 Example `docker-compose.yml` override:
 

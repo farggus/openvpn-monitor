@@ -36,3 +36,6 @@ Thumbs.db
 
 # Flask cache
 instance/
+
+# Application runtime data
+data/
