@@ -174,3 +174,106 @@ def test_geo_db_populated_from_history(app_client):
     assert bob["first_seen"] == "2024-01-02 09:00:00"
     bob_ip = bob["ips"]["203.0.113.5"]
     assert bob_ip["vpn_ipv6"] == ["2001:db8::abcd"]
+
+
+def test_clients_summary_counts_closed_sessions(app_client, monkeypatch):
+    client, history_path, _ = app_client
+
+    history_entries = [
+        {
+            "timestamp": "2024-01-01 09:00:00",
+            "name": "alice",
+            "ip": "198.51.100.10",
+            "session_id": "s1",
+            "rx": None,
+            "tx": None,
+            "vpn_ip": "10.8.0.5",
+            "vpn_ipv4": "10.8.0.5",
+            "vpn_ipv6": "",
+            "port": "443",
+            "session_end": None,
+        },
+        {
+            "timestamp": "2024-01-01 09:00:00",
+            "name": "alice",
+            "ip": "198.51.100.10",
+            "session_id": "s1",
+            "rx": 1.0,
+            "tx": 2.0,
+            "vpn_ip": "10.8.0.5",
+            "vpn_ipv4": "10.8.0.5",
+            "vpn_ipv6": "",
+            "port": "443",
+            "session_end": "2024-01-01 10:00:00",
+        },
+        {
+            "timestamp": "2024-01-02 11:00:00",
+            "name": "alice",
+            "ip": "198.51.100.10",
+            "session_id": "s2",
+            "rx": 3.0,
+            "tx": 4.0,
+            "vpn_ip": "10.8.0.5",
+            "vpn_ipv4": "10.8.0.5",
+            "vpn_ipv6": "",
+            "port": "443",
+            "session_end": "2024-01-02 12:00:00",
+        },
+    ]
+    history_path.write_text(json.dumps(history_entries))
+
+    from app import routes
+
+    monkeypatch.setattr(routes, "parse_status_log", lambda: [])
+
+    response = client.get("/api/clients/summary")
+    assert response.status_code == 200
+
+    payload = json.loads(response.data)
+    assert payload["clients"][0]["sessions"] == 2
+
+
+def test_clients_summary_includes_active_session(app_client, monkeypatch):
+    client, history_path, _ = app_client
+
+    history_entries = [
+        {
+            "timestamp": "2024-01-01 09:00:00",
+            "name": "alice",
+            "ip": "198.51.100.10",
+            "session_id": "s1",
+            "rx": 1.0,
+            "tx": 2.0,
+            "vpn_ip": "10.8.0.5",
+            "vpn_ipv4": "10.8.0.5",
+            "vpn_ipv6": "",
+            "port": "443",
+            "session_end": "2024-01-01 10:00:00",
+        }
+    ]
+    history_path.write_text(json.dumps(history_entries))
+
+    active_clients = [
+        {
+            "common_name": "alice",
+            "connected_since": "2024-01-02 09:00:00",
+            "time_online": "01:00:00",
+            "real_ip": "198.51.100.10",
+            "port": "443",
+            "vpn_ipv4": "10.8.0.5",
+            "vpn_ipv6": "",
+            "bytes_received": 1024,
+            "bytes_sent": 2048,
+        }
+    ]
+
+    from app import routes
+
+    monkeypatch.setattr(routes, "parse_status_log", lambda: active_clients)
+
+    response = client.get("/api/clients/summary")
+    assert response.status_code == 200
+
+    payload = json.loads(response.data)
+    assert payload["clients"][0]["sessions"] == 2
+    assert payload["clients"][0]["is_online"] is True

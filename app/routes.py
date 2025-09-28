@@ -144,12 +144,21 @@ def _aggregate_client_stats() -> List[Dict[str, Any]]:
                 "total_tx_mb": 0.0,
                 "total_duration_seconds": 0,
                 "last_seen": None,
+                "_closed_sessions": set(),
+                "_has_active_session": False,
             }
         return clients_map[name]
 
     for entry in history_entries:
         info = _ensure_client(entry["name"])
-        info["sessions"] += 1
+
+        session_end = entry.get("session_end")
+        if session_end:
+            session_id = entry.get("session_id")
+            if session_id:
+                info["_closed_sessions"].add(session_id)
+            else:
+                info["_closed_sessions"].add((entry.get("timestamp"), session_end))
 
         if entry["rx"] is not None:
             info["total_rx_mb"] += entry["rx"]
@@ -179,6 +188,7 @@ def _aggregate_client_stats() -> List[Dict[str, Any]]:
 
         info = _ensure_client(name)
         info["is_online"] = True
+        info["_has_active_session"] = True
 
         connected_since = _parse_datetime(client.get("connected_since"))
         if connected_since and now >= connected_since:
@@ -191,9 +201,6 @@ def _aggregate_client_stats() -> List[Dict[str, Any]]:
         info["total_tx_mb"] += bytes_sent / (1024 * 1024)
 
         info["last_seen"] = now
-
-        if info.get("sessions", 0) == 0:
-            info["sessions"] = 1
 
         info["current_session"] = {
             "connected_since": client.get("connected_since"),
@@ -210,6 +217,10 @@ def _aggregate_client_stats() -> List[Dict[str, Any]]:
     clients_list: List[Dict[str, Any]] = []
 
     for client in clients_map.values():
+        closed_sessions = client.pop("_closed_sessions", set())
+        has_active_session = client.pop("_has_active_session", False)
+        client["sessions"] = len(closed_sessions) + (1 if has_active_session else 0)
+
         total_duration = client.get("total_duration_seconds", 0)
         client["total_duration_human"] = str(timedelta(seconds=total_duration))
         client["total_rx_gb"] = round(client.get("total_rx_mb", 0.0) / 1024, 3)
