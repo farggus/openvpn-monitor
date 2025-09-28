@@ -3,6 +3,7 @@ import json
 import sys
 from datetime import datetime as RealDateTime
 from pathlib import Path
+import threading
 import uuid
 
 import pytest
@@ -207,3 +208,49 @@ ROUTING TABLE
         "198.51.100.20",
         str(fixed_uuid),
     ]
+
+
+def test_parse_status_log_avoids_duplicate_history_entries(parser_module, monkeypatch):
+    parser, status_path, history_path, _ = parser_module
+
+    status_path.write_text(
+        """
+Common Name,Real Address,Bytes Received,Bytes Sent,Connected Since
+client1,198.51.100.50:1194,1024,2048,2024-01-01 12:00:00
+
+ROUTING TABLE
+10.8.0.2,client1
+""".strip()
+    )
+
+    _freeze_time(monkeypatch, parser, hour=12, minute=5)
+
+    generated_ids = iter(
+        [
+            uuid.UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+            uuid.UUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+        ]
+    )
+    monkeypatch.setattr(parser.uuid, "uuid4", lambda: next(generated_ids))
+
+    barrier = threading.Barrier(2)
+
+    def _parse():
+        barrier.wait()
+        parser.parse_status_log(str(status_path))
+
+    thread_one = threading.Thread(target=_parse)
+    thread_two = threading.Thread(target=_parse)
+
+    thread_one.start()
+    thread_two.start()
+
+    thread_one.join()
+    thread_two.join()
+
+    history_lines = [line for line in history_path.read_text().splitlines() if line]
+    assert len(history_lines) == 1
+
+    parts = history_lines[0].split(",")
+    assert parts[0] == "2024-01-01 12:00:00"
+    assert parts[1] == "client1"
