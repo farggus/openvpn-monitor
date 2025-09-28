@@ -17,7 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
 @pytest.fixture
 def parser_module(tmp_path, monkeypatch):
     status_path = tmp_path / "status.log"
-    history_path = tmp_path / "history.log"
+    history_path = tmp_path / "history.json"
     active_path = tmp_path / "active_sessions.json"
 
     monkeypatch.setenv("OPENVPN_STATUS_LOG", str(status_path))
@@ -96,20 +96,21 @@ ROUTING TABLE
     assert data["client1"]["vpn_ipv4"] == "10.8.0.2"
     assert data["client1"]["vpn_ipv6"] == "2001:db8:abcd::100"
 
-    history_entries = history_path.read_text().strip().split(",")
+    history_entries = json.loads(history_path.read_text())
     assert history_entries == [
-        "2024-01-01 12:00:00",
-        "client1",
-        "2001:db8::1",
-        str(fixed_uuid),
-        "",
-        "",
-        "",
-        "10.8.0.2",
-        "443",
-        "",
-        "10.8.0.2",
-        "2001:db8:abcd::100",
+        {
+            "timestamp": "2024-01-01 12:00:00",
+            "name": "client1",
+            "ip": "2001:db8::1",
+            "session_id": str(fixed_uuid),
+            "rx": None,
+            "tx": None,
+            "vpn_ip": "10.8.0.2",
+            "vpn_ipv4": "10.8.0.2",
+            "vpn_ipv6": "2001:db8:abcd::100",
+            "port": "443",
+            "session_end": None,
+        }
     ]
 
 
@@ -148,11 +149,22 @@ ROUTING TABLE
         data = json.load(fh)
     assert data == {}
 
-    history_line = history_path.read_text().strip()
-    assert history_line == (
-        "2024-01-01 09:00:00,alice,198.51.100.10,existing-session,1.0,2.0,"
-        "10.8.0.5,443,2024-01-01 13:00:00,10.8.0.5,"
-    )
+    history_entries = json.loads(history_path.read_text())
+    assert history_entries == [
+        {
+            "timestamp": "2024-01-01 09:00:00",
+            "name": "alice",
+            "ip": "198.51.100.10",
+            "session_id": "existing-session",
+            "rx": 1.0,
+            "tx": 2.0,
+            "vpn_ip": "10.8.0.5",
+            "vpn_ipv4": "10.8.0.5",
+            "vpn_ipv6": None,
+            "port": "443",
+            "session_end": "2024-01-01 13:00:00",
+        }
+    ]
 
 
 def test_parse_status_log_recovers_from_corrupted_state(parser_module, monkeypatch):
@@ -201,13 +213,11 @@ ROUTING TABLE
         }
     }
 
-    history_entries = history_path.read_text().strip().split(",")
-    assert history_entries[0:4] == [
-        "2024-01-01 11:45:00",
-        "alice",
-        "198.51.100.20",
-        str(fixed_uuid),
-    ]
+    history_entries = json.loads(history_path.read_text())
+    assert history_entries[0]["timestamp"] == "2024-01-01 11:45:00"
+    assert history_entries[0]["name"] == "alice"
+    assert history_entries[0]["ip"] == "198.51.100.20"
+    assert history_entries[0]["session_id"] == str(fixed_uuid)
 
 
 def test_parse_status_log_avoids_duplicate_history_entries(parser_module, monkeypatch):
@@ -248,9 +258,8 @@ ROUTING TABLE
     thread_one.join()
     thread_two.join()
 
-    history_lines = [line for line in history_path.read_text().splitlines() if line]
-    assert len(history_lines) == 1
-
-    parts = history_lines[0].split(",")
-    assert parts[0] == "2024-01-01 12:00:00"
-    assert parts[1] == "client1"
+    history_entries = json.loads(history_path.read_text())
+    assert len(history_entries) == 1
+    entry = history_entries[0]
+    assert entry["timestamp"] == "2024-01-01 12:00:00"
+    assert entry["name"] == "client1"

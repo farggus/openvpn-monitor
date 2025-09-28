@@ -86,13 +86,27 @@ def history_log(path: str = HISTORY_LOG_PATH):
     directory = os.path.dirname(target_path)
     os.makedirs(directory, exist_ok=True)
 
-    with open(target_path, "a") as logf:
+    with open(target_path, "a+") as logf:
         fcntl.flock(logf, fcntl.LOCK_EX)
         try:
-            yield logf
-        finally:
+            logf.seek(0)
+            try:
+                entries = json.load(logf)
+            except (json.JSONDecodeError, OSError):
+                entries = []
+
+            if not isinstance(entries, list):
+                entries = []
+
+            yield entries
+
+            logf.seek(0)
+            logf.truncate()
+            json.dump(entries, logf, ensure_ascii=False, indent=2)
+            logf.write("\n")
             logf.flush()
             os.fsync(logf.fileno())
+        finally:
             fcntl.flock(logf, fcntl.LOCK_UN)
 
 
@@ -297,9 +311,21 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                 session["vpn_ipv4"] = vpn_ipv4 or None
                 session["vpn_ipv6"] = vpn_ipv6 or None
 
-                with history_log() as logf:
-                    logf.write(
-                        f"{session['connected_at']},{common_name},{session['ip']},{session['session_id']},,,,{vpn_ip},{port},,{vpn_ipv4},{vpn_ipv6}\n"
+                with history_log() as entries:
+                    entries.append(
+                        {
+                            "timestamp": session["connected_at"],
+                            "name": common_name,
+                            "ip": session.get("ip"),
+                            "session_id": session["session_id"],
+                            "rx": None,
+                            "tx": None,
+                            "vpn_ip": vpn_ip or None,
+                            "vpn_ipv4": vpn_ipv4 or None,
+                            "vpn_ipv6": vpn_ipv6 or None,
+                            "port": port or None,
+                            "session_end": None,
+                        }
                     )
 
             disconnected = [cn for cn in list(active_sessions) if cn not in current_common_names]
@@ -324,9 +350,21 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                         else:
                             vpn_ipv6 = vpn_ip
 
-                with history_log() as logf:
-                    logf.write(
-                        f"{session['connected_at']},{cn},{session['ip']},{session['session_id']},{rx},{tx},{vpn_ip},{port},{disconnect_time},{vpn_ipv4},{vpn_ipv6}\n"
+                with history_log() as entries:
+                    entries.append(
+                        {
+                            "timestamp": session["connected_at"],
+                            "name": cn,
+                            "ip": session.get("ip"),
+                            "session_id": session["session_id"],
+                            "rx": rx,
+                            "tx": tx,
+                            "vpn_ip": vpn_ip or None,
+                            "vpn_ipv4": vpn_ipv4 or None,
+                            "vpn_ipv6": vpn_ipv6 or None,
+                            "port": port or None,
+                            "session_end": disconnect_time,
+                        }
                     )
 
                 del active_sessions[cn]

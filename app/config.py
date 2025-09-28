@@ -51,7 +51,7 @@ def _ensure_data_files(targets) -> None:
 
 LOCAL_TZ = _load_timezone()
 STATUS_LOG_PATH = _load_path("OPENVPN_STATUS_LOG", "/var/log/openvpn/status.log")
-HISTORY_LOG_PATH = _load_path("OPENVPN_HISTORY_LOG", _default_data_path("session_history.log"))
+HISTORY_LOG_PATH = _load_path("OPENVPN_HISTORY_LOG", _default_data_path("session_history.json"))
 ACTIVE_SESSIONS_PATH = _load_path(
     "OPENVPN_ACTIVE_SESSIONS", _default_data_path("active_sessions.json")
 )
@@ -62,7 +62,7 @@ CLIENT_GEO_DB_PATH = _load_path(
 
 _ensure_data_files(
     {
-        HISTORY_LOG_PATH: None,
+        HISTORY_LOG_PATH: [],
         ACTIVE_SESSIONS_PATH: {},
         SERVER_STATUS_PATH: {},
         CLIENT_GEO_DB_PATH: {"clients": {}, "updated_at": None},
