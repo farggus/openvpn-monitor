@@ -15,11 +15,9 @@ if str(PROJECT_ROOT) not in sys.path:
 def app_client(tmp_path, monkeypatch):
     history_path = tmp_path / "history.json"
     geo_path = tmp_path / "client_geo.json"
-    server_status_path = tmp_path / "server_status.json"
 
     monkeypatch.setenv("OPENVPN_HISTORY_LOG", str(history_path))
     monkeypatch.setenv("OPENVPN_CLIENT_GEO_DB", str(geo_path))
-    monkeypatch.setenv("OPENVPN_SERVER_STATUS", str(server_status_path))
 
     from app import config
 
@@ -33,11 +31,11 @@ def app_client(tmp_path, monkeypatch):
     routes.app.config.update(TESTING=True)
     client = routes.app.test_client()
 
-    return client, history_path, geo_path, server_status_path
+    return client, history_path, geo_path
 
 
 def test_api_history_includes_vpn_ip_versions(app_client):
-    client, history_path, _, _ = app_client
+    client, history_path, _ = app_client
 
     history_entries = [
         {
@@ -104,7 +102,7 @@ def test_api_history_includes_vpn_ip_versions(app_client):
 
 
 def test_geo_db_populated_from_history(app_client):
-    client, history_path, geo_path, _ = app_client
+    client, history_path, geo_path = app_client
 
     history_entries = [
         {
@@ -179,7 +177,7 @@ def test_geo_db_populated_from_history(app_client):
 
 
 def test_clients_summary_counts_closed_sessions(app_client, monkeypatch):
-    client, history_path, _, _ = app_client
+    client, history_path, _ = app_client
 
     history_entries = [
         {
@@ -236,7 +234,7 @@ def test_clients_summary_counts_closed_sessions(app_client, monkeypatch):
 
 
 def test_clients_summary_includes_active_session(app_client, monkeypatch):
-    client, history_path, _, _ = app_client
+    client, history_path, _ = app_client
 
     history_entries = [
         {
@@ -279,47 +277,3 @@ def test_clients_summary_includes_active_session(app_client, monkeypatch):
     payload = json.loads(response.data)
     assert payload["clients"][0]["sessions"] == 2
     assert payload["clients"][0]["is_online"] is True
-
-
-def test_server_status_endpoint_persists_response(app_client, monkeypatch):
-    client, _, _, server_status_path = app_client
-
-    initial_status = {
-        "status": "Running",
-        "uptime": "3 days",
-        "local_ip": "10.0.0.1",
-        "public_ip": "203.0.113.1",
-        "pingable": "yes",
-    }
-    server_status_path.write_text(json.dumps(initial_status))
-
-    from app import routes
-
-    sample_clients = [
-        {
-            "common_name": "alice",
-            "bytes_received": 5 * 1024 * 1024,
-            "bytes_sent": 3 * 1024 * 1024,
-        },
-        {
-            "common_name": "bob",
-            "bytes_received": 7 * 1024 * 1024,
-            "bytes_sent": 9 * 1024 * 1024,
-        },
-    ]
-
-    monkeypatch.setattr(routes, "parse_status_log", lambda: sample_clients)
-
-    response = client.get("/api/server-status")
-    assert response.status_code == 200
-
-    payload = response.get_json()
-
-    assert payload["mode"] == "server"
-    assert payload["clients"] == 2
-    assert payload["pingable"] is True
-    assert payload["total_rx"] == 12.0
-    assert payload["total_tx"] == 12.0
-
-    saved_payload = json.loads(server_status_path.read_text())
-    assert saved_payload == payload

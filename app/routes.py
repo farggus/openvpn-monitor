@@ -4,7 +4,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import tempfile
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -262,28 +261,6 @@ def _load_server_status() -> Dict[str, Any]:
     return data
 
 
-def _write_server_status(data: Dict[str, Any]) -> None:
-    directory = os.path.dirname(SERVER_STATUS_PATH)
-    if directory:
-        os.makedirs(directory, exist_ok=True)
-
-    temp_dir = directory or "."
-    fd, temp_path = tempfile.mkstemp(dir=temp_dir, prefix="server_status_", suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as tmp_file:
-            json.dump(data, tmp_file, ensure_ascii=False, sort_keys=True)
-            tmp_file.write("\n")
-            tmp_file.flush()
-            os.fsync(tmp_file.fileno())
-        os.replace(temp_path, SERVER_STATUS_PATH)
-    except Exception:  # pragma: no cover - defensive logging
-        logger.exception("[server-status] Failed to persist server status")
-        try:
-            os.unlink(temp_path)
-        except OSError:
-            pass
-
-
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -337,8 +314,6 @@ def get_server_status():
             "total_tx": round(total_tx / 1024 / 1024, 2),
         }
     )
-
-    _write_server_status(data)
 
     return jsonify(data)
 
