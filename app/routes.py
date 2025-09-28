@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from flask import Flask, g, jsonify, render_template
 
 from .config import HISTORY_LOG_PATH, SERVER_STATUS_PATH
+from .geo_store import ensure_geo_db_entries
 from .parser import parse_status_log
 
 
@@ -114,6 +115,8 @@ def _load_history_entries() -> List[Dict[str, Any]]:
             entry = _parse_history_line(parts)
             if entry:
                 entries.append(entry)
+
+    ensure_geo_db_entries(entries)
 
     return entries
 

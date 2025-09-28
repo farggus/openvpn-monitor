@@ -28,3 +28,6 @@ ACTIVE_SESSIONS_PATH = _load_path(
     "OPENVPN_ACTIVE_SESSIONS", "/var/log/openvpn/active_sessions.json"
 )
 SERVER_STATUS_PATH = _load_path("OPENVPN_SERVER_STATUS", "/var/log/openvpn/server_status.json")
+CLIENT_GEO_DB_PATH = _load_path(
+    "OPENVPN_CLIENT_GEO_DB", "/var/log/openvpn/client_geolocation.json"
+)
