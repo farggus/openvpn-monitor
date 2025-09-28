@@ -3,7 +3,7 @@
 ## Parser (`app/parser.py`)
 - `LOCAL_TZ` is hard-coded to `Europe/Bucharest`; timezone/log paths should be configurable via environment or config to avoid incorrect calculations when deployed elsewhere. This also makes unit testing harder because the parser relies on the host time zone. 【F:app/parser.py†L9-L11】
 - `parse_status_log` reads the entire log into memory and then iterates twice (once for the routing table, once for clients). Streaming the file once would lower overhead and reduce latency for large logs that the API polls every few seconds. 【F:app/parser.py†L26-L79】
-- Every API call triggers updates to `active_sessions.json`/`session_history.log`. Without file locking this risks race conditions (corrupted JSON, duplicate history rows) once multiple workers or the background logger run concurrently. 【F:app/parser.py†L18-L25】【F:app/parser.py†L96-L123】
+- Every API call triggers updates to `active_sessions.json`/`session_history.json`. Without file locking this risks race conditions (corrupted JSON, duplicate history rows) once multiple workers or the background logger run concurrently. 【F:app/parser.py†L18-L25】【F:app/parser.py†L96-L123】
 - Error handling falls back to `print` statements; replacing them with the standard `logging` module and returning meaningful HTTP errors would simplify debugging and play better with production log aggregation. 【F:app/parser.py†L124-L127】
 - IPv6 addresses skip port extraction by setting `port = None`, yet later history writes interpolate `{port}`, yielding the literal string `None`. Consider storing explicit empty strings or retaining the socket pair to avoid confusing UI consumers. 【F:app/parser.py†L57-L106】
 
@@ -24,7 +24,7 @@
 
 - parse_status_log читает файл целиком и проходит по нему дважды, что создаёт лишнюю нагрузку при больших логах и частом опросе API; оптимальнее обрабатывать потоково за один проход. 
 
-- Активные сессии сохраняются в JSON без какой-либо синхронизации, а каждый HTTP‑запрос модифицирует active_sessions.json и session_history.log; при параллельных процессах высок риск гонок и повреждения данных. 
+- Активные сессии сохраняются в JSON без какой-либо синхронизации, а каждый HTTP‑запрос модифицирует active_sessions.json и session_history.json; при параллельных процессах высок риск гонок и повреждения данных.
 
 - Обработка ошибок сводится к print, поэтому ошибки теряются в продакшене; стоит перейти на стандартный logging и возвращать более информативные ответы API. 
 

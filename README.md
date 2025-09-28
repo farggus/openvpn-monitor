@@ -74,7 +74,7 @@ This allows the container to access:
 - `data/active_sessions.json`
 - `data/client_geolocation.json`
 - `data/server_status.json`
-- `data/session_history.log`
+- `data/session_history.json`
 
 ### 2. Traefik domain setup
 
@@ -105,7 +105,7 @@ You can override default log locations and timezone with environment variables:
 |----------|---------|-------------|
 | `OPENVPN_MONITOR_TZ` | `Europe/Bucharest` | Timezone used to compute session durations. |
 | `OPENVPN_STATUS_LOG` | `/var/log/openvpn/status.log` | Path to the OpenVPN status log parsed for active clients. |
-| `OPENVPN_HISTORY_LOG` | `<project_root>/data/session_history.log` | File used to persist session history entries. |
+| `OPENVPN_HISTORY_LOG` | `<project_root>/data/session_history.json` | File used to persist session history entries. |
 | `OPENVPN_ACTIVE_SESSIONS` | `<project_root>/data/active_sessions.json` | JSON file storing in-progress sessions. |
 | `OPENVPN_SERVER_STATUS` | `<project_root>/data/server_status.json` | Optional JSON file with aggregated server status information. |
 | `OPENVPN_CLIENT_GEO_DB` | `<project_root>/data/client_geolocation.json` | Local cache of IP geolocation metadata. |

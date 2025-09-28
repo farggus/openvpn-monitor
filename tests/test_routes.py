@@ -13,7 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 @pytest.fixture
 def app_client(tmp_path, monkeypatch):
-    history_path = tmp_path / "history.log"
+    history_path = tmp_path / "history.json"
     geo_path = tmp_path / "client_geo.json"
 
     monkeypatch.setenv("OPENVPN_HISTORY_LOG", str(history_path))
@@ -37,15 +37,48 @@ def app_client(tmp_path, monkeypatch):
 def test_api_history_includes_vpn_ip_versions(app_client):
     client, history_path, _ = app_client
 
-    history_path.write_text(
-        "\n".join(
-            [
-                "2024-01-01 09:00:00,alice,198.51.100.10,s1,1.0,2.0,10.8.0.5,443,2024-01-01 10:00:00",
-                "2024-01-02 09:00:00,bob,203.0.113.5,s2,3.0,4.0,10.9.0.2,1194,2024-01-02 11:00:00,10.9.0.2,2001:db8::abcd",
-                "2024-01-03 09:00:00,carol,2001:db8::10,s3,5.0,6.0,2001:db8::ffff,1194,2024-01-03 10:00:00",
-            ]
-        )
-    )
+    history_entries = [
+        {
+            "timestamp": "2024-01-01 09:00:00",
+            "name": "alice",
+            "ip": "198.51.100.10",
+            "session_id": "s1",
+            "rx": 1.0,
+            "tx": 2.0,
+            "vpn_ip": "10.8.0.5",
+            "vpn_ipv4": "10.8.0.5",
+            "vpn_ipv6": "",
+            "port": "443",
+            "session_end": "2024-01-01 10:00:00",
+        },
+        {
+            "timestamp": "2024-01-02 09:00:00",
+            "name": "bob",
+            "ip": "203.0.113.5",
+            "session_id": "s2",
+            "rx": 3.0,
+            "tx": 4.0,
+            "vpn_ip": "10.9.0.2",
+            "vpn_ipv4": "10.9.0.2",
+            "vpn_ipv6": "2001:db8::abcd",
+            "port": "1194",
+            "session_end": "2024-01-02 11:00:00",
+        },
+        {
+            "timestamp": "2024-01-03 09:00:00",
+            "name": "carol",
+            "ip": "2001:db8::10",
+            "session_id": "s3",
+            "rx": 5.0,
+            "tx": 6.0,
+            "vpn_ip": "2001:db8::ffff",
+            "vpn_ipv4": "",
+            "vpn_ipv6": "2001:db8::ffff",
+            "port": "1194",
+            "session_end": "2024-01-03 10:00:00",
+        },
+    ]
+    history_path.write_text(json.dumps(history_entries))
 
     response = client.get("/api/history")
     assert response.status_code == 200
@@ -71,15 +104,48 @@ def test_api_history_includes_vpn_ip_versions(app_client):
 def test_geo_db_populated_from_history(app_client):
     client, history_path, geo_path = app_client
 
-    history_path.write_text(
-        "\n".join(
-            [
-                "2024-01-01 09:00:00,alice,198.51.100.10,s1,1.0,2.0,10.8.0.5,443,2024-01-01 10:00:00",
-                "2024-01-03 09:00:00,alice,198.51.100.10,s2,1.0,2.0,10.8.0.5,443,2024-01-03 11:00:00",
-                "2024-01-02 09:00:00,bob,203.0.113.5,s3,3.0,4.0,10.9.0.2,1194,2024-01-02 11:00:00,10.9.0.2,2001:db8::abcd",
-            ]
-        )
-    )
+    history_entries = [
+        {
+            "timestamp": "2024-01-01 09:00:00",
+            "name": "alice",
+            "ip": "198.51.100.10",
+            "session_id": "s1",
+            "rx": 1.0,
+            "tx": 2.0,
+            "vpn_ip": "10.8.0.5",
+            "vpn_ipv4": "10.8.0.5",
+            "vpn_ipv6": "",
+            "port": "443",
+            "session_end": "2024-01-01 10:00:00",
+        },
+        {
+            "timestamp": "2024-01-03 09:00:00",
+            "name": "alice",
+            "ip": "198.51.100.10",
+            "session_id": "s2",
+            "rx": 1.0,
+            "tx": 2.0,
+            "vpn_ip": "10.8.0.5",
+            "vpn_ipv4": "10.8.0.5",
+            "vpn_ipv6": "",
+            "port": "443",
+            "session_end": "2024-01-03 11:00:00",
+        },
+        {
+            "timestamp": "2024-01-02 09:00:00",
+            "name": "bob",
+            "ip": "203.0.113.5",
+            "session_id": "s3",
+            "rx": 3.0,
+            "tx": 4.0,
+            "vpn_ip": "10.9.0.2",
+            "vpn_ipv4": "10.9.0.2",
+            "vpn_ipv6": "2001:db8::abcd",
+            "port": "1194",
+            "session_end": "2024-01-02 11:00:00",
+        },
+    ]
+    history_path.write_text(json.dumps(history_entries))
 
     response = client.get("/api/history")
     assert response.status_code == 200

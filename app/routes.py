@@ -31,17 +31,13 @@ def is_valid_datetime(value: str) -> bool:
         return False
 
 
-def _parse_optional_float(parts: List[str], index: int) -> Optional[float]:
-    if len(parts) <= index:
-        return None
-
-    value = parts[index].strip()
-    if not value:
+def _parse_optional_float(value: Any) -> Optional[float]:
+    if value in (None, ""):
         return None
 
     try:
         return float(value)
-    except ValueError:
+    except (TypeError, ValueError):
         return None
 
 
@@ -65,40 +61,37 @@ def _get_cached_clients() -> List[Dict[str, Any]]:
     return g.parsed_clients
 
 
-def _parse_history_line(parts: List[str]) -> Optional[Dict[str, Any]]:
-    if len(parts) < 4:
+def _normalize_history_entry(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    required_fields = ("timestamp", "name", "ip", "session_id")
+
+    if not all(raw.get(field) for field in required_fields):
         return None
 
-    timestamp = parts[0]
+    timestamp = str(raw["timestamp"])
+    session_end_raw = raw.get("session_end")
+    session_end = session_end_raw if isinstance(session_end_raw, str) and is_valid_datetime(session_end_raw) else None
 
-    vpn_ip_legacy = parts[6].strip() if len(parts) > 6 else ""
-    port = parts[7].strip() if len(parts) > 7 else ""
-    raw_session_end = parts[8].strip() if len(parts) > 8 else ""
-    session_end = raw_session_end if is_valid_datetime(raw_session_end) else None
-    vpn_ipv4 = parts[9].strip() if len(parts) > 9 else ""
-    vpn_ipv6 = parts[10].strip() if len(parts) > 10 else ""
-
-    vpn_ip = vpn_ip_legacy or vpn_ipv4 or vpn_ipv6
+    vpn_ipv4 = (raw.get("vpn_ipv4") or "").strip()
+    vpn_ipv6 = (raw.get("vpn_ipv6") or "").strip()
+    vpn_ip = (raw.get("vpn_ip") or "").strip() or vpn_ipv4 or vpn_ipv6
+    port = raw.get("port")
+    if port is not None:
+        port = str(port)
 
     entry: Dict[str, Any] = {
         "timestamp": timestamp,
-        "name": parts[1],
-        "ip": parts[2],
-        "session_id": parts[3],
-        "rx": _parse_optional_float(parts, 4),
-        "tx": _parse_optional_float(parts, 5),
+        "name": str(raw.get("name", "")),
+        "ip": str(raw.get("ip", "")),
+        "session_id": str(raw.get("session_id", "")),
+        "rx": _parse_optional_float(raw.get("rx")),
+        "tx": _parse_optional_float(raw.get("tx")),
         "vpn_ip": vpn_ip,
-        "vpn_ipv4": vpn_ipv4,
-        "vpn_ipv6": vpn_ipv6,
-        "port": port,
+        "vpn_ipv4": vpn_ipv4 or (vpn_ip if "." in vpn_ip else ""),
+        "vpn_ipv6": vpn_ipv6 or (vpn_ip if ":" in vpn_ip else ""),
+        "port": port or "",
         "session_end": session_end,
         "duration": _calculate_duration(timestamp, session_end),
     }
-
-    if not entry["vpn_ipv4"] and vpn_ip and "." in vpn_ip:
-        entry["vpn_ipv4"] = vpn_ip
-    if not entry["vpn_ipv6"] and vpn_ip and ":" in vpn_ip:
-        entry["vpn_ipv6"] = vpn_ip
 
     return entry
 
@@ -110,11 +103,17 @@ def _load_history_entries() -> List[Dict[str, Any]]:
         return entries
 
     with open(HISTORY_LOG_PATH, "r") as f:
-        for raw_line in f:
-            parts = raw_line.strip().split(",")
-            entry = _parse_history_line(parts)
-            if entry:
-                entries.append(entry)
+        try:
+            data = json.load(f)
+        except json.JSONDecodeError:
+            data = []
+
+    if isinstance(data, list):
+        for item in data:
+            if isinstance(item, dict):
+                entry = _normalize_history_entry(item)
+                if entry:
+                    entries.append(entry)
 
     ensure_geo_db_entries(entries)
 
