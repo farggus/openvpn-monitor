@@ -57,8 +57,8 @@ OpenVPN Monitor — это веб-панель для наблюдения за 
 2. **Структура каталогов**
    - Внутри `/openvpn-monitor` создайте подкаталог `/data` и убедитесь, что он доступен для записи пользователю, от имени которого будет запускаться контейнер:
      ```bash
-     sudo mkdir -p /home/app_data/docker/openvpn-monitor/data
-     sudo chown -R 1000:1000 /home/app_data/docker/openvpn-monitor
+     sudo mkdir -p /var/www/openvpn-monitor/data
+     sudo chown -R 1000:1000 /var/www/openvpn-monitor
      ```
 4. **Cron для статуса сервера**
    - Установите пакеты `curl`, `iproute2`, `dnsutils` (для `dig`).
