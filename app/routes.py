@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from flask import Flask, g, jsonify, render_template
 
-from .config import HISTORY_LOG_PATH, SERVER_STATUS_PATH
+from .config import HISTORY_LOG_PATH
 from .geo_store import ensure_geo_db_entries
 from .parser import parse_status_log
 
@@ -240,27 +240,6 @@ def _aggregate_client_stats() -> List[Dict[str, Any]]:
     return clients_list
 
 
-def _load_server_status() -> Dict[str, Any]:
-    try:
-        with open(SERVER_STATUS_PATH, "r") as f:
-            data = json.load(f)
-    except (OSError, json.JSONDecodeError):
-        logger.exception("[server-status] Failed to read or parse JSON")
-        return {
-            "status": "Unknown",
-            "uptime": "Unknown",
-            "local_ip": "0.0.0.0",
-            "public_ip": "0.0.0.0",
-            "pingable": False,
-        }
-
-    pingable = data.get("pingable")
-    if isinstance(pingable, str):
-        data["pingable"] = pingable.lower() == "yes"
-
-    return data
-
-
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -295,27 +274,19 @@ def get_history():
 
 @app.route("/api/server-status")
 def get_server_status():
-    data = _load_server_status()
+    empty_status = {
+        "mode": "",
+        "status": "",
+        "pingable": "",
+        "clients": "",
+        "total_rx": "",
+        "total_tx": "",
+        "uptime": "",
+        "local_ip": "",
+        "public_ip": "",
+    }
 
-    try:
-        clients = _get_cached_clients()
-    except Exception:  # pragma: no cover - defensive logging
-        logger.exception("[server-status] Failed to parse status log")
-        clients = []
-
-    total_rx = sum(c.get("bytes_received", 0) for c in clients)
-    total_tx = sum(c.get("bytes_sent", 0) for c in clients)
-
-    data.update(
-        {
-            "mode": "server",
-            "clients": len(clients),
-            "total_rx": round(total_rx / 1024 / 1024, 2),
-            "total_tx": round(total_tx / 1024 / 1024, 2),
-        }
-    )
-
-    return jsonify(data)
+    return jsonify(empty_status)
 
 
 @app.route("/api/clients/summary")

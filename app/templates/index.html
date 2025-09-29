@@ -658,24 +658,66 @@ function escapeHtml(value) {
 
 
 function formatUptime(uptimeStr) {
+  if (!uptimeStr) return '';
   const uptime = new Date(uptimeStr);
   const now = new Date();
   const diffMs = now - uptime;
-  if (isNaN(uptime.getTime()) || diffMs < 0) return "Unknown";
+  if (isNaN(uptime.getTime()) || diffMs < 0) return '';
   const minutes = Math.floor(diffMs / 60000);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
   return `${days > 0 ? days + "d " : ""}${hours % 24}h ${minutes % 60}m`;
 }
 
+function formatPingable(value) {
+  if (value === null || value === undefined || value === '') return '';
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['yes', 'true', '1'].includes(normalized)) return 'Yes';
+    if (['no', 'false', '0'].includes(normalized)) return 'No';
+    return value;
+  }
+  return value ? 'Yes' : 'No';
+}
+
+function ensureString(value) {
+  if (value === null || value === undefined) return '';
+  return String(value);
+}
+
+function formatWithUnit(value, unit) {
+  const text = ensureString(value);
+  if (text === '') return '';
+  return `${text} ${unit}`;
+}
+
 function fetchServerStatus() {
   fetch("/api/server-status")
     .then(r => r.json())
     .then(data => {
+      const status = {
+        mode: '',
+        status: '',
+        pingable: '',
+        clients: '',
+        total_rx: '',
+        total_tx: '',
+        uptime: '',
+        local_ip: '',
+        public_ip: '',
+        ...(data || {})
+      };
+
       const row = `<tr>
-        <td>${data.mode}</td><td>${data.status}</td><td>${data.pingable}</td>
-        <td>${data.clients}</td><td>${data.total_rx} MB</td><td>${data.total_tx} MB</td>
-        <td>${formatUptime(data.uptime)}</td><td>${data.local_ip}</td><td>${data.public_ip}</td>
+        <td>${escapeHtml(ensureString(status.mode))}</td>
+        <td>${escapeHtml(ensureString(status.status))}</td>
+        <td>${escapeHtml(ensureString(formatPingable(status.pingable)))}</td>
+        <td>${escapeHtml(ensureString(status.clients))}</td>
+        <td>${escapeHtml(formatWithUnit(status.total_rx, 'MB'))}</td>
+        <td>${escapeHtml(formatWithUnit(status.total_tx, 'MB'))}</td>
+        <td>${escapeHtml(formatUptime(status.uptime))}</td>
+        <td>${escapeHtml(ensureString(status.local_ip))}</td>
+        <td>${escapeHtml(ensureString(status.public_ip))}</td>
       </tr>`;
       document.getElementById("server-status-body").innerHTML = row;
     });

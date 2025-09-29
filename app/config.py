@@ -55,7 +55,6 @@ HISTORY_LOG_PATH = _load_path("OPENVPN_HISTORY_LOG", _default_data_path("session
 ACTIVE_SESSIONS_PATH = _load_path(
     "OPENVPN_ACTIVE_SESSIONS", _default_data_path("active_sessions.json")
 )
-SERVER_STATUS_PATH = _load_path("OPENVPN_SERVER_STATUS", _default_data_path("server_status.json"))
 CLIENT_GEO_DB_PATH = _load_path(
     "OPENVPN_CLIENT_GEO_DB", _default_data_path("client_geolocation.json")
 )
@@ -64,7 +63,6 @@ _ensure_data_files(
     {
         HISTORY_LOG_PATH: [],
         ACTIVE_SESSIONS_PATH: {},
-        SERVER_STATUS_PATH: {},
         CLIENT_GEO_DB_PATH: {"clients": {}, "updated_at": None},
     }
 )

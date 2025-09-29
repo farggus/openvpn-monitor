@@ -9,7 +9,6 @@ services:
 #      OPENVPN_STATUS_LOG: "/var/log/openvpn/status.log"
 #      OPENVPN_HISTORY_LOG: "./data/session_history.json"
 #      OPENVPN_ACTIVE_SESSIONS: "./data/active_sessions.json"
-#      OPENVPN_SERVER_STATUS: "./data/server_status.json"
 #      OPENVPN_CLIENT_GEO_DB: "./data/client_geolocation.json"
     volumes:
       - /var/log/openvpn:/var/log/openvpn:rw  # Mounting OpenVPN logs into a container
