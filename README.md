@@ -39,26 +39,14 @@ OpenVPN Monitor — это веб-панель для наблюдения за 
      ```
    - Проверьте права доступа: пользователь Docker/службы должен читать `status.log`.
 2. **Структура каталогов**
-   - Создайте на хосте каталог, в котором будут храниться данные мониторинга, например `/home/app_data/docker/openvpn-monitor`.
+   По умолчанию рекомендуется устанавливать веб-приложение по пути `/var/www`, перейдите по этому пути и склонируйте репозиторий. После клонирования появится каталог `/var/www/openvpn-monitor`.
+   Если желаете установить приложение по другому пути, то:  
+   - Создайте (или перейдите) на хосте каталог, в который будет скопирован репозиторий и в дальнейшем будут храниться данные мониторинга, например `/home/app_data/openvpn-monitor`.
    - Внутри создайте подкаталог `data` и убедитесь, что он доступен для записи пользователю, от имени которого будет запускаться контейнер:
      ```bash
      sudo mkdir -p /home/app_data/docker/openvpn-monitor/data
      sudo chown -R 1000:1000 /home/app_data/docker/openvpn-monitor
      ```
-3. **Cron для статуса сервера**
-   - Установите пакеты `curl`, `iproute2`, `dnsutils` (для `dig`).
-   - Скопируйте `scripts/server_status.sh` на хост, сделайте исполняемым и поправьте путь вывода JSON, если директория отличается от `/home/app_data/docker/openvpn-monitor/data/`.
-   - Добавьте задание cron (ежеминутно):
-     ```cron
-     * * * * * root /home/app_data/docker/openvpn-monitor/scripts/server_status.sh
-     ```
-   - Убедитесь, что JSON обновляется: `cat /home/app_data/docker/openvpn-monitor/data/server_status.json`.
-4. **Traefik (опционально)**
-   - Если панель будет опубликована через Traefik, заранее создайте внешнюю сеть:
-     ```bash
-     docker network create proxy
-     ```
-   - Подготовьте TLS-сертификаты/авторизацию (Basic Auth) и откорректируйте лейблы в `docker-compose.yml`.
 
 ## Установка и запуск (Docker Compose)
 1. **Клонирование репозитория**
@@ -66,6 +54,30 @@ OpenVPN Monitor — это веб-панель для наблюдения за 
    git clone https://github.com/<your-org>/openvpn-monitor.git
    cd openvpn-monitor
    ```
+2. **Структура каталогов**
+   - Внутри `/openvpn-monitor` создайте подкаталог `/data` и убедитесь, что он доступен для записи пользователю, от имени которого будет запускаться контейнер:
+     ```bash
+     sudo mkdir -p /home/app_data/docker/openvpn-monitor/data
+     sudo chown -R 1000:1000 /home/app_data/docker/openvpn-monitor
+     ```
+4. **Cron для статуса сервера**
+   - Установите пакеты `curl`, `iproute2`, `dnsutils` (для `dig`).
+   - Скопируйте `scripts/server_status.sh` на хост, сделайте исполняемым и поправьте путь вывода JSON, если директория отличается от `/home/app_data/docker/openvpn-monitor/data/`.
+   - Добавьте задание cron (ежеминутно):
+     ```cron
+     * * * * * root /home/app_data/docker/openvpn-monitor/scripts/server_status.sh
+     ```
+   - Убедитесь, что JSON обновляется: `cat /home/app_data/docker/openvpn-monitor/data/server_status.json`.
+5. **Traefik (опционально)**
+   - Если панель будет опубликована через Traefik, заранее создайте внешнюю сеть:
+     ```bash
+     docker network create proxy
+     ```
+   - Подготовьте TLS-сертификаты/авторизацию (Basic Auth) и откорректируйте лейблы в `docker-compose.yml`.
+
+
+
+   
 2. **Проверка переменных окружения**
    - При необходимости отредактируйте блок `environment` в `docker-compose.yml` (раскомментируйте и задайте свои пути/часовой пояс).
    - Доступные переменные:
