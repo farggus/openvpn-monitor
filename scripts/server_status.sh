@@ -28,4 +28,4 @@ echo '{
   "local_ip": "'$ip'",
   "public_ip": "'$public_ip'",
   "pingable": "'$pingable'"
-}' > /var/log/openvpn/server_status.json
+}' > /home/app_data/docker/openvpn-monitor/data/server_status.json
