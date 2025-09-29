@@ -62,12 +62,12 @@ OpenVPN Monitor — это веб-панель для наблюдения за 
      ```
 4. **Cron для статуса сервера**
    - Установите пакеты `curl`, `iproute2`, `dnsutils` (для `dig`).
-   - Скопируйте `scripts/server_status.sh` на хост, сделайте исполняемым и поправьте путь вывода JSON, если директория отличается от `/home/app_data/docker/openvpn-monitor/data/`.
+   - Скопируйте `scripts/server_status.sh` на хост, сделайте исполняемым и поправьте путь вывода JSON, если директория отличается от `/var/www/openvpn-monitor/data`.
    - Добавьте задание cron (ежеминутно):
      ```cron
-     * * * * * root /home/app_data/docker/openvpn-monitor/scripts/server_status.sh
+     * * * * * root /var/www/openvpn-monitor/scripts/server_status.sh
      ```
-   - Убедитесь, что JSON обновляется: `cat /home/app_data/docker/openvpn-monitor/data/server_status.json`.
+   - Убедитесь, что JSON обновляется: `cat /var/www/openvpn-monitor/data/server_status.json`.
 5. **Traefik (опционально)**
    - Если панель будет опубликована через Traefik, заранее создайте внешнюю сеть:
      ```bash
