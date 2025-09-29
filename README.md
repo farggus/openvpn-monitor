@@ -51,7 +51,7 @@ OpenVPN Monitor — это веб-панель для наблюдения за 
 1. **Клонирование репозитория**
    ```bash
    cd /var/www
-   git clone https://github.com/<your-org>/openvpn-monitor.git
+   git clone https://github.com/farggus/openvpn-monitor.git
    cd openvpn-monitor
    ```
 2. **Структура каталогов**
