@@ -681,84 +681,65 @@ function fetchServerStatus() {
     });
 }
 
-function loadClientAndServerMarkers() {
+async function loadClientAndServerMarkers() {
   // очистка
   mapMarkers.forEach(m => mapInstance.removeLayer(m));
   mapMarkers = [];
   const bounds = [];
 
-  // 1) Клиенты
-  fetch("/api/clients")
-    .then(res => res.json())
-    .then(data => {
-      const clients = data.clients || [];
-      clients.forEach(c => {
-        const ip = c.real_ip;
-        if (!ip) return;
+  try {
+    // 1) Клиенты
+    const clientsRes = await fetch("/api/clients");
+    const clientsData = await clientsRes.json();
+    const clients = clientsData.clients || [];
 
-        const onLoc = (loc) => {
-          if (!loc || !loc.latitude || !loc.longitude) return;
-          const marker = L.marker([loc.latitude, loc.longitude])
-            .addTo(mapInstance)
-            .bindPopup(`<strong>${c.common_name}</strong><br>${loc.city || ''} ${loc.country_name || ''}`);
-          mapMarkers.push(marker);
-          bounds.push([loc.latitude, loc.longitude]);
-        };
+    for (const c of clients) {
+      const ip = c.real_ip;
+      const clientName = c.common_name || 'unknown';
+      if (!ip) continue;
 
-        if (geoCache[ip]) {
-          onLoc(geoCache[ip]);
-        } else {
-          fetch(`https://ipapi.co/${ip}/json/`)
-            .then(r => r.json())
-            .then(loc => { geoCache[ip] = loc; onLoc(loc); })
-            .catch(() => {});
-        }
-      });
-    })
-    .finally(() => {
-      // 2) Сервер (красный маркер только если pingable = true)
-      fetch("/api/server-status")
-        .then(r => r.json())
-        .then(s => {
-          // в API уже есть pingable и public_ip — используем их
-          if (!s || !s.pingable || !s.public_ip) return;
+      try {
+        const loc = await geocodeIP(ip, clientName);
+        const marker = L.marker([loc.lat, loc.lon])
+          .addTo(mapInstance)
+          .bindPopup(`<strong>${clientName}</strong><br>${loc.city} ${loc.country}`);
+        mapMarkers.push(marker);
+        bounds.push([loc.lat, loc.lon]);
+      } catch(e) {
+        console.error(`Failed to geocode client IP ${ip}:`, e);
+      }
+    }
 
-          const serverIp = s.public_ip;
-          const placeServer = (loc) => {
-            if (!loc || !loc.latitude || !loc.longitude) return;
-            // красный "маркер" — используем circleMarker, чтобы не тянуть внешние иконки
-            const serverMarker = L.circleMarker([loc.latitude, loc.longitude], {
-              radius: 8,
-              color: 'red',
-              fillColor: 'red',
-              fillOpacity: 0.8,
-              weight: 2
-            })
-            .addTo(mapInstance)
-            .bindPopup(`<strong>OpenVPN Server</strong><br>${serverIp}`);
-            mapMarkers.push(serverMarker);
-            bounds.push([loc.latitude, loc.longitude]);
+    // 2) Сервер (красный маркер только если pingable = true)
+    const serverRes = await fetch("/api/server-status");
+    const s = await serverRes.json();
 
-            if (bounds.length) {
-              mapInstance.fitBounds(bounds, { padding: [30, 30] });
-            }
-          };
-
-          if (geoCache[serverIp]) {
-            placeServer(geoCache[serverIp]);
-          } else {
-            fetch(`https://ipapi.co/${serverIp}/json/`)
-              .then(r => r.json())
-              .then(loc => { geoCache[serverIp] = loc; placeServer(loc); })
-              .catch(() => {});
-          }
+    if (s && s.pingable && s.public_ip) {
+      const serverIp = s.public_ip;
+      try {
+        const loc = await geocodeIP(serverIp, 'server');
+        const serverMarker = L.circleMarker([loc.lat, loc.lon], {
+          radius: 8,
+          color: 'red',
+          fillColor: 'red',
+          fillOpacity: 0.8,
+          weight: 2
         })
-        .finally(() => {
-          if (bounds.length) {
-            mapInstance.fitBounds(bounds, { padding: [30, 30] });
-          }
-        });
-    });
+        .addTo(mapInstance)
+        .bindPopup(`<strong>OpenVPN Server</strong><br>${serverIp}`);
+        mapMarkers.push(serverMarker);
+        bounds.push([loc.lat, loc.lon]);
+      } catch(e) {
+        console.error(`Failed to geocode server IP ${serverIp}:`, e);
+      }
+    }
+
+    if (bounds.length) {
+      mapInstance.fitBounds(bounds, { padding: [30, 30] });
+    }
+  } catch(e) {
+    console.error('Failed to load markers:', e);
+  }
 }
 
 
@@ -1122,7 +1103,15 @@ function fetchData(forceInitChart = false) {
     try { localStorage.setItem(LS_KEY, JSON.stringify(lsCache)); } catch {}
   }
 
-  // ---- Geo providers (primary + fallback) ----
+  // ---- Geo providers (local DB, then external APIs) ----
+  async function geoLocalDB(ip){
+    const r = await fetch(`/api/geo/${encodeURIComponent(ip)}`);
+    if (!r.ok) throw new Error('Not in local DB');
+    const j = await r.json();
+    if (!j || !j.latitude || !j.longitude) throw new Error('No lat/lon in DB');
+    return { lat: j.latitude, lon: j.longitude, city: j.city || '', country: j.country || '' };
+  }
+
   async function geoIpApi(ip){
     const r = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, {cache:'no-store'});
     const j = await r.json();
@@ -1136,15 +1125,49 @@ function fetchData(forceInitChart = false) {
     return { lat: j.latitude, lon: j.longitude, city: j.city || '', country: j.country || '' };
   }
 
-  async function geocodeIP(ip){
+  async function saveGeoToDB(ip, geoData, clientName = 'unknown'){
+    try {
+      await fetch('/api/geo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ip: ip,
+          latitude: geoData.lat,
+          longitude: geoData.lon,
+          city: geoData.city,
+          country: geoData.country,
+          client_name: clientName
+        })
+      });
+    } catch(e) {
+      console.error('Failed to save geo to DB:', e);
+    }
+  }
+
+  async function geocodeIP(ip, clientName = 'unknown'){
     const cached = readCache(ip);
     if (cached) return cached;
+
+    // Try local DB first
     let g;
+    try {
+      g = await geoLocalDB(ip);
+      writeCache(ip, g);
+      return g;
+    } catch {}
+
+    // Fallback to external APIs
     try { g = await geoIpApi(ip); }
     catch { g = await geoIpWho(ip); }
+
+    // Save to local DB and cache
     writeCache(ip, g);
+    saveGeoToDB(ip, g, clientName);
     return g;
   }
+
+  // Expose geocodeIP globally for other scripts
+  window.geocodeIP = geocodeIP;
 
   // ---- MAIN MAP hardening (если у тебя есть live-карта клиентов) ----
   if (typeof window.loadClientMarkers === 'function') {
@@ -1162,12 +1185,13 @@ function fetchData(forceInitChart = false) {
             const bounds = [];
             for (const c of (data.clients||[])) {
               const ip = c.real_ip;
+              const clientName = c.common_name || 'unknown';
               if (!ip) continue;
               try {
-                const loc = await geocodeIP(ip);
+                const loc = await geocodeIP(ip, clientName);
                 const m = L.marker([loc.lat, loc.lon])
                   .addTo(window.mapInstance)
-                  .bindPopup(`<strong>${c.common_name}</strong><br>${loc.city}, ${loc.country}`);
+                  .bindPopup(`<strong>${clientName}</strong><br>${loc.city}, ${loc.country}`);
                 window.mapMarkers.push(m);
                 bounds.push([loc.lat, loc.lon]);
               } catch(e){}
@@ -1263,7 +1287,7 @@ function fetchData(forceInitChart = false) {
       };
 
       const results = await Promise.allSettled(ips.map(async ip => {
-        const g = await geocodeIP(ip);
+        const g = await geocodeIP(ip, 'history');
         addGreen(g.lat, g.lon, `${ip}<br>${g.city} ${g.country}`);
       }));
 
