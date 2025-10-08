@@ -9,8 +9,9 @@ from typing import Any, Dict, List, Optional
 
 from flask import Flask, g, jsonify, render_template, request
 
-from .config import ACTIVE_SESSIONS_PATH, HISTORY_LOG_PATH, SERVER_STATUS_PATH
-from .parser import load_active_sessions, parse_status_log
+from .config import HISTORY_LOG_PATH, SERVER_STATUS_PATH
+from .geo_store import ensure_geo_db_entries
+from .parser import parse_status_log
 
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 app = Flask(
     __name__,
     template_folder=os.path.join(os.path.dirname(__file__), "templates"),
-    static_folder=os.path.join(os.path.dirname(__file__), "static"),
+    static_folder=None,
 )
 
 
@@ -77,16 +78,6 @@ def _normalize_history_entry(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     if port is not None:
         port = str(port)
 
-    # Extract location data
-    location = raw.get("location")
-    if not isinstance(location, dict):
-        location = {
-            "city": None,
-            "country": None,
-            "latitude": None,
-            "longitude": None
-        }
-
     entry: Dict[str, Any] = {
         "timestamp": timestamp,
         "name": str(raw.get("name", "")),
@@ -100,7 +91,6 @@ def _normalize_history_entry(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         "port": port or "",
         "session_end": session_end,
         "duration": _calculate_duration(timestamp, session_end),
-        "location": location,
     }
 
     return entry
@@ -124,6 +114,8 @@ def _load_history_entries() -> List[Dict[str, Any]]:
                 entry = _normalize_history_entry(item)
                 if entry:
                     entries.append(entry)
+
+    ensure_geo_db_entries(entries)
 
     return entries
 
@@ -284,28 +276,6 @@ def index():
 def api_clients():
     try:
         clients = _get_cached_clients()
-        # Load active sessions to enrich with location data
-        active_sessions = load_active_sessions(ACTIVE_SESSIONS_PATH)
-
-        # Add location from active_sessions to each client
-        for client in clients:
-            common_name = client.get("common_name")
-            if common_name and common_name in active_sessions:
-                session = active_sessions[common_name]
-                client["location"] = session.get("location", {
-                    "city": None,
-                    "country": None,
-                    "latitude": None,
-                    "longitude": None
-                })
-            else:
-                client["location"] = {
-                    "city": None,
-                    "country": None,
-                    "latitude": None,
-                    "longitude": None
-                }
-
         return jsonify({"clients": clients})
     except Exception:  # pragma: no cover - defensive logging
         logger.exception("[api_clients] Error while fetching clients")
@@ -357,6 +327,95 @@ def get_clients_summary():
         return _json_error("Failed to build clients summary")
 
     return jsonify({"clients": clients})
+
+
+@app.route("/api/geo/<ip>")
+def get_geo_by_ip(ip: str):
+    """Get geolocation for an IP from local database."""
+    from .config import CLIENT_GEO_DB_PATH
+
+    try:
+        with open(CLIENT_GEO_DB_PATH, "r") as f:
+            db = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return jsonify({"error": "Failed to read geo database"}), 500
+
+    clients = db.get("clients", {})
+    for client_name, client_data in clients.items():
+        ips = client_data.get("ips", {})
+        if ip in ips:
+            location = ips[ip].get("location", {})
+            lat = location.get("latitude")
+            lon = location.get("longitude")
+            if lat is not None and lon is not None:
+                return jsonify({
+                    "ip": ip,
+                    "latitude": lat,
+                    "longitude": lon,
+                    "city": location.get("city", ""),
+                    "country": location.get("country", ""),
+                })
+
+    return jsonify({"error": "IP not found"}), 404
+
+
+@app.route("/api/geo", methods=["POST"])
+def save_geo_data():
+    """Save geolocation data for an IP to local database."""
+    from .config import CLIENT_GEO_DB_PATH
+    from .geo_store import _safe_read_json, _safe_write_json, _now_utc_iso
+
+    try:
+        payload = request.get_json()
+        if not payload:
+            return jsonify({"error": "Invalid JSON payload"}), 400
+
+        ip = payload.get("ip")
+        latitude = payload.get("latitude")
+        longitude = payload.get("longitude")
+        city = payload.get("city", "")
+        country = payload.get("country", "")
+        client_name = payload.get("client_name", "unknown")
+
+        if not ip or latitude is None or longitude is None:
+            return jsonify({"error": "Missing required fields: ip, latitude, longitude"}), 400
+
+        db = _safe_read_json(CLIENT_GEO_DB_PATH)
+        clients = db.setdefault("clients", {})
+        client = clients.setdefault(client_name, {
+            "name": client_name,
+            "ips": {},
+            "first_seen": None,
+            "last_seen": None,
+        })
+
+        ips = client.setdefault("ips", {})
+        ip_record = ips.setdefault(ip, {
+            "ip": ip,
+            "vpn_ipv4": [],
+            "vpn_ipv6": [],
+            "location": {"latitude": None, "longitude": None, "city": "", "country": ""},
+            "first_seen": None,
+            "last_seen": None,
+        })
+
+        ip_record["location"]["latitude"] = latitude
+        ip_record["location"]["longitude"] = longitude
+        ip_record["location"]["city"] = city
+        ip_record["location"]["country"] = country
+
+        now = _now_utc_iso()
+        if not ip_record.get("first_seen"):
+            ip_record["first_seen"] = now
+        ip_record["last_seen"] = now
+
+        db["updated_at"] = now
+        _safe_write_json(CLIENT_GEO_DB_PATH, db)
+
+        return jsonify({"success": True})
+    except Exception as e:
+        logger.exception("[save-geo] Failed to save geolocation data")
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

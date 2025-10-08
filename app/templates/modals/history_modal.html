@@ -1,0 +1,53 @@
+<!-- Модальное окно: История подключений -->
+<div aria-hidden="true" class="modal fade" id="historyModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Connection history</h5>
+        <button aria-label="Закрыть" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex align-items-end justify-content-start gap-3 mb-3">
+          <div>
+            <label class="form-label" for="filterDate">Date</label>
+            <input class="form-control" id="filterDate" type="date"/>
+          </div>
+          <div>
+            <label class="form-label" for="filterUser">Client</label>
+            <input class="form-control" id="filterUser" list="userList" type="text"/>
+            <datalist id="userList"></datalist>
+          </div>
+          <div>
+            <label class="form-label" for="filterCity">City</label>
+            <input class="form-control" id="filterCity" list="cityList" type="text"/>
+            <datalist id="cityList"></datalist>
+          </div>
+          <div class="ms-auto">
+            <button class="btn btn-outline-secondary" id="resetFilters">Clear filter</button>
+            <button class="btn btn-outline-success" id="viewOnMap">View on map</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table-bordered text-nowrap table table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Session Opened</th>
+                <th>Client</th>
+                <th>VPN IPV4</th>
+                <th>VPN IPV6</th>
+                <th>Client IP</th>
+                <th>Port</th>
+                <th>City</th>
+                <th>Session Closed</th>
+                <th>Duration</th>
+                <th>Rx (MB)</th>
+                <th>Tx (MB)</th>
+              </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

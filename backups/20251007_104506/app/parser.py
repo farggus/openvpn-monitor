@@ -9,7 +9,6 @@ from contextlib import contextmanager
 from ipaddress import ip_address
 
 import fcntl
-import requests
 from .config import (
     ACTIVE_SESSIONS_PATH,
     HISTORY_LOG_PATH,
@@ -74,7 +73,7 @@ def save_active_sessions(sessions, path: str = ACTIVE_SESSIONS_PATH):
     os.makedirs(directory, exist_ok=True)
 
     with tempfile.NamedTemporaryFile("w", dir=directory, delete=False) as tmp_file:
-        json.dump(sessions, tmp_file, ensure_ascii=False, indent=2)
+        json.dump(sessions, tmp_file)
         tmp_file.flush()
         os.fsync(tmp_file.fileno())
 
@@ -153,49 +152,6 @@ def _split_real_address(address: str):
                 except ValueError:
                     pass
         return value, ""
-
-
-def fetch_geolocation(ip: str):
-    """
-    Fetch geolocation data for an IP address using ip-api.com
-
-    Returns dict with city, country, latitude, longitude or None values on error
-    """
-    if not ip:
-        return {
-            "city": None,
-            "country": None,
-            "latitude": None,
-            "longitude": None
-        }
-
-    try:
-        # Using ip-api.com free service (no API key required)
-        # Limit: 45 requests per minute from an IP address
-        response = requests.get(
-            f"http://ip-api.com/json/{ip}",
-            timeout=5
-        )
-
-        if response.status_code == 200:
-            data = response.json()
-
-            if data.get('status') == 'success':
-                return {
-                    "city": data.get('city'),
-                    "country": data.get('country'),
-                    "latitude": data.get('lat'),
-                    "longitude": data.get('lon')
-                }
-    except Exception as e:
-        logger.warning(f"Failed to fetch geolocation for {ip}: {e}")
-
-    return {
-        "city": None,
-        "country": None,
-        "latitude": None,
-        "longitude": None
-    }
 
 
 def parse_status_log(filepath=STATUS_LOG_PATH):
@@ -292,8 +248,6 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
 
                         if common_name not in active_sessions:
                             session_id = str(uuid.uuid4())
-                            # Fetch geolocation for new session
-                            location = fetch_geolocation(real_ip)
                             active_sessions[common_name] = {
                                 "ip": real_ip,
                                 "vpn_ip": None,
@@ -304,7 +258,6 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                                 "bytes_sent": bytes_sent,
                                 "port": port,
                                 "session_id": session_id,
-                                "location": location,
                             }
                             new_sessions.append(common_name)
                         else:
@@ -372,12 +325,6 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                             "vpn_ipv6": vpn_ipv6 or None,
                             "port": port or None,
                             "session_end": None,
-                            "location": session.get("location", {
-                                "city": None,
-                                "country": None,
-                                "latitude": None,
-                                "longitude": None
-                            }),
                         }
                     )
 
@@ -417,12 +364,6 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                             "vpn_ipv6": vpn_ipv6 or None,
                             "port": port or None,
                             "session_end": disconnect_time,
-                            "location": session.get("location", {
-                                "city": None,
-                                "country": None,
-                                "latitude": None,
-                                "longitude": None
-                            }),
                         }
                     )
 

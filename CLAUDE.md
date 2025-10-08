@@ -18,7 +18,7 @@ OpenVPN Monitor is a Flask-based web dashboard for real-time monitoring of OpenV
 **Configuration Layer** (`app/config.py`)
 - Loads timezone, log paths, and JSON file paths from environment variables
 - Creates directories and initializes empty JSON files on first run
-- Environment variables: `OPENVPN_MONITOR_TZ`, `OPENVPN_STATUS_LOG`, `OPENVPN_HISTORY_LOG`, `OPENVPN_ACTIVE_SESSIONS`, `OPENVPN_SERVER_STATUS`, `OPENVPN_CLIENT_GEO_DB`
+- Environment variables: `OPENVPN_MONITOR_TZ`, `OPENVPN_STATUS_LOG`, `OPENVPN_HISTORY_LOG`, `OPENVPN_ACTIVE_SESSIONS`, `OPENVPN_SERVER_STATUS`
 
 **Status Parser** (`app/parser.py`)
 - Parses OpenVPN's `status.log` (expects version 3 format)
@@ -30,11 +30,6 @@ OpenVPN Monitor is a Flask-based web dashboard for real-time monitoring of OpenV
 **Background Logger** (`logger.py`)
 - Simple loop that calls `parse_status_log()` every 10 seconds
 - Runs alongside Flask via `supervisord`
-
-**Geolocation Database** (`app/geo_store.py`)
-- Maintains JSON registry of client IPs with first/last seen timestamps
-- Provides POST `/api/geo` endpoint for external geolocation enrichment
-- GET `/api/geo/<ip>` retrieves location data from local database
 
 **Server Status Script** (`scripts/server_status.sh`)
 - Shell script that captures OpenVPN server operational status (PID, local/public IP, ping check)
@@ -83,7 +78,6 @@ export OPENVPN_STATUS_LOG=/var/log/openvpn/status.log
 export OPENVPN_HISTORY_LOG=$(pwd)/data/session_history.json
 export OPENVPN_ACTIVE_SESSIONS=$(pwd)/data/active_sessions.json
 export OPENVPN_SERVER_STATUS=$(pwd)/data/server_status.json
-export OPENVPN_CLIENT_GEO_DB=$(pwd)/data/client_geolocation.json
 export OPENVPN_MONITOR_TZ=Europe/Moscow
 mkdir -p data
 
@@ -152,7 +146,7 @@ Routes use `_get_cached_clients()` which stores parsed results in Flask's `g` ob
 - **Empty client table**: Verify container can read `/var/log/openvpn/status.log` with correct permissions
 - **Unknown server status**: Ensure `scripts/server_status.sh` is running via cron and writing to correct path
 - **Timezone errors**: `OPENVPN_MONITOR_TZ` must be valid IANA timezone (e.g., `Europe/Moscow`, not `MSK`)
-- **Geolocation not working**: Check `client_geolocation.json` is writable; external service integration required for auto-population
+- **Geolocation not working**: Parser fetches geolocation from ip-api.com when clients connect (45 req/min limit). Check network access and API availability.
 - **File lock timeouts**: If parser hangs, check for stale `.lock` files in data directory
 
 ## Configuration Variables (Docker Compose)
@@ -166,4 +160,3 @@ All optional with sensible defaults (uncomment in `docker-compose.yml` to custom
 | `OPENVPN_HISTORY_LOG` | Session history JSON | `/app/data/session_history.json` |
 | `OPENVPN_ACTIVE_SESSIONS` | Active sessions JSON | `/app/data/active_sessions.json` |
 | `OPENVPN_SERVER_STATUS` | Server status JSON | `/app/data/server_status.json` |
-| `OPENVPN_CLIENT_GEO_DB` | Geolocation database JSON | `/app/data/client_geolocation.json` |

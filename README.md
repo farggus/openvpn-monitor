@@ -8,9 +8,8 @@ OpenVPN Monitor — это веб-панель для наблюдения за 
 |-----------|------------|-----------|
 | Flask-приложение | Отдаёт веб-интерфейс и REST API (`/api/clients`, `/api/history`, `/api/server-status`, `/api/clients/summary`). | `app/routes.py`, `app/templates/index.html` |
 | Конфигурационный слой | Загружает часовой пояс, пути к логам и JSON-файлам из переменных окружения, гарантирует создание каталогов и пустых JSON при первом запуске. | `app/config.py` |
-| Парсер статуса | Потоково читает `status.log`, синхронно обновляет JSON с активными сессиями и историей, нормализует IPv4/IPv6, работает под файловой блокировкой и атомарно обновляет файлы. | `app/parser.py`, `logger.py` |
+| Парсер статуса | Потоково читает `status.log`, синхронно обновляет JSON с активными сессиями и историей, нормализует IPv4/IPv6, работает под файловой блокировкой и атомарно обновляет файлы. Автоматически запрашивает геолокацию для новых IP через ip-api.com. | `app/parser.py`, `logger.py` |
 | Фоновый логгер | Запускает парсер в цикле каждые 10 секунд, чтобы UI получал свежие данные. | `logger.py`, `supervisord.conf` |
-| База геолокаций | Поддерживает JSON-реестр IP-адресов и отметок first/last seen для построения карты. | `app/geo_store.py` |
 | Скрипт статуса сервера | Сохраняет операционный статус OpenVPN (PID, локальный/публичный IP, пинг) в `server_status.json`; рекомендуется запускать из cron каждую минуту. | `scripts/server_status.sh`, `crontab` |
 | Контейнеризация | Dockerfile ставит Python 3.12, зависимости, копирует код и включает `supervisord`, который поднимает одновременно API и логгер. Docker Compose монтирует логи OpenVPN и данные, содержит Traefik-лейблы. | `Dockerfile`, `docker-compose.yml`, `supervisord.conf` |
 
@@ -18,17 +17,18 @@ OpenVPN Monitor — это веб-панель для наблюдения за 
 1. OpenVPN сервер обновляет `status.log` (обычно `/var/log/openvpn/status.log`).
 2. Контейнер (или локальный процесс) каждые 10 секунд запускает `parse_status_log()`, который:
    - считывает активных клиентов, маршрутную таблицу и вычисляет длительность сессий;
+   - для новых IP автоматически запрашивает геолокацию через ip-api.com (45 запросов/мин);
    - обновляет `active_sessions.json` и дописывает историю в `session_history.json` под блокировкой;
    - вычисляет сводную статистику, кэшируемую на время HTTP-запроса.
-3. UI и API извлекают кэшированные данные и, при необходимости, пополняют базу геолокаций `client_geolocation.json`.
+3. UI и API извлекают кэшированные данные с встроенной геолокацией напрямую из JSON.
 4. Отдельный cron на хосте обновляет `server_status.json`, чтобы `/api/server-status` показывал режим работы, локальный/публичный IP, пинг и аптайм.
 
 ## Предварительные требования
 - Действующий OpenVPN-сервер с включённым выводом `status` (рекомендуется `status-version 3`) и доступом к файлу статуса на хосте.
 - Linux-хост с Docker (24+) и Docker Compose v2, либо Python ≥3.11 при ручном запуске.
-- Директория на хосте, куда будут сохраняться файлы состояния (`active_sessions.json`, `session_history.json`, `client_geolocation.json`, `server_status.json`).
+- Директория на хосте, куда будут сохраняться файлы состояния (`active_sessions.json`, `session_history.json`, `server_status.json`).
 - (Опционально) Traefik v2 в режиме reverse-proxy и внешняя сеть `proxy` для публикации панели.
-- (Опционально) Интернет-доступ для скрипта `server_status.sh` для определения публичного IP.
+- (Опционально) Интернет-доступ для скрипта `server_status.sh` и парсера для определения публичного IP и геолокации клиентов.
 
 ## Прединсталляционные действия
 1. **Настройка OpenVPN**
@@ -95,7 +95,6 @@ OpenVPN Monitor — это веб-панель для наблюдения за 
      | `OPENVPN_HISTORY_LOG` | JSON с историей сессий. | `/app/data/session_history.json` |
      | `OPENVPN_ACTIVE_SESSIONS` | JSON с активными сессиями. | `/app/data/active_sessions.json` |
      | `OPENVPN_SERVER_STATUS` | JSON со статусом сервера. | `/app/data/server_status.json` |
-     | `OPENVPN_CLIENT_GEO_DB` | JSON с базой геолокаций. | `/app/data/client_geolocation.json` |
 3. **Проброс томов**
    - Убедитесь, что в секции `volumes` проброшены:
      ```yaml
@@ -137,7 +136,6 @@ OpenVPN Monitor — это веб-панель для наблюдения за 
    export OPENVPN_HISTORY_LOG=$(pwd)/data/session_history.json
    export OPENVPN_ACTIVE_SESSIONS=$(pwd)/data/active_sessions.json
    export OPENVPN_SERVER_STATUS=$(pwd)/data/server_status.json
-   export OPENVPN_CLIENT_GEO_DB=$(pwd)/data/client_geolocation.json
    export OPENVPN_MONITOR_TZ=Europe/Moscow
    mkdir -p data
    ```
@@ -161,7 +159,7 @@ OpenVPN Monitor — это веб-панель для наблюдения за 
 
 ## Постинсталляционные шаги
 1. **Проверка данных**
-   - Убедитесь, что в каталоге данных появились файлы `session_history.json`, `active_sessions.json`, `client_geolocation.json` и `server_status.json`.
+   - Убедитесь, что в каталоге данных появились файлы `session_history.json`, `active_sessions.json` и `server_status.json`.
    - Проверьте, что cron успел записать статус сервера (JSON не пустой).
 2. **Настройка авторизации/HTTPS**
    - При использовании Traefik добавьте middleware с Basic Auth или иным методом аутентификации.
@@ -170,7 +168,7 @@ OpenVPN Monitor — это веб-панель для наблюдения за 
    - Добавьте проверку доступности `/api/server-status` в систему мониторинга.
    - Настройте сбор логов контейнера (stdout/stderr) в централизованное хранилище.
 4. **Резервное копирование**
-   - Включите `data/` каталог в регулярные бэкапы, чтобы не потерять историю подключений и кэш геолокаций.
+   - Включите `data/` каталог в регулярные бэкапы, чтобы не потерять историю подключений с данными геолокации.
 
 ## Эксплуатация и обновления
 - Для обновления приложения:
@@ -206,7 +204,7 @@ API отдаёт JSON и может быть интегрирован с вне�
 |---------|---------|
 | В таблице клиентов пусто | Проверьте, что контейнер видит `/var/log/openvpn/status.log` и у него есть права чтения. |
 | `/api/server-status` возвращает «Unknown» | Убедитесь, что cron запускает `server_status.sh` и путь вывода JSON совпадает с `OPENVPN_SERVER_STATUS`. |
-| Не строится карта клиентов | Проверьте, что `client_geolocation.json` доступен для записи. Для наполнения координат можно дополнительно интегрировать внешние сервисы геолокации. |
+| Не строится карта клиентов | Проверьте доступность ip-api.com и лимит запросов (45/мин). Геолокация добавляется автоматически при первом подключении клиента. |
 | Ошибки `UnknownTimeZoneError` | Проверьте значение `OPENVPN_MONITOR_TZ` — оно должно соответствовать базе IANA (например, `Europe/Moscow`). |
 
 Следуя инструкции, вы сможете развернуть OpenVPN Monitor «с нуля», интегрировать его с существующим OpenVPN-сервером и обеспечить наблюдаемость за подключениями.
