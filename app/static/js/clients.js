@@ -204,7 +204,7 @@ function fetchClientsSummary() {
 }
 
 /**
- * Отрисовывает список клиентов в модальном окне
+ * Отрисовывает список клиентов в модальном окне с accordion-интерфейсом
  *
  * @param {Array<Object>} clients - Массив объектов с данными о клиентах
  */
@@ -230,10 +230,13 @@ function renderClientsList(clients) {
     return nameA.localeCompare(nameB, 'ru');
   });
 
-  // Формирование HTML для каждого клиента
-  const itemsHtml = sortedClients.map(client => {
+  // Формирование HTML для каждого клиента с accordion-структурой
+  const itemsHtml = sortedClients.map((client, index) => {
     const name = client.name || 'Неизвестный';
     const statusClass = client.is_online ? 'status-dot-online' : 'status-dot-offline';
+
+    // Уникальный ID для collapse-панели
+    const collapseId = `collapse-client-${index}`;
 
     // Массив частей подзаголовка
     const subtitleParts = [];
@@ -261,17 +264,31 @@ function renderClientsList(clients) {
 
     const subtitle = subtitleParts.join(' · ');
 
-    // Формирование HTML элемента списка
+    // Генерация детальной информации
+    const detailsHtml = generateClientDetailsHTML(client);
+
+    // Формирование HTML элемента списка с collapse-панелью
     return `
-      <button type="button"
-              class="list-group-item list-group-item-action d-flex flex-column align-items-start gap-1"
-              data-client-name="${escapeHtml(name)}">
-        <div class="d-flex align-items-center">
-          <span class="status-dot ${statusClass}"></span>
-          <span>${escapeHtml(name)}</span>
+      <div class="list-group-item p-0">
+        <button type="button"
+                class="btn btn-link text-start text-decoration-none w-100 p-3 d-flex flex-column align-items-start gap-1 collapsed client-accordion-btn"
+                data-bs-toggle="collapse"
+                data-bs-target="#${collapseId}"
+                aria-expanded="false"
+                aria-controls="${collapseId}"
+                data-client-name="${escapeHtml(name)}">
+          <div class="d-flex align-items-center">
+            <span class="status-dot ${statusClass}"></span>
+            <span class="client-name">${escapeHtml(name)}</span>
+          </div>
+          ${subtitle ? `<div class="small text-muted client-subtitle">${subtitle}</div>` : ''}
+        </button>
+        <div id="${collapseId}" class="collapse" data-bs-parent="#clientsList">
+          <div class="px-3 pb-3 border-top client-details-content">
+            ${detailsHtml}
+          </div>
         </div>
-        ${subtitle ? `<div class="small text-muted">${subtitle}</div>` : ''}
-      </button>
+      </div>
     `;
   }).join('');
 
@@ -281,23 +298,14 @@ function renderClientsList(clients) {
 // === МОДАЛЬНОЕ ОКНО: ДЕТАЛИ КЛИЕНТА ===
 
 /**
- * Отрисовывает детальную информацию о выбранном клиенте
- * Показывает модальное окно с подробной статистикой
+ * Генерирует HTML с детальной информацией о клиенте
+ * Используется для встраивания в collapse-панель
  *
  * @param {Object} client - Объект с данными о клиенте
+ * @returns {string} HTML-строка с деталями клиента
  */
-function renderClientDetails(client) {
-  const titleEl = document.getElementById('clientDetailsTitle');
-  const bodyEl = document.getElementById('clientDetailsBody');
-
-  if (!titleEl || !bodyEl) return;
-
-  // === ЗАГОЛОВОК МОДАЛЬНОГО ОКНА ===
-  const name = client.name || 'Детали клиента';
-  titleEl.textContent = name;
-
+function generateClientDetailsHTML(client) {
   // === ОСНОВНАЯ ИНФОРМАЦИЯ ===
-  const statusClass = client.is_online ? 'status-dot-online' : 'status-dot-offline';
   const sessions = typeof client.sessions === 'number' ? client.sessions : 0;
   const totalTime = client.total_duration_human ? escapeHtml(client.total_duration_human) : '0:00:00';
   const lastSeen = client.last_seen ? escapeHtml(client.last_seen) : 'Неизвестно';
@@ -341,7 +349,7 @@ function renderClientDetails(client) {
     infoItems.push(`<li><strong>Отправлено:</strong> ${formatGb(session.bytes_sent_gb)}</li>`);
 
     currentSessionHtml = `
-      <div class="mt-4">
+      <div class="mt-3">
         <h6>Текущая сессия</h6>
         <ul class="list-unstyled mb-0">
           ${infoItems.join('')}
@@ -350,12 +358,8 @@ function renderClientDetails(client) {
     `;
   }
 
-  // === ФОРМИРОВАНИЕ HTML ТЕЛА МОДАЛЬНОГО ОКНА ===
-  bodyEl.innerHTML = `
-    <div class="d-flex align-items-center gap-2 mb-3">
-      <span class="status-dot ${statusClass}"></span>
-      <h5 class="mb-0">${escapeHtml(name)}</h5>
-    </div>
+  // === ФОРМИРОВАНИЕ HTML ===
+  return `
     <dl class="row mb-0">
       <dt class="col-sm-5">Сессий</dt>
       <dd class="col-sm-7">${sessions}</dd>
@@ -373,6 +377,35 @@ function renderClientDetails(client) {
       <dd class="col-sm-7">${lastSeen}</dd>
     </dl>
     ${currentSessionHtml}
+  `;
+}
+
+/**
+ * Отрисовывает детальную информацию о выбранном клиенте
+ * Показывает модальное окно с подробной статистикой
+ * (УСТАРЕВШАЯ ФУНКЦИЯ - оставлена для совместимости)
+ *
+ * @param {Object} client - Объект с данными о клиенте
+ */
+function renderClientDetails(client) {
+  const titleEl = document.getElementById('clientDetailsTitle');
+  const bodyEl = document.getElementById('clientDetailsBody');
+
+  if (!titleEl || !bodyEl) return;
+
+  // === ЗАГОЛОВОК МОДАЛЬНОГО ОКНА ===
+  const name = client.name || 'Детали клиента';
+  titleEl.textContent = name;
+
+  const statusClass = client.is_online ? 'status-dot-online' : 'status-dot-offline';
+
+  // === ФОРМИРОВАНИЕ HTML ТЕЛА МОДАЛЬНОГО ОКНА ===
+  bodyEl.innerHTML = `
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="status-dot ${statusClass}"></span>
+      <h5 class="mb-0">${escapeHtml(name)}</h5>
+    </div>
+    ${generateClientDetailsHTML(client)}
   `;
 
   // Показать модальное окно

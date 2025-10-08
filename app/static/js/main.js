@@ -168,10 +168,11 @@ document.addEventListener("DOMContentLoaded", function () {
     clientsModalInstance = new bootstrap.Modal(clientsModalEl);
   }
 
-  const clientDetailsModalEl = document.getElementById('clientDetailsModal');
-  if (clientDetailsModalEl) {
-    clientDetailsModalInstance = new bootstrap.Modal(clientDetailsModalEl);
-  }
+  // Модальное окно деталей клиента больше не используется (заменено на accordion)
+  // const clientDetailsModalEl = document.getElementById('clientDetailsModal');
+  // if (clientDetailsModalEl) {
+  //   clientDetailsModalInstance = new bootstrap.Modal(clientDetailsModalEl);
+  // }
 
   // --- Кнопка "Clients" - Открытие модального окна списка клиентов ---
   const clientsBtn = document.getElementById('clientsBtn');
@@ -189,24 +190,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // --- Обработчик клика по элементу списка клиентов ---
-  const clientsListEl = document.getElementById('clientsList');
-  if (clientsListEl) {
-    clientsListEl.addEventListener('click', (event) => {
-      // Поиск ближайшего родительского элемента с атрибутом data-client-name
-      const item = event.target.closest('[data-client-name]');
-      if (!item) return;
-
-      // Извлечение имени клиента
-      const clientName = item.getAttribute('data-client-name');
-
-      // Поиск данных клиента в массиве
-      const client = clientsSummary.find(c => c.name === clientName);
-      if (!client) return;
-
-      // Отображение детальной информации
-      renderClientDetails(client);
-    });
-  }
+  // Bootstrap Collapse автоматически обрабатывает клики через data-bs-toggle="collapse"
+  // Старый обработчик для открытия модального окна деталей удален
 
   // === НАСТРОЙКА ФИЛЬТРОВ ИСТОРИИ ===
 

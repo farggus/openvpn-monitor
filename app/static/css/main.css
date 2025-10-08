@@ -32,3 +32,185 @@
 .status-dot-offline {
   background-color: #dc3545;
 }
+
+/* === Стили для accordion-списка клиентов === */
+
+/**
+ * Контейнер для элемента списка с accordion
+ * Убирает padding чтобы кнопка и collapse-панель заполняли весь элемент
+ */
+#clientsList .list-group-item {
+  padding: 0;
+  transition: background-color 0.15s ease-in-out;
+}
+
+/**
+ * Кнопка-заголовок клиента в accordion
+ * Стилизация для лучшего визуального представления
+ */
+#clientsList .list-group-item .btn-link {
+  color: inherit;
+  border: none;
+  background: none;
+  transition: background-color 0.15s ease-in-out;
+}
+
+/**
+ * Hover эффект для кнопки-заголовка
+ */
+#clientsList .list-group-item .btn-link:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/**
+ * Тёмная тема: hover эффект
+ */
+[data-bs-theme="dark"] #clientsList .list-group-item .btn-link:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/**
+ * Активная (раскрытая) кнопка-заголовок
+ */
+#clientsList .list-group-item .btn-link:not(.collapsed) {
+  background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+/**
+ * Фокус для кнопки-заголовка
+ */
+#clientsList .list-group-item .btn-link:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+/**
+ * Collapse-панель с деталями клиента
+ * Добавляет плавную анимацию раскрытия/закрытия
+ */
+#clientsList .collapse {
+  transition: height 0.35s ease;
+}
+
+/**
+ * Контент внутри collapse-панели
+ * Добавляет верхний отступ для разделения от заголовка
+ */
+#clientsList .collapse .border-top {
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+/**
+ * Имя клиента в светлой теме
+ */
+.client-name {
+  color: #212529;
+  font-weight: 500;
+}
+
+/**
+ * Имя клиента в тёмной теме
+ */
+.bg-dark .client-name,
+.modal-content.bg-dark .client-name {
+  color: #f8f9fa !important;
+}
+
+/**
+ * Подзаголовок клиента в тёмной теме
+ */
+.bg-dark .client-subtitle,
+.modal-content.bg-dark .client-subtitle {
+  color: #adb5bd !important;
+}
+
+/**
+ * Border для деталей клиента в тёмной теме
+ */
+.bg-dark .client-details-content,
+.modal-content.bg-dark .client-details-content {
+  border-color: #495057 !important;
+}
+
+/**
+ * List group items в тёмной теме
+ */
+.bg-dark .list-group-item,
+.modal-content.bg-dark .list-group-item {
+  background-color: #212529;
+  border-color: #495057;
+  color: #f8f9fa;
+}
+
+/**
+ * Активная панель accordion в тёмной теме
+ */
+.bg-dark #clientsList .list-group-item .btn-link:not(.collapsed),
+.modal-content.bg-dark #clientsList .list-group-item .btn-link:not(.collapsed) {
+  background-color: rgba(13, 110, 253, 0.2);
+}
+
+/**
+ * Description list (dl) элементы в деталях клиента для тёмной темы
+ */
+.bg-dark .client-details-content dt,
+.modal-content.bg-dark .client-details-content dt {
+  color: #adb5bd;
+}
+
+.bg-dark .client-details-content dd,
+.modal-content.bg-dark .client-details-content dd {
+  color: #f8f9fa;
+}
+
+/**
+ * Заголовки и текст внутри деталей клиента в тёмной теме
+ */
+.bg-dark .client-details-content h6,
+.modal-content.bg-dark .client-details-content h6 {
+  color: #f8f9fa;
+}
+
+.bg-dark .client-details-content ul li,
+.modal-content.bg-dark .client-details-content ul li {
+  color: #f8f9fa;
+}
+
+.bg-dark .client-details-content strong,
+.modal-content.bg-dark .client-details-content strong {
+  color: #adb5bd;
+}
+
+/* === Стили для модального окна History === */
+
+/**
+ * Контейнер для таблицы истории с фиксированными заголовками
+ * Обеспечивает прокрутку только для строк таблицы
+ */
+.history-table-container {
+  max-height: 60vh;           /* Максимальная высота контейнера */
+  overflow-y: auto;           /* Вертикальная прокрутка */
+  overflow-x: auto;           /* Горизонтальная прокрутка при необходимости */
+  position: relative;         /* Для корректной работы sticky */
+  border: 1px solid #dee2e6; /* Граница контейнера */
+  border-radius: 0.375rem;    /* Скругление углов */
+}
+
+/**
+ * Заголовки таблицы истории фиксированы при прокрутке
+ */
+.history-table-container thead th {
+  position: sticky;           /* Фиксирует заголовки */
+  top: 0;                     /* Прижимает к верху контейнера */
+  z-index: 10;                /* Над строками таблицы */
+  background-color: var(--bs-table-bg); /* Фон заголовка */
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1); /* Тень для визуального разделения */
+}
+
+/**
+ * Таблица внутри контейнера без дополнительных отступов
+ */
+.history-table-container table {
+  margin-bottom: 0;           /* Убирает нижний отступ таблицы */
+}
