@@ -3,11 +3,68 @@
   <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Traffic Charts (MB/s)</h5>
+        <h5 class="modal-title">Traffic Charts</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
       </div>
       <div class="modal-body">
-        <canvas id="trafficChartModal" height="120" class="w-100"></canvas>
+        <!-- Панель управления -->
+        <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+          <div class="btn-group" role="group" aria-label="Режим отображения">
+            <input type="radio" class="btn-check" name="chartViewMode" id="chartViewAll" value="all" checked autocomplete="off">
+            <label class="btn btn-outline-primary btn-sm" for="chartViewAll">Все клиенты</label>
+
+            <input type="radio" class="btn-check" name="chartViewMode" id="chartViewIndividual" value="individual" autocomplete="off">
+            <label class="btn btn-outline-primary btn-sm" for="chartViewIndividual">По отдельности</label>
+          </div>
+
+          <div class="d-flex gap-2 align-items-center">
+            <label for="clientSelect" class="small mb-0" id="clientSelectLabel" style="display: none;">Клиент:</label>
+            <select class="form-select form-select-sm" id="clientSelect" style="display: none; max-width: 200px;">
+              <option value="">Выберите клиента</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="row g-2 mb-3" id="chartStats">
+          <div class="col-md-3 col-6">
+            <div class="card text-center">
+              <div class="card-body py-2">
+                <div class="small text-muted">Текущая Rx</div>
+                <div class="fw-bold" id="statCurrentRx">0.00 MB/s</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div class="card text-center">
+              <div class="card-body py-2">
+                <div class="small text-muted">Текущая Tx</div>
+                <div class="fw-bold" id="statCurrentTx">0.00 MB/s</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div class="card text-center">
+              <div class="card-body py-2">
+                <div class="small text-muted">Пик Rx</div>
+                <div class="fw-bold" id="statPeakRx">0.00 MB/s</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div class="card text-center">
+              <div class="card-body py-2">
+                <div class="small text-muted">Пик Tx</div>
+                <div class="fw-bold" id="statPeakTx">0.00 MB/s</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- График -->
+        <div class="position-relative">
+          <canvas id="trafficChartModal" height="120" class="w-100"></canvas>
+        </div>
       </div>
     </div>
   </div>

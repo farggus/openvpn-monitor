@@ -25,8 +25,8 @@ document.addEventListener("DOMContentLoaded", function () {
   // Первоначальная загрузка данных
   refreshAll();
 
-  // Автоматическое обновление каждую секунду
-  setInterval(refreshAll, 1000);
+  // Автоматическое обновление каждые 10 секунд
+  setInterval(refreshAll, 10000);
 
   // === НАСТРОЙКА ОБРАБОТЧИКОВ КНОПОК ===
 
@@ -42,8 +42,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Обработчик события показа модального окна графиков
   // Инициализация/обновление графика при открытии
+  let chartModeHandlerInitialized = false;
+
   document.getElementById('chartsModal').addEventListener('shown.bs.modal', () => {
     chartCanvas = document.getElementById('trafficChartModal');
+
+    // Инициализация обработчиков переключения режима графика (только один раз)
+    if (!chartModeHandlerInitialized) {
+      handleChartModeChange();
+      chartModeHandlerInitialized = true;
+    }
 
     if (!chart) {
       // График будет инициализирован при первом fetchData()

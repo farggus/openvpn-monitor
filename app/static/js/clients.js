@@ -38,7 +38,7 @@ function fetchData(forceInitChart = false) {
         // График будет создан при открытии модального окна
       } else {
         // Инициализация графика с текущим списком клиентов
-        initializeChart(users);
+        initializeChart(users, currentChartMode, currentSelectedClient);
       }
     }
 

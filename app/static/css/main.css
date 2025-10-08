@@ -214,3 +214,85 @@
 .history-table-container table {
   margin-bottom: 0;           /* Убирает нижний отступ таблицы */
 }
+
+/* === Стили для графиков трафика === */
+
+/**
+ * Карточки статистики графиков
+ */
+#chartStats .card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+#chartStats .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/**
+ * Заголовки статистики
+ */
+#chartStats .small.text-muted {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/**
+ * Значения статистики
+ */
+#chartStats .fw-bold {
+  font-size: 1.1rem;
+  color: #0d6efd;
+}
+
+/**
+ * Тёмная тема: карточки статистики
+ */
+[data-bs-theme="dark"] #chartStats .card {
+  background-color: #212529;
+  border-color: #495057;
+}
+
+[data-bs-theme="dark"] #chartStats .fw-bold {
+  color: #6ea8fe;
+}
+
+/**
+ * Кнопки переключения режима графика
+ */
+.btn-group .btn-check:checked + .btn-outline-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: #fff;
+}
+
+/**
+ * Селект выбора клиента
+ */
+#clientSelect {
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+#clientSelect:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/**
+ * Контейнер графика
+ */
+#trafficChartModal {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+}
+
+/**
+ * Тёмная тема: контейнер графика
+ */
+[data-bs-theme="dark"] #trafficChartModal {
+  background: rgba(0, 0, 0, 0.2);
+}
