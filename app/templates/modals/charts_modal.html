@@ -25,6 +25,37 @@
           </div>
         </div>
 
+        <!-- Фильтр периода -->
+        <div class="d-flex justify-content-center align-items-center mb-3 gap-2 flex-wrap">
+          <label class="small mb-0">Период:</label>
+          <div class="btn-group" role="group" aria-label="Период отображения">
+            <input type="radio" class="btn-check" name="chartPeriod" id="period30" value="30" checked autocomplete="off">
+            <label class="btn btn-outline-secondary btn-sm" for="period30">30 мин</label>
+
+            <input type="radio" class="btn-check" name="chartPeriod" id="period60" value="60" autocomplete="off">
+            <label class="btn btn-outline-secondary btn-sm" for="period60">1 час</label>
+
+            <input type="radio" class="btn-check" name="chartPeriod" id="period180" value="180" autocomplete="off">
+            <label class="btn btn-outline-secondary btn-sm" for="period180">3 часа</label>
+
+            <input type="radio" class="btn-check" name="chartPeriod" id="period360" value="360" autocomplete="off">
+            <label class="btn btn-outline-secondary btn-sm" for="period360">6 часов</label>
+
+            <input type="radio" class="btn-check" name="chartPeriod" id="period720" value="720" autocomplete="off">
+            <label class="btn btn-outline-secondary btn-sm" for="period720">12 часов</label>
+          </div>
+        </div>
+
+        <!-- Опция фильтрации нулевых значений -->
+        <div class="d-flex justify-content-center align-items-center mb-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="hideZeroValues" checked autocomplete="off">
+            <label class="form-check-label small" for="hideZeroValues">
+              Не отображать нулевые значения Rx/Tx
+            </label>
+          </div>
+        </div>
+
         <!-- Статистика -->
         <div class="row g-2 mb-3" id="chartStats">
           <div class="col-md-3 col-6">

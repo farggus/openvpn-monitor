@@ -56,11 +56,13 @@ ACTIVE_SESSIONS_PATH = _load_path(
     "OPENVPN_ACTIVE_SESSIONS", _default_data_path("active_sessions.json")
 )
 SERVER_STATUS_PATH = _load_path("OPENVPN_SERVER_STATUS", _default_data_path("server_status.json"))
+TRAFFIC_METRICS_PATH = _load_path("OPENVPN_TRAFFIC_METRICS", _default_data_path("traffic_metrics.json"))
 
 _ensure_data_files(
     {
         HISTORY_LOG_PATH: [],
         ACTIVE_SESSIONS_PATH: {},
         SERVER_STATUS_PATH: {},
+        TRAFFIC_METRICS_PATH: {},
     }
 )

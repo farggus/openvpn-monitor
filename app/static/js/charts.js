@@ -7,6 +7,9 @@
 let currentChartMode = 'all'; // 'all' или 'individual'
 let currentSelectedClient = null; // имя выбранного клиента для индивидуального графика
 let chartStatistics = {}; // статистика для каждого клиента
+let currentPeriod = 30; // текущий период в минутах
+let historicalDataLoaded = false; // флаг загрузки исторических данных
+let hideZeroValues = true; // скрывать нулевые значения Rx/Tx (активно по умолчанию)
 
 /**
  * Расширенная палитра цветов для графиков
@@ -34,14 +37,92 @@ function createGradient(ctx, color) {
 }
 
 /**
- * Инициализирует или переинициализирует график трафика
- * Создает отдельные линии для входящего (Rx) и исходящего (Tx) трафика каждого клиента
- *
+ * Загружает исторические данные метрик трафика из API
+ * @param {number} period - Период в минутах
+ * @param {string|null} clientName - Имя клиента (опционально)
+ * @returns {Promise<Object>} Промис с данными метрик
+ */
+async function loadHistoricalMetrics(period, clientName = null) {
+  try {
+    let url = `/api/traffic-metrics?period=${period}`;
+    if (clientName) {
+      url += `&client=${encodeURIComponent(clientName)}`;
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.metrics || {};
+  } catch (error) {
+    console.error('Failed to load historical metrics:', error);
+    return {};
+  }
+}
+
+/**
+ * Фильтрует нулевые значения, заменяя их на null для разрывов в графике
+ * @param {number} value - Значение для проверки
+ * @returns {number|null} Исходное значение или null если нужно скрыть ноль
+ */
+function filterZeroValue(value) {
+  if (hideZeroValues && value === 0) {
+    return null;
+  }
+  return value;
+}
+
+/**
+ * Преобразует исторические данные в формат для Chart.js
+ * @param {Object} metricsData - Данные метрик из API
+ * @returns {Object} Объект с метками времени и данными наборов
+ */
+function processHistoricalData(metricsData) {
+  const allTimestamps = new Set();
+  const clientData = {};
+
+  // Собираем все метки времени и данные для каждого клиента
+  for (const [clientName, points] of Object.entries(metricsData)) {
+    clientData[clientName] = { rx: {}, tx: {} };
+
+    for (const point of points) {
+      const timestamp = point.timestamp;
+      allTimestamps.add(timestamp);
+
+      const rxValue = point.speed_rx || 0;
+      const txValue = point.speed_tx || 0;
+
+      clientData[clientName].rx[timestamp] = filterZeroValue(rxValue);
+      clientData[clientName].tx[timestamp] = filterZeroValue(txValue);
+    }
+  }
+
+  // Сортируем метки времени
+  const sortedTimestamps = Array.from(allTimestamps).sort();
+
+  // Форматируем метки времени для отображения
+  const formattedLabels = sortedTimestamps.map(ts => {
+    const date = new Date(ts);
+    return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  });
+
+  return {
+    timestamps: sortedTimestamps,
+    labels: formattedLabels,
+    clientData: clientData
+  };
+}
+
+/**
+ * Инициализирует или переинициализирует график трафика с историческими данными
  * @param {Array<string>} users - Массив имен клиентов для отображения на графике
  * @param {string} mode - Режим отображения ('all' или 'individual')
  * @param {string} selectedClient - Имя выбранного клиента (для режима 'individual')
+ * @param {Object|null} historicalData - Исторические данные (опционально)
  */
-function initializeChart(users, mode = 'all', selectedClient = null) {
+async function initializeChart(users, mode = 'all', selectedClient = null, historicalData = null) {
   // Если график уже существует - уничтожаем его перед созданием нового
   if (chart) {
     chart.destroy();
@@ -49,6 +130,18 @@ function initializeChart(users, mode = 'all', selectedClient = null) {
 
   // Сброс данных графика
   chartData = { labels: [], datasets: [] };
+
+  // Если есть исторические данные, загружаем их
+  if (!historicalData) {
+    const clientToLoad = mode === 'individual' ? selectedClient : null;
+    const metricsData = await loadHistoricalMetrics(currentPeriod, clientToLoad);
+    historicalData = processHistoricalData(metricsData);
+  }
+
+  // Заполняем график историческими данными
+  if (historicalData && historicalData.labels.length > 0) {
+    chartData.labels = historicalData.labels;
+  }
 
   // Инициализация статистики для клиентов
   users.forEach(user => {
@@ -74,23 +167,74 @@ function initializeChart(users, mode = 'all', selectedClient = null) {
   displayUsers.forEach((user, i) => {
     const colorScheme = CHART_COLORS[i % CHART_COLORS.length];
 
+    // Подготовка исторических данных для этого клиента
+    const rxData = [];
+    const txData = [];
+
+    if (historicalData && historicalData.clientData && historicalData.clientData[user]) {
+      const clientHistData = historicalData.clientData[user];
+
+      // Заполняем данные для каждой метки времени
+      historicalData.timestamps.forEach(timestamp => {
+        const rxVal = clientHistData.rx[timestamp];
+        const txVal = clientHistData.tx[timestamp];
+
+        // Применяем фильтрацию (null уже может быть установлен в processHistoricalData)
+        rxData.push(rxVal !== undefined && rxVal !== null ? rxVal : filterZeroValue(0));
+        txData.push(txVal !== undefined && txVal !== null ? txVal : filterZeroValue(0));
+
+        // Обновляем статистику (используем реальные значения, не null)
+        const rxValForStats = rxVal !== null && rxVal !== undefined ? rxVal : 0;
+        const txValForStats = txVal !== null && txVal !== undefined ? txVal : 0;
+
+        if (!chartStatistics[user]) {
+          chartStatistics[user] = {
+            peakRx: 0,
+            peakTx: 0,
+            currentRx: 0,
+            currentTx: 0,
+            avgRx: 0,
+            avgTx: 0,
+            totalPoints: 0,
+            sumRx: 0,
+            sumTx: 0
+          };
+        }
+
+        chartStatistics[user].peakRx = Math.max(chartStatistics[user].peakRx, rxValForStats);
+        chartStatistics[user].peakTx = Math.max(chartStatistics[user].peakTx, txValForStats);
+        chartStatistics[user].sumRx += rxValForStats;
+        chartStatistics[user].sumTx += txValForStats;
+        chartStatistics[user].totalPoints++;
+        chartStatistics[user].avgRx = chartStatistics[user].sumRx / chartStatistics[user].totalPoints;
+        chartStatistics[user].avgTx = chartStatistics[user].sumTx / chartStatistics[user].totalPoints;
+      });
+
+      // Текущие значения - последние в массиве
+      if (rxData.length > 0) {
+        chartStatistics[user].currentRx = rxData[rxData.length - 1];
+        chartStatistics[user].currentTx = txData[txData.length - 1];
+      }
+    }
+
     chartData.datasets.push(
       // Линия входящего трафика (Receive)
       {
         label: `${user} ↓ Rx`,
-        data: [],
+        data: rxData,
         borderColor: colorScheme.primary,
         backgroundColor: colorScheme.gradient,
         fill: mode === 'individual', // Заливка только в индивидуальном режиме
         borderWidth: 2,
         tension: 0.4, // Сглаживание линии
         pointRadius: mode === 'individual' ? 3 : 0, // Точки только в индивидуальном режиме
-        pointHoverRadius: 5
+        pointHoverRadius: 5,
+        spanGaps: true // Не прерывать линию на null значениях
       },
       // Линия исходящего трафика (Transmit)
       {
         label: `${user} ↑ Tx`,
-        data: [],
+        data: txData,
         borderColor: colorScheme.secondary,
         backgroundColor: colorScheme.gradient,
         fill: false,
@@ -98,7 +242,8 @@ function initializeChart(users, mode = 'all', selectedClient = null) {
         borderDash: [5, 5],
         tension: 0.4,
         pointRadius: mode === 'individual' ? 3 : 0,
-        pointHoverRadius: 5
+        pointHoverRadius: 5,
+        spanGaps: true // Не прерывать линию на null значениях
       }
     );
   });
@@ -188,12 +333,14 @@ function initializeChart(users, mode = 'all', selectedClient = null) {
               font: { size: 12 }
             },
             beginAtZero: true,
+            max: 0.6,
             grid: {
               color: 'rgba(0, 0, 0, 0.05)'
             },
             ticks: {
+              stepSize: 0.1,
               callback: function(value) {
-                return value.toFixed(2);
+                return value.toFixed(1);
               }
             }
           }
@@ -205,7 +352,7 @@ function initializeChart(users, mode = 'all', selectedClient = null) {
 
 /**
  * Обновляет данные графика новыми значениями скорости передачи
- * Добавляет новые точки данных и удаляет старые (сохраняет последние 20 значений)
+ * Добавляет новые точки данных в реальном времени
  *
  * @param {string} timeLabel - Метка времени для оси X (например, "14:30:25")
  * @param {Object} datasetMap - Карта наборов данных {имя_набора: массив_данных}
@@ -218,8 +365,12 @@ function updateChartData(timeLabel, datasetMap, clientName, speedRx, speedTx) {
   if (chartData.labels) {
     chartData.labels.push(timeLabel);
 
-    // Ограничение количества меток (максимум 20 последних точек)
-    if (chartData.labels.length > 20) {
+    // Удаляем старые точки, которые выходят за пределы текущего периода
+    // Рассчитываем максимальное количество точек на основе периода
+    // При обновлении каждые 10 секунд: 30 мин = 180 точек, 1 час = 360 точек и т.д.
+    const maxPoints = (currentPeriod * 60) / 10;
+
+    if (chartData.labels.length > maxPoints) {
       chartData.labels.shift();
     }
   }
@@ -253,10 +404,12 @@ function updateChartData(timeLabel, datasetMap, clientName, speedRx, speedTx) {
   // Обновление данных входящего трафика (Rx)
   const rxDatasetName = `${clientName} ↓ Rx`;
   if (datasetMap[rxDatasetName]) {
-    datasetMap[rxDatasetName].push(speedRx);
+    // Применяем фильтрацию нулевых значений
+    datasetMap[rxDatasetName].push(filterZeroValue(speedRx));
 
-    // Ограничение количества точек данных
-    if (datasetMap[rxDatasetName].length > 20) {
+    // Удаляем старые точки на основе текущего периода
+    const maxPoints = (currentPeriod * 60) / 10;
+    if (datasetMap[rxDatasetName].length > maxPoints) {
       datasetMap[rxDatasetName].shift();
     }
   }
@@ -264,10 +417,12 @@ function updateChartData(timeLabel, datasetMap, clientName, speedRx, speedTx) {
   // Обновление данных исходящего трафика (Tx)
   const txDatasetName = `${clientName} ↑ Tx`;
   if (datasetMap[txDatasetName]) {
-    datasetMap[txDatasetName].push(speedTx);
+    // Применяем фильтрацию нулевых значений
+    datasetMap[txDatasetName].push(filterZeroValue(speedTx));
 
-    // Ограничение количества точек данных
-    if (datasetMap[txDatasetName].length > 20) {
+    // Удаляем старые точки на основе текущего периода
+    const maxPoints = (currentPeriod * 60) / 10;
+    if (datasetMap[txDatasetName].length > maxPoints) {
       datasetMap[txDatasetName].shift();
     }
   }
@@ -379,4 +534,32 @@ function handleChartModeChange() {
       initializeChart(users, currentChartMode, currentSelectedClient);
     }
   });
+
+  // Обработчики фильтров периодов
+  const periodRadios = document.querySelectorAll('input[name="chartPeriod"]');
+  periodRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      currentPeriod = parseInt(e.target.value, 10);
+
+      // Переинициализируем график с новым периодом
+      const users = Object.keys(lastStats);
+      if (users.length > 0) {
+        initializeChart(users, currentChartMode, currentSelectedClient);
+      }
+    });
+  });
+
+  // Обработчик чекбокса скрытия нулевых значений
+  const hideZeroCheckbox = document.getElementById('hideZeroValues');
+  if (hideZeroCheckbox) {
+    hideZeroCheckbox.addEventListener('change', (e) => {
+      hideZeroValues = e.target.checked;
+
+      // Переинициализируем график с новой настройкой
+      const users = Object.keys(lastStats);
+      if (users.length > 0) {
+        initializeChart(users, currentChartMode, currentSelectedClient);
+      }
+    });
+  }
 }

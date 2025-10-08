@@ -11,6 +11,7 @@ from flask import Flask, g, jsonify, render_template, request
 
 from .config import ACTIVE_SESSIONS_PATH, HISTORY_LOG_PATH, SERVER_STATUS_PATH
 from .parser import load_active_sessions, parse_status_log
+from .traffic_collector import get_metrics_for_period
 
 
 logger = logging.getLogger(__name__)
@@ -357,6 +358,51 @@ def get_clients_summary():
         return _json_error("Failed to build clients summary")
 
     return jsonify({"clients": clients})
+
+
+@app.route("/api/traffic-metrics")
+def get_traffic_metrics():
+    """
+    Get historical traffic metrics for charts.
+
+    Query parameters:
+    - client: Optional client name to filter by
+    - period: Time period in minutes (default: 30, options: 30, 60, 180, 360, 720)
+    """
+    try:
+        client_name = request.args.get("client")
+        period_str = request.args.get("period", "30")
+
+        # Parse and validate period
+        try:
+            period_minutes = int(period_str)
+        except (TypeError, ValueError):
+            return _json_error("Invalid period parameter", 400, code="invalid_parameter")
+
+        # Validate period is one of allowed values
+        allowed_periods = [30, 60, 180, 360, 720]
+        if period_minutes not in allowed_periods:
+            return _json_error(
+                f"Period must be one of {allowed_periods}",
+                400,
+                code="invalid_parameter"
+            )
+
+        # Get metrics
+        metrics = get_metrics_for_period(
+            client_name=client_name if client_name else None,
+            minutes=period_minutes
+        )
+
+        return jsonify({
+            "metrics": metrics,
+            "period_minutes": period_minutes,
+            "client": client_name
+        })
+
+    except Exception:  # pragma: no cover - defensive logging
+        logger.exception("[traffic-metrics] Failed to fetch traffic metrics")
+        return _json_error("Failed to fetch traffic metrics")
 
 
 if __name__ == "__main__":
