@@ -62,8 +62,9 @@ let clientsModalInstance = null;
 /**
  * Экземпляр Bootstrap модального окна деталей клиента
  * @type {bootstrap.Modal|null}
+ * (УСТАРЕЛО - заменено на accordion)
  */
-let clientDetailsModalInstance = null;
+// let clientDetailsModalInstance = null;
 
 // === КАРТЫ (MAPS) ===
 

@@ -49,7 +49,34 @@ async function loadClientAndServerMarkers() {
     }
 
     // === ЗАГРУЗКА МАРКЕРА СЕРВЕРА ===
-    // TODO: Добавить логику отображения сервера при необходимости
+
+    // Получение данных о сервере из API
+    const serverRes = await fetch("/api/server-status");
+    const serverData = await serverRes.json();
+    const serverLocation = serverData.location;
+
+    // Проверка наличия данных о местоположении сервера
+    if (serverLocation && serverLocation.latitude != null && serverLocation.longitude != null) {
+      // Создание красного кружочка для сервера
+      const serverMarker = L.circleMarker([serverLocation.latitude, serverLocation.longitude], {
+        radius: 8,           // Радиус кружочка
+        fillColor: "#ff0000", // Красный цвет заливки
+        color: "#cc0000",     // Темно-красный цвет обводки
+        weight: 2,            // Толщина обводки
+        opacity: 1,           // Непрозрачность обводки
+        fillOpacity: 0.8      // Непрозрачность заливки
+      })
+        .addTo(mapInstance)   // Добавление маркера на карту
+        .bindPopup(           // Привязка всплывающего окна к маркеру
+          `<strong>VPN Server</strong><br>${serverLocation.city || ''}, ${serverLocation.country || ''}<br>IP: ${serverData.public_ip || ''}`
+        );
+
+      // Сохранение ссылки на маркер для последующей очистки
+      mapMarkers.push(serverMarker);
+
+      // Добавление координат сервера в массив границ для автопозиционирования
+      bounds.push([serverLocation.latitude, serverLocation.longitude]);
+    }
 
     // Автоматическое позиционирование карты по всем маркерам
     if (bounds.length) {

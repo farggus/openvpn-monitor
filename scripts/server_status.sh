@@ -22,10 +22,31 @@ fi
 pingable="No"
 ping -c1 -W1 "$ip" >/dev/null 2>&1 && pingable="Yes"
 
+# Получение геолокации для публичного IP
+location_data=$(curl -s "http://ip-api.com/json/$public_ip")
+city=$(echo "$location_data" | grep -o '"city":"[^"]*' | cut -d'"' -f4)
+country=$(echo "$location_data" | grep -o '"country":"[^"]*' | cut -d'"' -f4)
+latitude=$(echo "$location_data" | grep -o '"lat":[^,}]*' | cut -d':' -f2)
+longitude=$(echo "$location_data" | grep -o '"lon":[^,}]*' | cut -d':' -f2)
+
+# Проверка успешности получения геолокации
+if [ -z "$latitude" ] || [ -z "$longitude" ]; then
+  city="null"
+  country="null"
+  latitude="null"
+  longitude="null"
+fi
+
 echo '{
   "status": "'$status'",
   "uptime": "'$uptime'",
   "local_ip": "'$ip'",
   "public_ip": "'$public_ip'",
-  "pingable": "'$pingable'"
+  "pingable": "'$pingable'",
+  "location": {
+    "city": "'$city'",
+    "country": "'$country'",
+    "latitude": '$latitude',
+    "longitude": '$longitude'
+  }
 }' > /home/app_data/docker/openvpn-monitor/data/server_status.json

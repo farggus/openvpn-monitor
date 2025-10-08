@@ -151,10 +151,6 @@ async function buildHistoryMap() {
     return;
   }
 
-  // === ИНИЦИАЛИЗАЦИЯ МОДАЛЬНОГО ОКНА ===
-  const modal = new bootstrap.Modal(modalEl);
-  modal.show();
-
   // === ИНИЦИАЛИЗАЦИЯ КАРТЫ (ОДИН РАЗ) ===
   if (!historyMapInitialized) {
     // Создание экземпляра Leaflet карты
@@ -168,7 +164,14 @@ async function buildHistoryMap() {
     // Обработчик события показа модального окна
     // Исправление размеров карты после анимации открытия
     modalEl.addEventListener('shown.bs.modal', () => {
-      setTimeout(() => historyMapInstance.invalidateSize(), 50);
+      setTimeout(() => {
+        historyMapInstance.invalidateSize();
+        // Пересчитываем bounds после invalidateSize, если есть маркеры
+        if (historyMapMarkers.length > 0) {
+          const bounds = historyMapMarkers.map(m => m.getLatLng());
+          historyMapInstance.fitBounds(bounds, { padding: [30, 30] });
+        }
+      }, 50);
     });
 
     historyMapInitialized = true;
@@ -251,6 +254,11 @@ async function buildHistoryMap() {
   if (bounds.length) {
     historyMapInstance.fitBounds(bounds, { padding: [30, 30] });
   }
+
+  // === ПОКАЗ МОДАЛЬНОГО ОКНА ===
+  // Показываем модальное окно после добавления всех маркеров
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
 }
 
 /**
