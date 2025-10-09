@@ -1,9 +1,52 @@
 /**
- * Основные стили для OpenVPN Monitor
- * Описание: Содержит пользовательские стили для индикаторов статуса
+ * Main styles for OpenVPN Monitor
+ * Description: Contains custom styles for status indicators and UI improvements
  */
 
-/* === Индикаторы статуса (онлайн/оффлайн) === */
+/* === Page Header === */
+.display-6 {
+  font-size: 2.5rem;
+}
+
+/* Dark theme: ensure subtitle is visible */
+[data-bs-theme="dark"] .text-muted {
+  color: #adb5bd !important;
+}
+
+/* Dark theme: ensure background is dark */
+[data-bs-theme="dark"] body {
+  background-color: #212529 !important;
+  color: #f8f9fa;
+}
+
+/* Dark theme: headers and titles */
+[data-bs-theme="dark"] .text-primary {
+  color: #6ea8fe !important;
+}
+
+[data-bs-theme="dark"] h1,
+[data-bs-theme="dark"] h2,
+[data-bs-theme="dark"] h3 {
+  color: #f8f9fa;
+}
+
+/* === Button Spacing === */
+.gap-2 {
+  gap: 0.5rem !important;
+}
+
+.gap-3 {
+  gap: 1rem !important;
+}
+
+/* === Table Improvements === */
+.shadow-sm {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+/* === Status Indicators (Online/Offline) === */
 
 /**
  * Базовый класс для круглого индикатора статуса

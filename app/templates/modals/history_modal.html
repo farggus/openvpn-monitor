@@ -3,45 +3,45 @@
   <div class="modal-dialog modal-xl modal-fullscreen-sm-down">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Connection history</h5>
-        <button aria-label="Закрыть" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+        <h5 class="modal-title">{{ _('Connection history') }}</h5>
+        <button aria-label="{{ _('Close') }}" class="btn-close" data-bs-dismiss="modal" type="button"></button>
       </div>
       <div class="modal-body">
         <div class="d-flex align-items-end justify-content-start gap-3 mb-3">
           <div>
-            <label class="form-label" for="filterDate">Date</label>
+            <label class="form-label" for="filterDate">{{ _('Date') }}</label>
             <input class="form-control" id="filterDate" type="date"/>
           </div>
           <div>
-            <label class="form-label" for="filterUser">Client</label>
+            <label class="form-label" for="filterUser">{{ _('Client') }}</label>
             <input class="form-control" id="filterUser" list="userList" type="text"/>
             <datalist id="userList"></datalist>
           </div>
           <div>
-            <label class="form-label" for="filterCity">City</label>
+            <label class="form-label" for="filterCity">{{ _('City') }}</label>
             <input class="form-control" id="filterCity" list="cityList" type="text"/>
             <datalist id="cityList"></datalist>
           </div>
           <div class="ms-auto">
-            <button class="btn btn-outline-secondary" id="resetFilters">Clear filter</button>
-            <button class="btn btn-outline-success" id="viewOnMap">View on map</button>
+            <button class="btn btn-outline-secondary" id="resetFilters">{{ _('Clear filter') }}</button>
+            <button class="btn btn-outline-success" id="viewOnMap">{{ _('View on map') }}</button>
           </div>
         </div>
         <div class="history-table-container">
           <table class="table-bordered text-nowrap table table-sm">
             <thead class="table-light">
               <tr>
-                <th>Session Opened</th>
-                <th>Client</th>
-                <th>VPN IPV4</th>
-                <th>VPN IPV6</th>
-                <th>Client IP</th>
-                <th>Port</th>
-                <th>City</th>
-                <th>Session Closed</th>
-                <th>Duration</th>
-                <th>Rx (MB)</th>
-                <th>Tx (MB)</th>
+                <th>{{ _('Session Opened') }}</th>
+                <th>{{ _('Client') }}</th>
+                <th>{{ _('VPN IPv4') }}</th>
+                <th>{{ _('VPN IPv6') }}</th>
+                <th>{{ _('Client IP') }}</th>
+                <th>{{ _('Port') }}</th>
+                <th>{{ _('City') }}</th>
+                <th>{{ _('Session Closed') }}</th>
+                <th>{{ _('Duration') }}</th>
+                <th>{{ _('Rx (MB)') }}</th>
+                <th>{{ _('Tx (MB)') }}</th>
               </tr>
             </thead>
             <tbody id="history-body"></tbody>

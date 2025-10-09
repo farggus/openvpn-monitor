@@ -3,46 +3,46 @@
   <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Traffic Charts</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+        <h5 class="modal-title">{{ _('Traffic Charts') }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
       </div>
       <div class="modal-body">
         <!-- Панель управления -->
         <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
-          <div class="btn-group" role="group" aria-label="Режим отображения">
+          <div class="btn-group" role="group" aria-label="{{ _('Display mode') }}">
             <input type="radio" class="btn-check" name="chartViewMode" id="chartViewAll" value="all" checked autocomplete="off">
-            <label class="btn btn-outline-primary btn-sm" for="chartViewAll">Все клиенты</label>
+            <label class="btn btn-outline-primary btn-sm" for="chartViewAll">{{ _('All clients') }}</label>
 
             <input type="radio" class="btn-check" name="chartViewMode" id="chartViewIndividual" value="individual" autocomplete="off">
-            <label class="btn btn-outline-primary btn-sm" for="chartViewIndividual">По отдельности</label>
+            <label class="btn btn-outline-primary btn-sm" for="chartViewIndividual">{{ _('Individual') }}</label>
           </div>
 
           <div class="d-flex gap-2 align-items-center">
-            <label for="clientSelect" class="small mb-0" id="clientSelectLabel" style="display: none;">Клиент:</label>
+            <label for="clientSelect" class="small mb-0" id="clientSelectLabel" style="display: none;">{{ _('Client:') }}</label>
             <select class="form-select form-select-sm" id="clientSelect" style="display: none; max-width: 200px;">
-              <option value="">Выберите клиента</option>
+              <option value="">{{ _('Select client') }}</option>
             </select>
           </div>
         </div>
 
         <!-- Фильтр периода -->
         <div class="d-flex justify-content-center align-items-center mb-3 gap-2 flex-wrap">
-          <label class="small mb-0">Период:</label>
-          <div class="btn-group" role="group" aria-label="Период отображения">
+          <label class="small mb-0">{{ _('Period:') }}</label>
+          <div class="btn-group" role="group" aria-label="{{ _('Display period') }}">
             <input type="radio" class="btn-check" name="chartPeriod" id="period30" value="30" checked autocomplete="off">
-            <label class="btn btn-outline-secondary btn-sm" for="period30">30 мин</label>
+            <label class="btn btn-outline-secondary btn-sm" for="period30">{{ _('30 min') }}</label>
 
             <input type="radio" class="btn-check" name="chartPeriod" id="period60" value="60" autocomplete="off">
-            <label class="btn btn-outline-secondary btn-sm" for="period60">1 час</label>
+            <label class="btn btn-outline-secondary btn-sm" for="period60">{{ _('1 hour') }}</label>
 
             <input type="radio" class="btn-check" name="chartPeriod" id="period180" value="180" autocomplete="off">
-            <label class="btn btn-outline-secondary btn-sm" for="period180">3 часа</label>
+            <label class="btn btn-outline-secondary btn-sm" for="period180">{{ _('3 hours') }}</label>
 
             <input type="radio" class="btn-check" name="chartPeriod" id="period360" value="360" autocomplete="off">
-            <label class="btn btn-outline-secondary btn-sm" for="period360">6 часов</label>
+            <label class="btn btn-outline-secondary btn-sm" for="period360">{{ _('6 hours') }}</label>
 
             <input type="radio" class="btn-check" name="chartPeriod" id="period720" value="720" autocomplete="off">
-            <label class="btn btn-outline-secondary btn-sm" for="period720">12 часов</label>
+            <label class="btn btn-outline-secondary btn-sm" for="period720">{{ _('12 hours') }}</label>
           </div>
         </div>
 
@@ -51,13 +51,13 @@
           <div class="form-check">
             <input class="form-check-input" type="checkbox" id="hideZeroValues" checked autocomplete="off">
             <label class="form-check-label small" for="hideZeroValues">
-              Не отображать нулевые значения Rx/Tx
+              {{ _('Hide zero Rx/Tx values') }}
             </label>
           </div>
           <div class="form-check">
             <input class="form-check-input" type="checkbox" id="showDetailedMode" autocomplete="off">
             <label class="form-check-label small" for="showDetailedMode">
-              Отображать подробно
+              {{ _('Show detailed view') }}
             </label>
           </div>
         </div>
@@ -67,7 +67,7 @@
           <div class="col-md-3 col-6">
             <div class="card text-center">
               <div class="card-body py-2">
-                <div class="small text-muted">Текущая Rx</div>
+                <div class="small text-muted">{{ _('Current Rx') }}</div>
                 <div class="fw-bold" id="statCurrentRx">0.00 MB/s</div>
               </div>
             </div>
@@ -75,7 +75,7 @@
           <div class="col-md-3 col-6">
             <div class="card text-center">
               <div class="card-body py-2">
-                <div class="small text-muted">Текущая Tx</div>
+                <div class="small text-muted">{{ _('Current Tx') }}</div>
                 <div class="fw-bold" id="statCurrentTx">0.00 MB/s</div>
               </div>
             </div>
@@ -83,7 +83,7 @@
           <div class="col-md-3 col-6">
             <div class="card text-center">
               <div class="card-body py-2">
-                <div class="small text-muted">Пик Rx</div>
+                <div class="small text-muted">{{ _('Peak Rx') }}</div>
                 <div class="fw-bold" id="statPeakRx">0.00 MB/s</div>
               </div>
             </div>
@@ -91,7 +91,7 @@
           <div class="col-md-3 col-6">
             <div class="card text-center">
               <div class="card-body py-2">
-                <div class="small text-muted">Пик Tx</div>
+                <div class="small text-muted">{{ _('Peak Tx') }}</div>
                 <div class="fw-bold" id="statPeakTx">0.00 MB/s</div>
               </div>
             </div>

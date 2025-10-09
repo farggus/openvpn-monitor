@@ -308,10 +308,79 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                             }
                             new_sessions.append(common_name)
                         else:
-                            active_sessions[common_name]["bytes_received"] = bytes_received
-                            active_sessions[common_name]["bytes_sent"] = bytes_sent
-                            active_sessions[common_name]["ip"] = real_ip
-                            active_sessions[common_name]["port"] = port
+                            # Check if client reconnected (connected_since changed)
+                            stored_connected_at = active_sessions[common_name].get("connected_at")
+                            current_connected_at = connected_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+                            if stored_connected_at != current_connected_at:
+                                # Client reconnected - close old session and create new one
+                                old_session = active_sessions[common_name]
+                                rx = round(old_session["bytes_received"] / (1024 * 1024), 2)
+                                tx = round(old_session["bytes_sent"] / (1024 * 1024), 2)
+                                disconnect_time = connected_dt.strftime("%Y-%m-%d %H:%M:%S")
+                                vpn_ip = old_session.get("vpn_ip") or ""
+                                old_port = old_session.get("port") or ""
+                                vpn_ipv4 = old_session.get("vpn_ipv4") or ""
+                                vpn_ipv6 = old_session.get("vpn_ipv6") or ""
+
+                                if not vpn_ipv4 and not vpn_ipv6 and vpn_ip:
+                                    try:
+                                        ip_obj = ip_address(vpn_ip)
+                                    except ValueError:
+                                        pass
+                                    else:
+                                        if ip_obj.version == 4:
+                                            vpn_ipv4 = vpn_ip
+                                        else:
+                                            vpn_ipv6 = vpn_ip
+
+                                # Close old session in history
+                                with history_log() as entries:
+                                    entries.append(
+                                        {
+                                            "timestamp": old_session["connected_at"],
+                                            "name": common_name,
+                                            "ip": old_session.get("ip"),
+                                            "session_id": old_session["session_id"],
+                                            "rx": rx,
+                                            "tx": tx,
+                                            "vpn_ip": vpn_ip or None,
+                                            "vpn_ipv4": vpn_ipv4 or None,
+                                            "vpn_ipv6": vpn_ipv6 or None,
+                                            "port": old_port or None,
+                                            "session_end": disconnect_time,
+                                            "location": old_session.get("location", {
+                                                "city": None,
+                                                "country": None,
+                                                "latitude": None,
+                                                "longitude": None
+                                            }),
+                                        }
+                                    )
+
+                                # Create new session
+                                session_id = str(uuid.uuid4())
+                                # Fetch geolocation for new session
+                                location = fetch_geolocation(real_ip)
+                                active_sessions[common_name] = {
+                                    "ip": real_ip,
+                                    "vpn_ip": None,
+                                    "vpn_ipv4": None,
+                                    "vpn_ipv6": None,
+                                    "connected_at": current_connected_at,
+                                    "bytes_received": bytes_received,
+                                    "bytes_sent": bytes_sent,
+                                    "port": port,
+                                    "session_id": session_id,
+                                    "location": location,
+                                }
+                                new_sessions.append(common_name)
+                            else:
+                                # Same session - just update stats
+                                active_sessions[common_name]["bytes_received"] = bytes_received
+                                active_sessions[common_name]["bytes_sent"] = bytes_sent
+                                active_sessions[common_name]["ip"] = real_ip
+                                active_sessions[common_name]["port"] = port
 
             for record in client_records:
                 common_name = record["common_name"]

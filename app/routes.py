@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from flask import Flask, g, jsonify, render_template, request
+from flask_babel import Babel, gettext
 
 from .config import ACTIVE_SESSIONS_PATH, HISTORY_LOG_PATH, SERVER_STATUS_PATH
 from .parser import load_active_sessions, parse_status_log
@@ -21,6 +22,39 @@ app = Flask(
     template_folder=os.path.join(os.path.dirname(__file__), "templates"),
     static_folder=os.path.join(os.path.dirname(__file__), "static"),
 )
+
+
+# Locale selector function (must be defined before Babel initialization)
+def get_locale():
+    """
+    Determine the locale for the current request.
+    Priority: URL param 'lang' > cookie 'lang' > Accept-Language header > default (en)
+    """
+    # Check URL parameter
+    lang = request.args.get('lang')
+    if lang in ['en', 'ru']:
+        return lang
+
+    # Check cookie
+    lang = request.cookies.get('lang')
+    if lang in ['en', 'ru']:
+        return lang
+
+    # Check Accept-Language header
+    return request.accept_languages.best_match(['en', 'ru']) or 'en'
+
+
+# Configure Flask-Babel (Flask-Babel 4.0+ uses locale_selector parameter)
+app.config['BABEL_DEFAULT_LOCALE'] = 'en'
+app.config['BABEL_TRANSLATION_DIRECTORIES'] = '../translations'
+babel = Babel(app, locale_selector=get_locale)
+
+
+# Make get_locale available in Jinja2 templates
+@app.context_processor
+def inject_locale():
+    """Inject get_locale function into template context"""
+    return dict(get_locale=get_locale)
 
 
 def is_valid_datetime(value: str) -> bool:
@@ -256,8 +290,8 @@ def _load_server_status() -> Dict[str, Any]:
     except (OSError, json.JSONDecodeError):
         logger.exception("[server-status] Failed to read or parse JSON")
         return {
-            "status": "Unknown",
-            "uptime": "Unknown",
+            "status": gettext("Unknown"),
+            "uptime": gettext("Unknown"),
             "local_ip": "0.0.0.0",
             "public_ip": "0.0.0.0",
             "pingable": False,
@@ -310,7 +344,7 @@ def api_clients():
         return jsonify({"clients": clients})
     except Exception:  # pragma: no cover - defensive logging
         logger.exception("[api_clients] Error while fetching clients")
-        return _json_error("Failed to fetch clients")
+        return _json_error(gettext("Failed to fetch clients"))
 
 
 @app.route("/api/history")
@@ -319,7 +353,7 @@ def get_history():
         entries = _load_history_entries()
     except Exception:  # pragma: no cover - defensive logging
         logger.exception("Error reading history log")
-        return _json_error("Failed to read history log")
+        return _json_error(gettext("Failed to read history log"))
 
     return jsonify(entries)
 
@@ -355,7 +389,7 @@ def get_clients_summary():
         clients = _aggregate_client_stats()
     except Exception:  # pragma: no cover - defensive logging
         logger.exception("[clients-summary] Failed to build clients summary")
-        return _json_error("Failed to build clients summary")
+        return _json_error(gettext("Failed to build clients summary"))
 
     return jsonify({"clients": clients})
 
@@ -377,13 +411,13 @@ def get_traffic_metrics():
         try:
             period_minutes = int(period_str)
         except (TypeError, ValueError):
-            return _json_error("Invalid period parameter", 400, code="invalid_parameter")
+            return _json_error(gettext("Invalid period parameter"), 400, code="invalid_parameter")
 
         # Validate period is one of allowed values
         allowed_periods = [30, 60, 180, 360, 720]
         if period_minutes not in allowed_periods:
             return _json_error(
-                f"Period must be one of {allowed_periods}",
+                gettext("Period must be one of %(periods)s", periods=allowed_periods),
                 400,
                 code="invalid_parameter"
             )
@@ -402,7 +436,89 @@ def get_traffic_metrics():
 
     except Exception:  # pragma: no cover - defensive logging
         logger.exception("[traffic-metrics] Failed to fetch traffic metrics")
-        return _json_error("Failed to fetch traffic metrics")
+        return _json_error(gettext("Failed to fetch traffic metrics"))
+
+
+@app.route("/api/translations")
+def get_translations():
+    """
+    Get translations for JavaScript frontend.
+    Returns all UI strings in the current locale.
+    """
+    translations = {
+        # Common
+        "loading": gettext("Loading..."),
+        "error": gettext("Error"),
+        "error_load": gettext("Failed to load"),
+        "unknown": gettext("Unknown"),
+        "total": gettext("Total"),
+        "yes": gettext("Yes"),
+        "no": gettext("No"),
+        "close": gettext("Close"),
+
+        # Client-related
+        "error_invalid_response": gettext("Invalid response format"),
+        "error_load_clients_list": gettext("Failed to load clients list"),
+        "no_clients_connected": gettext("No clients connected yet"),
+        "unknown_client": gettext("Unknown"),
+        "client_details": gettext("Client details"),
+        "session": gettext("session"),
+        "sessions": gettext("sessions"),
+        "total_time": gettext("Total"),
+        "traffic": gettext("Traffic"),
+        "last_seen": gettext("Last seen"),
+        "last_seen_time": gettext("Last seen:"),
+        "current_session": gettext("Current session"),
+        "connected_since": gettext("Connected since"),
+        "connected_since_label": gettext("Connected since:"),
+        "time_online": gettext("Time online"),
+        "time_online_label": gettext("Time online:"),
+        "client_ip": gettext("Client IP"),
+        "client_ip_label": gettext("Client IP:"),
+        "received": gettext("Received"),
+        "received_label": gettext("Received:"),
+        "sent": gettext("Sent"),
+        "sent_label": gettext("Sent:"),
+        "total_connection_time": gettext("Total connection time"),
+        "data_received": gettext("Data received"),
+        "data_sent": gettext("Data sent"),
+        "last_activity": gettext("Last activity"),
+
+        # Server status
+        "server_running": gettext("Running"),
+        "server_stopped": gettext("Stopped"),
+
+        # Map-related
+        "no_location_data": gettext("No location data available"),
+        "active_connections": gettext("Active connections"),
+        "historical_connections": gettext("Historical connections"),
+
+        # History-related
+        "error_load_history": gettext("Failed to load connection history"),
+        "no_history": gettext("No connection history"),
+        "filter_by_name": gettext("Filter by name..."),
+
+        # Charts-related
+        "speed_mbps": gettext("Speed (MB/s)"),
+        "receive": gettext("Receive"),
+        "transmit": gettext("Transmit"),
+        "no_data_available": gettext("No data available"),
+        "loading_chart_data": gettext("Loading chart data..."),
+        "error_loading_chart": gettext("Failed to load chart data"),
+
+        # Time periods
+        "period_30m": gettext("30 minutes"),
+        "period_1h": gettext("1 hour"),
+        "period_3h": gettext("3 hours"),
+        "period_6h": gettext("6 hours"),
+        "period_12h": gettext("12 hours"),
+
+        # View modes
+        "view_aggregated": gettext("Aggregated"),
+        "view_per_client": gettext("Per client"),
+    }
+
+    return jsonify(translations)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,356 @@
+# Russian translations for OpenVPN Monitor.
+# Copyright (C) 2025
+# This file is distributed under the same license as the OpenVPN Monitor project.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-01 00:00+0000\n"
+"PO-Revision-Date: 2025-01-01 00:00+0000\n"
+"Last-Translator: \n"
+"Language: ru\n"
+"Language-Team: Russian\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Manual\n"
+
+# Application title
+msgid "OpenVPN Management panel"
+msgstr "Панель управления OpenVPN"
+
+# Navigation buttons
+msgid "Map View"
+msgstr "Карта"
+
+msgid "Charts"
+msgstr "Графики"
+
+msgid "Connection history"
+msgstr "История подключений"
+
+msgid "Clients"
+msgstr "Клиенты"
+
+msgid "Switch Theme"
+msgstr "Сменить тему"
+
+# Server table headers
+msgid "OpenVPN - Server"
+msgstr "OpenVPN - Сервер"
+
+msgid "VPN Mode"
+msgstr "Режим VPN"
+
+msgid "Status"
+msgstr "Статус"
+
+msgid "Pingable"
+msgstr "Доступен ping"
+
+msgid "Total Bytes In"
+msgstr "Всего принято байт"
+
+msgid "Total Bytes Out"
+msgstr "Всего отправлено байт"
+
+msgid "Up Since"
+msgstr "Работает с"
+
+msgid "Local IP"
+msgstr "Локальный IP"
+
+msgid "Public IP"
+msgstr "Публичный IP"
+
+# Clients table
+msgid "OpenVPN - Clients"
+msgstr "OpenVPN - Клиенты"
+
+msgid "Client"
+msgstr "Клиент"
+
+msgid "VPN IPv4"
+msgstr "VPN IPv4"
+
+msgid "VPN IPv6"
+msgstr "VPN IPv6"
+
+msgid "Client IP"
+msgstr "IP клиента"
+
+msgid "Port"
+msgstr "Порт"
+
+msgid "Session Opened"
+msgstr "Сессия открыта"
+
+msgid "Time Online"
+msgstr "Время онлайн"
+
+msgid "Speed (Rx / Tx)"
+msgstr "Скорость (Прием / Отправка)"
+
+msgid "Bytes Received"
+msgstr "Получено байт"
+
+msgid "Bytes Sent"
+msgstr "Отправлено байт"
+
+msgid "Total"
+msgstr "Итого"
+
+# Common messages
+msgid "Loading..."
+msgstr "Загрузка..."
+
+msgid "Close"
+msgstr "Закрыть"
+
+msgid "Unknown"
+msgstr "Неизвестно"
+
+msgid "Error"
+msgstr "Ошибка"
+
+msgid "Yes"
+msgstr "Да"
+
+msgid "No"
+msgstr "Нет"
+
+# Modal titles
+msgid "Client Locations"
+msgstr "Расположение клиентов"
+
+msgid "Traffic Charts"
+msgstr "Графики трафика"
+
+msgid "History — View on map"
+msgstr "История — Просмотр на карте"
+
+# History modal
+msgid "Date"
+msgstr "Дата"
+
+msgid "City"
+msgstr "Город"
+
+msgid "Clear filter"
+msgstr "Очистить фильтр"
+
+msgid "View on map"
+msgstr "Показать на карте"
+
+msgid "Session Closed"
+msgstr "Сессия закрыта"
+
+msgid "Duration"
+msgstr "Длительность"
+
+msgid "Rx (MB)"
+msgstr "Прием (МБ)"
+
+msgid "Tx (MB)"
+msgstr "Отправка (МБ)"
+
+# Charts modal
+msgid "Display mode"
+msgstr "Режим отображения"
+
+msgid "All clients"
+msgstr "Все клиенты"
+
+msgid "Individual"
+msgstr "По отдельности"
+
+msgid "Client:"
+msgstr "Клиент:"
+
+msgid "Select client"
+msgstr "Выберите клиента"
+
+msgid "Period:"
+msgstr "Период:"
+
+msgid "Display period"
+msgstr "Период отображения"
+
+msgid "30 min"
+msgstr "30 мин"
+
+msgid "1 hour"
+msgstr "1 час"
+
+msgid "3 hours"
+msgstr "3 часа"
+
+msgid "6 hours"
+msgstr "6 часов"
+
+msgid "12 hours"
+msgstr "12 часов"
+
+msgid "Hide zero Rx/Tx values"
+msgstr "Не отображать нулевые значения Rx/Tx"
+
+msgid "Show detailed view"
+msgstr "Отображать подробно"
+
+msgid "Current Rx"
+msgstr "Текущая Rx"
+
+msgid "Current Tx"
+msgstr "Текущая Tx"
+
+msgid "Peak Rx"
+msgstr "Пик Rx"
+
+msgid "Peak Tx"
+msgstr "Пик Tx"
+
+# API translations
+msgid "Failed to load"
+msgstr "Ошибка загрузки"
+
+msgid "Invalid response format"
+msgstr "Некорректный формат ответа"
+
+msgid "Failed to load clients list"
+msgstr "Не удалось загрузить список клиентов"
+
+msgid "No clients connected yet"
+msgstr "Клиенты пока не подключались"
+
+msgid "Unknown"
+msgstr "Неизвестный"
+
+msgid "Client details"
+msgstr "Детали клиента"
+
+msgid "session"
+msgstr "сессия"
+
+msgid "sessions"
+msgstr "сессий"
+
+msgid "Traffic"
+msgstr "Трафик"
+
+msgid "Last seen"
+msgstr "Последний раз"
+
+msgid "Last seen:"
+msgstr "Последний раз:"
+
+msgid "Current session"
+msgstr "Текущая сессия"
+
+msgid "Connected since"
+msgstr "Подключен с"
+
+msgid "Connected since:"
+msgstr "Подключен с:"
+
+msgid "Time online:"
+msgstr "Время онлайн:"
+
+msgid "Client IP:"
+msgstr "IP клиента:"
+
+msgid "Received"
+msgstr "Получено"
+
+msgid "Received:"
+msgstr "Получено:"
+
+msgid "Sent"
+msgstr "Отправлено"
+
+msgid "Sent:"
+msgstr "Отправлено:"
+
+msgid "Total connection time"
+msgstr "Общее время подключения"
+
+msgid "Data received"
+msgstr "Данных получено"
+
+msgid "Data sent"
+msgstr "Данных отправлено"
+
+msgid "Last activity"
+msgstr "Последняя активность"
+
+msgid "Running"
+msgstr "Работает"
+
+msgid "Stopped"
+msgstr "Остановлен"
+
+msgid "No location data available"
+msgstr "Нет данных о местоположении"
+
+msgid "Active connections"
+msgstr "Активные подключения"
+
+msgid "Historical connections"
+msgstr "История подключений"
+
+msgid "Failed to load connection history"
+msgstr "Не удалось загрузить историю подключений"
+
+msgid "No connection history"
+msgstr "Нет истории подключений"
+
+msgid "Filter by name..."
+msgstr "Фильтр по имени..."
+
+msgid "Speed (MB/s)"
+msgstr "Скорость (МБ/с)"
+
+msgid "Receive"
+msgstr "Прием"
+
+msgid "Transmit"
+msgstr "Отправка"
+
+msgid "No data available"
+msgstr "Нет данных"
+
+msgid "Loading chart data..."
+msgstr "Загрузка данных графика..."
+
+msgid "Failed to load chart data"
+msgstr "Не удалось загрузить данные графика"
+
+msgid "30 minutes"
+msgstr "30 минут"
+
+msgid "Aggregated"
+msgstr "Агрегированно"
+
+msgid "Per client"
+msgstr "По клиентам"
+
+# Error messages
+msgid "Failed to fetch clients"
+msgstr "Не удалось получить список клиентов"
+
+msgid "Failed to read history log"
+msgstr "Не удалось прочитать журнал истории"
+
+msgid "Failed to build clients summary"
+msgstr "Не удалось создать сводку клиентов"
+
+msgid "Invalid period parameter"
+msgstr "Неверный параметр периода"
+
+#, python-format
+msgid "Period must be one of %(periods)s"
+msgstr "Период должен быть одним из %(periods)s"
+
+msgid "Failed to fetch traffic metrics"
+msgstr "Не удалось получить метрики трафика"

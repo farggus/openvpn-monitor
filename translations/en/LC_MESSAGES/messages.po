@@ -1,0 +1,356 @@
+# English translations for OpenVPN Monitor.
+# Copyright (C) 2025
+# This file is distributed under the same license as the OpenVPN Monitor project.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-01 00:00+0000\n"
+"PO-Revision-Date: 2025-01-01 00:00+0000\n"
+"Last-Translator: \n"
+"Language: en\n"
+"Language-Team: English\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Manual\n"
+
+# Application title
+msgid "OpenVPN Management panel"
+msgstr "OpenVPN Management panel"
+
+# Navigation buttons
+msgid "Map View"
+msgstr "Map View"
+
+msgid "Charts"
+msgstr "Charts"
+
+msgid "Connection history"
+msgstr "Connection history"
+
+msgid "Clients"
+msgstr "Clients"
+
+msgid "Switch Theme"
+msgstr "Switch Theme"
+
+# Server table headers
+msgid "OpenVPN - Server"
+msgstr "OpenVPN - Server"
+
+msgid "VPN Mode"
+msgstr "VPN Mode"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Pingable"
+msgstr "Pingable"
+
+msgid "Total Bytes In"
+msgstr "Total Bytes In"
+
+msgid "Total Bytes Out"
+msgstr "Total Bytes Out"
+
+msgid "Up Since"
+msgstr "Up Since"
+
+msgid "Local IP"
+msgstr "Local IP"
+
+msgid "Public IP"
+msgstr "Public IP"
+
+# Clients table
+msgid "OpenVPN - Clients"
+msgstr "OpenVPN - Clients"
+
+msgid "Client"
+msgstr "Client"
+
+msgid "VPN IPv4"
+msgstr "VPN IPv4"
+
+msgid "VPN IPv6"
+msgstr "VPN IPv6"
+
+msgid "Client IP"
+msgstr "Client IP"
+
+msgid "Port"
+msgstr "Port"
+
+msgid "Session Opened"
+msgstr "Session Opened"
+
+msgid "Time Online"
+msgstr "Time Online"
+
+msgid "Speed (Rx / Tx)"
+msgstr "Speed (Rx / Tx)"
+
+msgid "Bytes Received"
+msgstr "Bytes Received"
+
+msgid "Bytes Sent"
+msgstr "Bytes Sent"
+
+msgid "Total"
+msgstr "Total"
+
+# Common messages
+msgid "Loading..."
+msgstr "Loading..."
+
+msgid "Close"
+msgstr "Close"
+
+msgid "Unknown"
+msgstr "Unknown"
+
+msgid "Error"
+msgstr "Error"
+
+msgid "Yes"
+msgstr "Yes"
+
+msgid "No"
+msgstr "No"
+
+# Modal titles
+msgid "Client Locations"
+msgstr "Client Locations"
+
+msgid "Traffic Charts"
+msgstr "Traffic Charts"
+
+msgid "History — View on map"
+msgstr "History — View on map"
+
+# History modal
+msgid "Date"
+msgstr "Date"
+
+msgid "City"
+msgstr "City"
+
+msgid "Clear filter"
+msgstr "Clear filter"
+
+msgid "View on map"
+msgstr "View on map"
+
+msgid "Session Closed"
+msgstr "Session Closed"
+
+msgid "Duration"
+msgstr "Duration"
+
+msgid "Rx (MB)"
+msgstr "Rx (MB)"
+
+msgid "Tx (MB)"
+msgstr "Tx (MB)"
+
+# Charts modal
+msgid "Display mode"
+msgstr "Display mode"
+
+msgid "All clients"
+msgstr "All clients"
+
+msgid "Individual"
+msgstr "Individual"
+
+msgid "Client:"
+msgstr "Client:"
+
+msgid "Select client"
+msgstr "Select client"
+
+msgid "Period:"
+msgstr "Period:"
+
+msgid "Display period"
+msgstr "Display period"
+
+msgid "30 min"
+msgstr "30 min"
+
+msgid "1 hour"
+msgstr "1 hour"
+
+msgid "3 hours"
+msgstr "3 hours"
+
+msgid "6 hours"
+msgstr "6 hours"
+
+msgid "12 hours"
+msgstr "12 hours"
+
+msgid "Hide zero Rx/Tx values"
+msgstr "Hide zero Rx/Tx values"
+
+msgid "Show detailed view"
+msgstr "Show detailed view"
+
+msgid "Current Rx"
+msgstr "Current Rx"
+
+msgid "Current Tx"
+msgstr "Current Tx"
+
+msgid "Peak Rx"
+msgstr "Peak Rx"
+
+msgid "Peak Tx"
+msgstr "Peak Tx"
+
+# API translations
+msgid "Failed to load"
+msgstr "Failed to load"
+
+msgid "Invalid response format"
+msgstr "Invalid response format"
+
+msgid "Failed to load clients list"
+msgstr "Failed to load clients list"
+
+msgid "No clients connected yet"
+msgstr "No clients connected yet"
+
+msgid "Unknown"
+msgstr "Unknown"
+
+msgid "Client details"
+msgstr "Client details"
+
+msgid "session"
+msgstr "session"
+
+msgid "sessions"
+msgstr "sessions"
+
+msgid "Traffic"
+msgstr "Traffic"
+
+msgid "Last seen"
+msgstr "Last seen"
+
+msgid "Last seen:"
+msgstr "Last seen:"
+
+msgid "Current session"
+msgstr "Current session"
+
+msgid "Connected since"
+msgstr "Connected since"
+
+msgid "Connected since:"
+msgstr "Connected since:"
+
+msgid "Time online:"
+msgstr "Time online:"
+
+msgid "Client IP:"
+msgstr "Client IP:"
+
+msgid "Received"
+msgstr "Received"
+
+msgid "Received:"
+msgstr "Received:"
+
+msgid "Sent"
+msgstr "Sent"
+
+msgid "Sent:"
+msgstr "Sent:"
+
+msgid "Total connection time"
+msgstr "Total connection time"
+
+msgid "Data received"
+msgstr "Data received"
+
+msgid "Data sent"
+msgstr "Data sent"
+
+msgid "Last activity"
+msgstr "Last activity"
+
+msgid "Running"
+msgstr "Running"
+
+msgid "Stopped"
+msgstr "Stopped"
+
+msgid "No location data available"
+msgstr "No location data available"
+
+msgid "Active connections"
+msgstr "Active connections"
+
+msgid "Historical connections"
+msgstr "Historical connections"
+
+msgid "Failed to load connection history"
+msgstr "Failed to load connection history"
+
+msgid "No connection history"
+msgstr "No connection history"
+
+msgid "Filter by name..."
+msgstr "Filter by name..."
+
+msgid "Speed (MB/s)"
+msgstr "Speed (MB/s)"
+
+msgid "Receive"
+msgstr "Receive"
+
+msgid "Transmit"
+msgstr "Transmit"
+
+msgid "No data available"
+msgstr "No data available"
+
+msgid "Loading chart data..."
+msgstr "Loading chart data..."
+
+msgid "Failed to load chart data"
+msgstr "Failed to load chart data"
+
+msgid "30 minutes"
+msgstr "30 minutes"
+
+msgid "Aggregated"
+msgstr "Aggregated"
+
+msgid "Per client"
+msgstr "Per client"
+
+# Error messages
+msgid "Failed to fetch clients"
+msgstr "Failed to fetch clients"
+
+msgid "Failed to read history log"
+msgstr "Failed to read history log"
+
+msgid "Failed to build clients summary"
+msgstr "Failed to build clients summary"
+
+msgid "Invalid period parameter"
+msgstr "Invalid period parameter"
+
+#, python-format
+msgid "Period must be one of %(periods)s"
+msgstr "Period must be one of %(periods)s"
+
+msgid "Failed to fetch traffic metrics"
+msgstr "Failed to fetch traffic metrics"

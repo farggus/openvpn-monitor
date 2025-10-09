@@ -9,6 +9,7 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
 - **Traffic Analytics** - Real-time traffic charts with historical data (up to 24 hours)
 - **Geolocation Mapping** - Automatic IP geolocation with interactive maps
 - **Multiple Display Modes** - Aggregated and individual traffic views with dynamic Y-axis scaling
+- **Multi-language Support** - English and Russian interface with easy language switching
 - **RESTful API** - Full API access for integration with external systems
 - **Docker Support** - Easy deployment with Docker Compose and Traefik integration
 - **Timezone Support** - Configurable timezone for accurate session duration calculations
@@ -24,6 +25,7 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
 | **Status Parser** | Parses OpenVPN's `status.log` (version 3 format), maintains session data, normalizes IPv4/IPv6 addresses, uses file locking (`fcntl`) to prevent race conditions, and atomically updates files | `app/parser.py` |
 | **Traffic Collector** | Collects and stores traffic metrics every 10 seconds, maintains 24-hour history, calculates speeds (MB/s) | `app/traffic_collector.py` |
 | **Background Logger** | Runs parser and traffic collector in a loop every 10 seconds to keep data fresh | `logger.py` |
+| **Internationalization** | Flask-Babel for Python/Jinja2 templates, custom API endpoint for JavaScript translations | `app/routes.py` (`/api/translations`), `translations/`, `app/static/js/i18n.js` |
 | **Server Status Script** | Shell script that captures OpenVPN server operational status (PID, local/public IP, ping check); should run via cron every minute | `scripts/server_status.sh` |
 | **Containerization** | Python 3.12 Docker image with supervisord managing both Flask web server and background logger | `Dockerfile`, `docker-compose.yml`, `supervisord.conf` |
 
@@ -242,6 +244,7 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
 | GET | `/api/server-status` | Server metadata: mode, uptime, client count, traffic |
 | GET | `/api/clients/summary` | Client summary (session count, traffic, last login) |
 | GET | `/api/traffic-metrics` | Traffic metrics with period filter (30m, 1h, 3h, 6h, 12h) |
+| GET | `/api/translations` | UI translations for current locale (used by JavaScript frontend) |
 
 ### API Examples
 
@@ -391,6 +394,75 @@ speed_mb_per_sec = (current_bytes - previous_bytes) / (1024 * 1024) / time_delta
 - Precision: 6 decimal places
 - Unit: MB/s
 
+## Internationalization (i18n)
+
+The application supports multiple languages with seamless switching between them.
+
+### Supported Languages
+
+- **English (en)** - Default language
+- **Russian (ru)** - Full translation
+
+### Language Selection
+
+Users can switch languages using the dropdown selector in the top-right corner of the interface. The language preference is saved in a browser cookie and persists across sessions.
+
+**Language Detection Priority:**
+1. URL parameter: `?lang=en` or `?lang=ru`
+2. Browser cookie: `lang`
+3. HTTP Accept-Language header
+4. Default: English
+
+**Example:**
+```
+http://localhost:5000/?lang=ru  # Force Russian
+http://localhost:5000/?lang=en  # Force English
+```
+
+### Architecture
+
+**Backend (Python/Jinja2):**
+- Uses **Flask-Babel** for server-side translations
+- All user-facing strings wrapped in `gettext()` or `_()`
+- Templates use `{{ _('text') }}` syntax
+- Compiled `.mo` files loaded on application start
+
+**Frontend (JavaScript):**
+- Custom i18n module (`app/static/js/i18n.js`)
+- Translations fetched from `/api/translations` endpoint
+- Function `t('key')` for translating strings in JavaScript
+
+**Translation Files:**
+```
+translations/
+├── en/LC_MESSAGES/messages.po  # English translations (source)
+├── ru/LC_MESSAGES/messages.po  # Russian translations
+└── messages.pot                # Template file
+```
+
+### Adding New Translations
+
+For developers who want to add new languages or update existing ones:
+
+1. **For new language (e.g., German):**
+   ```bash
+   mkdir -p translations/de/LC_MESSAGES
+   cp translations/en/LC_MESSAGES/messages.po translations/de/LC_MESSAGES/
+   # Edit messages.po and translate msgstr values
+   ```
+
+2. **Update code to include new language:**
+   - Add to `get_locale()` in `app/routes.py`
+   - Add option to language selector in `app/templates/index.html`
+
+3. **Compile and rebuild:**
+   ```bash
+   docker compose build
+   docker compose up -d
+   ```
+
+For detailed localization documentation, see [I18N.md](I18N.md).
+
 ## Development
 
 ### Docker Commands
@@ -430,6 +502,38 @@ flake8
 
 Static analyzers configured via `pyproject.toml`.
 
+### Working with Translations
+
+When developing new features that include user-facing text:
+
+1. **Wrap strings in Python:**
+   ```python
+   from flask_babel import gettext as _
+   message = _("Your translatable text")
+   ```
+
+2. **Wrap strings in Jinja2 templates:**
+   ```html
+   <h1>{{ _('Page Title') }}</h1>
+   ```
+
+3. **Add JavaScript translations:**
+   - Add key-value pair to `/api/translations` endpoint in `app/routes.py`
+   - Use `t('your_key')` in JavaScript code
+
+4. **Update translation files:**
+   - Edit `translations/en/LC_MESSAGES/messages.po`
+   - Edit `translations/ru/LC_MESSAGES/messages.po`
+
+5. **Compile and test:**
+   ```bash
+   python compile_translations.py
+   docker compose build
+   docker compose up -d
+   ```
+
+See [I18N.md](I18N.md) for complete localization documentation.
+
 ## Configuration
 
 ### Adjusting Traffic Metrics Retention
@@ -459,6 +563,8 @@ time.sleep(5)  # 5 seconds
 | **File lock timeouts** | Check for stale `.lock` files in data directory |
 | **Empty charts on open** | Wait 10-20 seconds for first data points to be collected. Verify background logger is running: `docker compose logs -f` |
 | **No historical traffic data** | Check `data/traffic_metrics.json` exists and has correct permissions. Restart container if needed |
+| **Translations not working** | Ensure `flask-babel` is installed, check browser console for `/api/translations` errors, verify `.mo` files exist in `translations/` |
+| **Language not changing** | Clear browser cookies, check `lang` cookie value, verify language selector in HTML |
 
 ## Operations and Updates
 

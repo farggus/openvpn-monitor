@@ -181,14 +181,14 @@ function fetchClientsSummary() {
   fetch('/api/clients/summary')
     .then(response => {
       if (!response.ok) {
-        throw new Error('Ошибка загрузки');
+        throw new Error(t('error_load'));
       }
       return response.json();
     })
     .then(data => {
       // Валидация ответа
       if (!data || !Array.isArray(data.clients)) {
-        throw new Error('Некорректный формат ответа');
+        throw new Error(t('error_invalid_response'));
       }
 
       // Сохранение данных в глобальной переменной
@@ -198,8 +198,8 @@ function fetchClientsSummary() {
       renderClientsList(clientsSummary);
     })
     .catch(error => {
-      console.error('Ошибка загрузки сводки клиентов:', error);
-      showClientsStatus('Не удалось загрузить список клиентов', { tone: 'danger' });
+      console.error('Error loading clients summary:', error);
+      showClientsStatus(t('error_load_clients_list'), { tone: 'danger' });
     });
 }
 
@@ -214,7 +214,7 @@ function renderClientsList(clients) {
 
   // Проверка на пустой список
   if (!Array.isArray(clients) || clients.length === 0) {
-    showClientsStatus('Клиенты пока не подключались');
+    showClientsStatus(t('no_clients_connected'));
     return;
   }
 
@@ -232,7 +232,7 @@ function renderClientsList(clients) {
 
   // Формирование HTML для каждого клиента с accordion-структурой
   const itemsHtml = sortedClients.map((client, index) => {
-    const name = client.name || 'Неизвестный';
+    const name = client.name || t('unknown_client');
     const statusClass = client.is_online ? 'status-dot-online' : 'status-dot-offline';
 
     // Уникальный ID для collapse-панели
@@ -243,23 +243,23 @@ function renderClientsList(clients) {
 
     // Количество сессий
     if (typeof client.sessions === 'number' && client.sessions > 0) {
-      const sessionWord = client.sessions === 1 ? 'сессия' : 'сессий';
+      const sessionWord = client.sessions === 1 ? t('session') : t('sessions');
       subtitleParts.push(`${client.sessions} ${sessionWord}`);
     }
 
     // Общее время подключения
     if (client.total_duration_human) {
-      subtitleParts.push(`Всего: ${escapeHtml(client.total_duration_human)}`);
+      subtitleParts.push(`${t('total_time')}: ${escapeHtml(client.total_duration_human)}`);
     }
 
     // Трафик
     if (typeof client.total_rx_gb === 'number' && typeof client.total_tx_gb === 'number') {
-      subtitleParts.push(`Трафик: ${formatGb(client.total_rx_gb)} / ${formatGb(client.total_tx_gb)}`);
+      subtitleParts.push(`${t('traffic')}: ${formatGb(client.total_rx_gb)} / ${formatGb(client.total_tx_gb)}`);
     }
 
     // Последняя активность
     if (client.last_seen) {
-      subtitleParts.push(`Последний раз: ${escapeHtml(client.last_seen)}`);
+      subtitleParts.push(`${t('last_seen_time')} ${escapeHtml(client.last_seen)}`);
     }
 
     const subtitle = subtitleParts.join(' · ');
@@ -308,7 +308,7 @@ function generateClientDetailsHTML(client) {
   // === ОСНОВНАЯ ИНФОРМАЦИЯ ===
   const sessions = typeof client.sessions === 'number' ? client.sessions : 0;
   const totalTime = client.total_duration_human ? escapeHtml(client.total_duration_human) : '0:00:00';
-  const lastSeen = client.last_seen ? escapeHtml(client.last_seen) : 'Неизвестно';
+  const lastSeen = client.last_seen ? escapeHtml(client.last_seen) : t('unknown');
   const totalRx = formatGb(client.total_rx_gb);
   const totalTx = formatGb(client.total_tx_gb);
 
@@ -320,17 +320,17 @@ function generateClientDetailsHTML(client) {
     const infoItems = [];
 
     // Время подключения
-    const connectedSince = session.connected_since ? escapeHtml(session.connected_since) : 'Неизвестно';
-    const timeOnline = session.time_online ? escapeHtml(session.time_online) : 'Неизвестно';
-    infoItems.push(`<li><strong>Подключен с:</strong> ${connectedSince}</li>`);
-    infoItems.push(`<li><strong>Время онлайн:</strong> ${timeOnline}</li>`);
+    const connectedSince = session.connected_since ? escapeHtml(session.connected_since) : t('unknown');
+    const timeOnline = session.time_online ? escapeHtml(session.time_online) : t('unknown');
+    infoItems.push(`<li><strong>${t('connected_since_label')}</strong> ${connectedSince}</li>`);
+    infoItems.push(`<li><strong>${t('time_online_label')}</strong> ${timeOnline}</li>`);
 
     // IP адрес клиента
     if (session.ip) {
       const withPort = session.port ?
         `${escapeHtml(session.ip)}:${escapeHtml(session.port)}` :
         escapeHtml(session.ip);
-      infoItems.push(`<li><strong>IP клиента:</strong> ${withPort}</li>`);
+      infoItems.push(`<li><strong>${t('client_ip_label')}</strong> ${withPort}</li>`);
     }
 
     // VPN IP адреса
@@ -345,12 +345,12 @@ function generateClientDetailsHTML(client) {
     }
 
     // Трафик текущей сессии
-    infoItems.push(`<li><strong>Получено:</strong> ${formatGb(session.bytes_received_gb)}</li>`);
-    infoItems.push(`<li><strong>Отправлено:</strong> ${formatGb(session.bytes_sent_gb)}</li>`);
+    infoItems.push(`<li><strong>${t('received_label')}</strong> ${formatGb(session.bytes_received_gb)}</li>`);
+    infoItems.push(`<li><strong>${t('sent_label')}</strong> ${formatGb(session.bytes_sent_gb)}</li>`);
 
     currentSessionHtml = `
       <div class="mt-3">
-        <h6>Текущая сессия</h6>
+        <h6>${t('current_session')}</h6>
         <ul class="list-unstyled mb-0">
           ${infoItems.join('')}
         </ul>
@@ -361,19 +361,19 @@ function generateClientDetailsHTML(client) {
   // === ФОРМИРОВАНИЕ HTML ===
   return `
     <dl class="row mb-0">
-      <dt class="col-sm-5">Сессий</dt>
+      <dt class="col-sm-5">${t('sessions')}</dt>
       <dd class="col-sm-7">${sessions}</dd>
 
-      <dt class="col-sm-5">Общее время подключения</dt>
+      <dt class="col-sm-5">${t('total_connection_time')}</dt>
       <dd class="col-sm-7">${totalTime}</dd>
 
-      <dt class="col-sm-5">Данных получено</dt>
+      <dt class="col-sm-5">${t('data_received')}</dt>
       <dd class="col-sm-7">${totalRx}</dd>
 
-      <dt class="col-sm-5">Данных отправлено</dt>
+      <dt class="col-sm-5">${t('data_sent')}</dt>
       <dd class="col-sm-7">${totalTx}</dd>
 
-      <dt class="col-sm-5">Последняя активность</dt>
+      <dt class="col-sm-5">${t('last_activity')}</dt>
       <dd class="col-sm-7">${lastSeen}</dd>
     </dl>
     ${currentSessionHtml}
@@ -394,7 +394,7 @@ function renderClientDetails(client) {
   if (!titleEl || !bodyEl) return;
 
   // === ЗАГОЛОВОК МОДАЛЬНОГО ОКНА ===
-  const name = client.name || 'Детали клиента';
+  const name = client.name || t('client_details');
   titleEl.textContent = name;
 
   const statusClass = client.is_online ? 'status-dot-online' : 'status-dot-offline';

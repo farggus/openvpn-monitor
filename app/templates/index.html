@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="{{ get_locale() }}">
 <head>
   <meta charset="utf-8"/>
-  <title>OpenVPN Management panel</title>
+  <title>{{ _('OpenVPN Management panel') }}</title>
   <meta content="width=device-width, initial-scale=1" name="viewport"/>
 
   <!-- Внешние библиотеки CSS -->
@@ -15,71 +15,94 @@
 
 <body class="bg-light">
 
-<!-- Панель управления -->
-<div class="container mt-5">
-  <div></div>
-  <button class="btn btn-outline-primary me-2" id="mapBtn">Map View</button>
-  <button class="btn btn-outline-primary me-2" id="chartsBtn">Charts</button>
-  <button class="btn btn-outline-primary me-1" id="historyBtn">Connection history</button>
-  <button class="btn btn-outline-primary me-2" id="clientsBtn">Clients</button>
-  <button class="btn btn-outline-secondary" id="themeToggle">Switch Theme</button>
+<!-- Header -->
+<div class="container mt-4">
+  <div class="text-center mb-4">
+    <h1 class="display-6 fw-bold text-primary">{{ _('OpenVPN Management panel') }}</h1>
+    <p class="text-muted">Real-time server and client monitoring dashboard</p>
+  </div>
 </div>
 
-<!-- Основное содержимое -->
-<div class="container mt-5">
+<!-- Control Panel -->
+<div class="container mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div class="d-flex flex-wrap gap-2">
+      <button class="btn btn-outline-primary" id="mapBtn">{{ _('Map View') }}</button>
+      <button class="btn btn-outline-primary" id="chartsBtn">{{ _('Charts') }}</button>
+      <button class="btn btn-outline-primary" id="historyBtn">{{ _('Connection history') }}</button>
+      <button class="btn btn-outline-primary" id="clientsBtn">{{ _('Clients') }}</button>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-secondary" id="themeToggle">{{ _('Switch Theme') }}</button>
+      <!-- Language switcher - commented out for future feature
+      <select class="form-select" id="languageSelector" style="width: auto;">
+        <option value="en" {% if get_locale() == 'en' %}selected{% endif %}>English</option>
+        <option value="ru" {% if get_locale() == 'ru' %}selected{% endif %}>Русский</option>
+      </select>
+      -->
+    </div>
+  </div>
+</div>
 
-  <!-- Таблица статуса сервера -->
-  <h2>OpenVPN - Serv</h2>
-  <div class="table-responsive">
-    <table class="table-bordered text-nowrap table table-sm" id="server-status-table">
-      <thead class="table-light">
-        <tr>
-          <th>VPN Mode</th>
-          <th>Status</th>
-          <th>Pingable</th>
-          <th>Clients</th>
-          <th>Total Bytes In</th>
-          <th>Total Bytes Out</th>
-          <th>Up Since</th>
-          <th>Local IP</th>
-          <th>Public IP</th>
-        </tr>
-      </thead>
-      <tbody id="server-status-body">
-        <tr>
-          <td colspan="9">Loading...</td>
-        </tr>
-      </tbody>
-    </table>
+<!-- Main Content -->
+<div class="container">
+
+  <!-- Server Status Section -->
+  <div class="mb-5">
+    <h2 class="mb-3 fw-bold">{{ _('OpenVPN - Server') }}</h2>
+    <div class="table-responsive shadow-sm">
+      <table class="table table-bordered table-hover table-sm mb-0" id="server-status-table">
+        <thead class="table-light">
+          <tr>
+            <th>{{ _('VPN Mode') }}</th>
+            <th>{{ _('Status') }}</th>
+            <th>{{ _('Pingable') }}</th>
+            <th>{{ _('Clients') }}</th>
+            <th>{{ _('Total Bytes In') }}</th>
+            <th>{{ _('Total Bytes Out') }}</th>
+            <th>{{ _('Up Since') }}</th>
+            <th>{{ _('Local IP') }}</th>
+            <th>{{ _('Public IP') }}</th>
+          </tr>
+        </thead>
+        <tbody id="server-status-body">
+          <tr>
+            <td colspan="9" class="text-center">{{ _('Loading...') }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- Таблица клиентов -->
-  <h2 class="mb-4">OpenVPN - Clients</h2>
-  <div class="table-responsive">
-    <table class="table-bordered table table-hover text-nowrap table-sm">
-      <thead class="table-light">
-        <tr>
-          <th>Client</th>
-          <th>VPN IPV4</th>
-          <th>VPN IPV6</th>
-          <th>Client IP</th>
-          <th>Port</th>
-          <th>Session Opened</th>
-          <th>Time Online</th>
-          <th>Speed (Rx / Tx)</th>
-          <th>Bytes Received</th>
-          <th>Bytes Sent</th>
-        </tr>
-      </thead>
-      <tbody id="vpn-clients-body"></tbody>
-      <tfoot class="table-light">
-        <tr>
-          <th colspan="8">Total</th>
-          <th id="total-received">0 MB</th>
-          <th id="total-sent">0 MB</th>
-        </tr>
-      </tfoot>
-    </table>
+  <!-- Clients Table Section -->
+  <div class="mb-5">
+    <h2 class="mb-3 fw-bold">{{ _('OpenVPN - Clients') }}</h2>
+    <div class="table-responsive shadow-sm">
+      <table class="table table-bordered table-hover table-sm mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>{{ _('Client') }}</th>
+            <th>{{ _('VPN IPv4') }}</th>
+            <th>{{ _('VPN IPv6') }}</th>
+            <th>{{ _('Client IP') }}</th>
+            <th>{{ _('Port') }}</th>
+            <th>{{ _('Session Opened') }}</th>
+            <th>{{ _('Time Online') }}</th>
+            <th>{{ _('Speed (Rx / Tx)') }}</th>
+            <th>{{ _('Bytes Received') }}</th>
+            <th>{{ _('Bytes Sent') }}</th>
+          </tr>
+        </thead>
+        <tbody id="vpn-clients-body"></tbody>
+        <tfoot class="table-light">
+          <tr>
+            <th colspan="8">{{ _('Total') }}</th>
+            <th id="total-received">0 MB</th>
+            <th id="total-sent">0 MB</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   </div>
 
 </div>
@@ -99,6 +122,9 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <!-- Подключение модулей приложения в правильном порядке -->
+<!-- 0. i18n (must be first to load translations) -->
+<script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+
 <!-- 1. Конфигурация и глобальные переменные -->
 <script src="{{ url_for('static', filename='js/config.js') }}"></script>
 
@@ -115,6 +141,18 @@
 
 <!-- 4. Инициализация приложения (должна быть последней) -->
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<!-- Language selector handler - commented out for future feature
+<script>
+document.getElementById('languageSelector').addEventListener('change', function(e) {
+  const lang = e.target.value;
+  // Set cookie with language preference
+  document.cookie = `lang=${lang}; path=/; max-age=31536000`; // 1 year
+  // Reload page to apply new language
+  window.location.reload();
+});
+</script>
+-->
 
 </body>
 </html>
