@@ -39,3 +39,6 @@ instance/
 
 # Application runtime data
 data/
+
+# Files
+CLAUDE.md
