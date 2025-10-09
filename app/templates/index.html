@@ -18,7 +18,7 @@
 <!-- Header -->
 <div class="container mt-4">
   <div class="text-center mb-4">
-    <h1 class="display-6 fw-bold text-primary">{{ _('OpenVPN Management panel') }}</h1>
+    <h1 class="display-6 fw-bold text-dark">{{ _('OpenVPN Management panel') }}</h1>
     <p class="text-muted">Real-time server and client monitoring dashboard</p>
   </div>
 </div>
@@ -27,10 +27,10 @@
 <div class="container mb-4">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
     <div class="d-flex flex-wrap gap-2">
-      <button class="btn btn-outline-primary" id="mapBtn">{{ _('Map View') }}</button>
-      <button class="btn btn-outline-primary" id="chartsBtn">{{ _('Charts') }}</button>
-      <button class="btn btn-outline-primary" id="historyBtn">{{ _('Connection history') }}</button>
-      <button class="btn btn-outline-primary" id="clientsBtn">{{ _('Clients') }}</button>
+      <button class="btn btn-outline-dark" id="mapBtn">{{ _('Map View') }}</button>
+      <button class="btn btn-outline-dark" id="chartsBtn">{{ _('Charts') }}</button>
+      <button class="btn btn-outline-dark" id="historyBtn">{{ _('Connection history') }}</button>
+      <button class="btn btn-outline-dark" id="clientsBtn">{{ _('Clients') }}</button>
     </div>
     <div class="d-flex gap-2">
       <button class="btn btn-outline-secondary" id="themeToggle">{{ _('Switch Theme') }}</button>
@@ -121,6 +121,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
+<!-- View Counter -->
+<div id="view-counter" style="position: fixed; bottom: 20px; right: 20px; font-size: 18px; font-weight: bold; color: #6c757d; z-index: 1000;"></div>
+
 <!-- Application module loading in correct order -->
 <!-- 0. i18n (must be first to load translations) -->
 <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
@@ -153,6 +156,22 @@ document.getElementById('languageSelector').addEventListener('change', function(
 });
 </script>
 -->
+
+<script>
+function updateViewCounter() {
+  fetch('/api/view-counter')
+    .then(response => response.json())
+    .then(data => {
+      if (data.count !== undefined) {
+        document.getElementById('view-counter').textContent = data.count;
+      }
+    })
+    .catch(error => console.error('Error fetching view counter:', error));
+}
+
+updateViewCounter();
+setInterval(updateViewCounter, 10000);
+</script>
 
 </body>
 </html>

@@ -20,8 +20,8 @@
 }
 
 /* Dark theme: headers and titles */
-[data-bs-theme="dark"] .text-primary {
-  color: #6ea8fe !important;
+[data-bs-theme="dark"] .text-dark {
+  color: #f8f9fa !important;
 }
 
 [data-bs-theme="dark"] h1,
@@ -116,7 +116,7 @@
  * Active (expanded) header button
  */
 #clientsList .list-group-item .btn-link:not(.collapsed) {
-  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 /**
@@ -191,7 +191,7 @@
  */
 .bg-dark #clientsList .list-group-item .btn-link:not(.collapsed),
 .modal-content.bg-dark #clientsList .list-group-item .btn-link:not(.collapsed) {
-  background-color: rgba(13, 110, 253, 0.2);
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 /**
@@ -288,7 +288,7 @@
  */
 #chartStats .fw-bold {
   font-size: 1.1rem;
-  color: #0d6efd;
+  color: #212529;
 }
 
 /**
@@ -300,15 +300,15 @@
 }
 
 [data-bs-theme="dark"] #chartStats .fw-bold {
-  color: #6ea8fe;
+  color: #f8f9fa;
 }
 
 /**
  * Chart mode toggle buttons
  */
-.btn-group .btn-check:checked + .btn-outline-primary {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
+.btn-group .btn-check:checked + .btn-outline-dark {
+  background-color: #212529;
+  border-color: #212529;
   color: #fff;
 }
 
@@ -320,8 +320,8 @@
 }
 
 #clientSelect:focus {
-  border-color: #86b7fe;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #6c757d;
+  box-shadow: 0 0 0 0.25rem rgba(33, 37, 41, 0.25);
 }
 
 /**

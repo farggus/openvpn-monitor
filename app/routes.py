@@ -13,6 +13,7 @@ from flask_babel import Babel, gettext
 from .config import ACTIVE_SESSIONS_PATH, HISTORY_LOG_PATH, SERVER_STATUS_PATH
 from .parser import load_active_sessions, parse_status_log
 from .traffic_collector import get_metrics_for_period
+from .view_counter import get_view_counter, increment_view_counter
 
 
 logger = logging.getLogger(__name__)
@@ -306,6 +307,7 @@ def _load_server_status() -> Dict[str, Any]:
 
 @app.route("/")
 def index():
+    increment_view_counter()
     return render_template("index.html")
 
 
@@ -437,6 +439,17 @@ def get_traffic_metrics():
     except Exception:  # pragma: no cover - defensive logging
         logger.exception("[traffic-metrics] Failed to fetch traffic metrics")
         return _json_error(gettext("Failed to fetch traffic metrics"))
+
+
+@app.route("/api/view-counter")
+def api_view_counter():
+    """Get the current view counter value."""
+    try:
+        count = get_view_counter()
+        return jsonify({"count": count})
+    except Exception:
+        logger.exception("[view-counter] Failed to fetch view counter")
+        return _json_error(gettext("Failed to fetch view counter"))
 
 
 @app.route("/api/translations")
