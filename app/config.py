@@ -56,7 +56,9 @@ ACTIVE_SESSIONS_PATH = _load_path(
     "OPENVPN_ACTIVE_SESSIONS", _default_data_path("active_sessions.json")
 )
 SERVER_STATUS_PATH = _load_path("OPENVPN_SERVER_STATUS", _default_data_path("server_status.json"))
-TRAFFIC_METRICS_PATH = _load_path("OPENVPN_TRAFFIC_METRICS", _default_data_path("traffic_metrics.json"))
+TRAFFIC_METRICS_PATH = _load_path(
+    "OPENVPN_TRAFFIC_METRICS", _default_data_path("traffic_metrics.json")
+)
 VIEW_COUNTER_PATH = _load_path("OPENVPN_VIEW_COUNTER", _default_data_path("view_counter.json"))
 
 _ensure_data_files(

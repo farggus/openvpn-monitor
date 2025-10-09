@@ -162,40 +162,27 @@ def fetch_geolocation(ip: str):
     Returns dict with city, country, latitude, longitude or None values on error
     """
     if not ip:
-        return {
-            "city": None,
-            "country": None,
-            "latitude": None,
-            "longitude": None
-        }
+        return {"city": None, "country": None, "latitude": None, "longitude": None}
 
     try:
         # Using ip-api.com free service (no API key required)
         # Limit: 45 requests per minute from an IP address
-        response = requests.get(
-            f"http://ip-api.com/json/{ip}",
-            timeout=5
-        )
+        response = requests.get(f"http://ip-api.com/json/{ip}", timeout=5)
 
         if response.status_code == 200:
             data = response.json()
 
-            if data.get('status') == 'success':
+            if data.get("status") == "success":
                 return {
-                    "city": data.get('city'),
-                    "country": data.get('country'),
-                    "latitude": data.get('lat'),
-                    "longitude": data.get('lon')
+                    "city": data.get("city"),
+                    "country": data.get("country"),
+                    "latitude": data.get("lat"),
+                    "longitude": data.get("lon"),
                 }
     except Exception as e:
         logger.warning(f"Failed to fetch geolocation for {ip}: {e}")
 
-    return {
-        "city": None,
-        "country": None,
-        "latitude": None,
-        "longitude": None
-    }
+    return {"city": None, "country": None, "latitude": None, "longitude": None}
 
 
 def parse_status_log(filepath=STATUS_LOG_PATH):
@@ -349,12 +336,15 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                                             "vpn_ipv6": vpn_ipv6 or None,
                                             "port": old_port or None,
                                             "session_end": disconnect_time,
-                                            "location": old_session.get("location", {
-                                                "city": None,
-                                                "country": None,
-                                                "latitude": None,
-                                                "longitude": None
-                                            }),
+                                            "location": old_session.get(
+                                                "location",
+                                                {
+                                                    "city": None,
+                                                    "country": None,
+                                                    "latitude": None,
+                                                    "longitude": None,
+                                                },
+                                            ),
                                         }
                                     )
 
@@ -441,12 +431,15 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                             "vpn_ipv6": vpn_ipv6 or None,
                             "port": port or None,
                             "session_end": None,
-                            "location": session.get("location", {
-                                "city": None,
-                                "country": None,
-                                "latitude": None,
-                                "longitude": None
-                            }),
+                            "location": session.get(
+                                "location",
+                                {
+                                    "city": None,
+                                    "country": None,
+                                    "latitude": None,
+                                    "longitude": None,
+                                },
+                            ),
                         }
                     )
 
@@ -486,12 +479,15 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                             "vpn_ipv6": vpn_ipv6 or None,
                             "port": port or None,
                             "session_end": disconnect_time,
-                            "location": session.get("location", {
-                                "city": None,
-                                "country": None,
-                                "latitude": None,
-                                "longitude": None
-                            }),
+                            "location": session.get(
+                                "location",
+                                {
+                                    "city": None,
+                                    "country": None,
+                                    "latitude": None,
+                                    "longitude": None,
+                                },
+                            ),
                         }
                     )
 

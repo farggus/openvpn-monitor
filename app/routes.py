@@ -32,22 +32,22 @@ def get_locale():
     Priority: URL param 'lang' > cookie 'lang' > Accept-Language header > default (en)
     """
     # Check URL parameter
-    lang = request.args.get('lang')
-    if lang in ['en', 'ru']:
+    lang = request.args.get("lang")
+    if lang in ["en", "ru"]:
         return lang
 
     # Check cookie
-    lang = request.cookies.get('lang')
-    if lang in ['en', 'ru']:
+    lang = request.cookies.get("lang")
+    if lang in ["en", "ru"]:
         return lang
 
     # Check Accept-Language header
-    return request.accept_languages.best_match(['en', 'ru']) or 'en'
+    return request.accept_languages.best_match(["en", "ru"]) or "en"
 
 
 # Configure Flask-Babel (Flask-Babel 4.0+ uses locale_selector parameter)
-app.config['BABEL_DEFAULT_LOCALE'] = 'en'
-app.config['BABEL_TRANSLATION_DIRECTORIES'] = '../translations'
+app.config["BABEL_DEFAULT_LOCALE"] = "en"
+app.config["BABEL_TRANSLATION_DIRECTORIES"] = "../translations"
 babel = Babel(app, locale_selector=get_locale)
 
 
@@ -104,7 +104,11 @@ def _normalize_history_entry(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 
     timestamp = str(raw["timestamp"])
     session_end_raw = raw.get("session_end")
-    session_end = session_end_raw if isinstance(session_end_raw, str) and is_valid_datetime(session_end_raw) else None
+    session_end = (
+        session_end_raw
+        if isinstance(session_end_raw, str) and is_valid_datetime(session_end_raw)
+        else None
+    )
 
     vpn_ipv4 = (raw.get("vpn_ipv4") or "").strip()
     vpn_ipv6 = (raw.get("vpn_ipv6") or "").strip()
@@ -116,12 +120,7 @@ def _normalize_history_entry(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     # Extract location data
     location = raw.get("location")
     if not isinstance(location, dict):
-        location = {
-            "city": None,
-            "country": None,
-            "latitude": None,
-            "longitude": None
-        }
+        location = {"city": None, "country": None, "latitude": None, "longitude": None}
 
     entry: Dict[str, Any] = {
         "timestamp": timestamp,
@@ -254,8 +253,8 @@ def _aggregate_client_stats() -> List[Dict[str, Any]]:
             "vpn_ip": client.get("vpn_ip"),
             "vpn_ipv4": client.get("vpn_ipv4"),
             "vpn_ipv6": client.get("vpn_ipv6"),
-            "bytes_received_gb": round(bytes_received / (1024 ** 3), 3),
-            "bytes_sent_gb": round(bytes_sent / (1024 ** 3), 3),
+            "bytes_received_gb": round(bytes_received / (1024**3), 3),
+            "bytes_sent_gb": round(bytes_sent / (1024**3), 3),
         }
 
     clients_list: List[Dict[str, Any]] = []
@@ -272,7 +271,9 @@ def _aggregate_client_stats() -> List[Dict[str, Any]]:
 
         last_seen_dt = client.get("last_seen")
         client["last_seen"] = (
-            last_seen_dt.strftime("%Y-%m-%d %H:%M:%S") if isinstance(last_seen_dt, datetime) else None
+            last_seen_dt.strftime("%Y-%m-%d %H:%M:%S")
+            if isinstance(last_seen_dt, datetime)
+            else None
         )
 
         client.pop("total_rx_mb", None)
@@ -329,18 +330,15 @@ def api_clients():
             common_name = client.get("common_name")
             if common_name and common_name in active_sessions:
                 session = active_sessions[common_name]
-                client["location"] = session.get("location", {
-                    "city": None,
-                    "country": None,
-                    "latitude": None,
-                    "longitude": None
-                })
+                client["location"] = session.get(
+                    "location", {"city": None, "country": None, "latitude": None, "longitude": None}
+                )
             else:
                 client["location"] = {
                     "city": None,
                     "country": None,
                     "latitude": None,
-                    "longitude": None
+                    "longitude": None,
                 }
 
         return jsonify({"clients": clients})
@@ -421,20 +419,17 @@ def get_traffic_metrics():
             return _json_error(
                 gettext("Period must be one of %(periods)s", periods=allowed_periods),
                 400,
-                code="invalid_parameter"
+                code="invalid_parameter",
             )
 
         # Get metrics
         metrics = get_metrics_for_period(
-            client_name=client_name if client_name else None,
-            minutes=period_minutes
+            client_name=client_name if client_name else None, minutes=period_minutes
         )
 
-        return jsonify({
-            "metrics": metrics,
-            "period_minutes": period_minutes,
-            "client": client_name
-        })
+        return jsonify(
+            {"metrics": metrics, "period_minutes": period_minutes, "client": client_name}
+        )
 
     except Exception:  # pragma: no cover - defensive logging
         logger.exception("[traffic-metrics] Failed to fetch traffic metrics")
@@ -468,7 +463,6 @@ def get_translations():
         "yes": gettext("Yes"),
         "no": gettext("No"),
         "close": gettext("Close"),
-
         # Client-related
         "error_invalid_response": gettext("Invalid response format"),
         "error_load_clients_list": gettext("Failed to load clients list"),
@@ -496,21 +490,17 @@ def get_translations():
         "data_received": gettext("Data received"),
         "data_sent": gettext("Data sent"),
         "last_activity": gettext("Last activity"),
-
         # Server status
         "server_running": gettext("Running"),
         "server_stopped": gettext("Stopped"),
-
         # Map-related
         "no_location_data": gettext("No location data available"),
         "active_connections": gettext("Active connections"),
         "historical_connections": gettext("Historical connections"),
-
         # History-related
         "error_load_history": gettext("Failed to load connection history"),
         "no_history": gettext("No connection history"),
         "filter_by_name": gettext("Filter by name..."),
-
         # Charts-related
         "speed_mbps": gettext("Speed (MB/s)"),
         "receive": gettext("Receive"),
@@ -518,14 +508,12 @@ def get_translations():
         "no_data_available": gettext("No data available"),
         "loading_chart_data": gettext("Loading chart data..."),
         "error_loading_chart": gettext("Failed to load chart data"),
-
         # Time periods
         "period_30m": gettext("30 minutes"),
         "period_1h": gettext("1 hour"),
         "period_3h": gettext("3 hours"),
         "period_6h": gettext("6 hours"),
         "period_12h": gettext("12 hours"),
-
         # View modes
         "view_aggregated": gettext("Aggregated"),
         "view_per_client": gettext("Per client"),

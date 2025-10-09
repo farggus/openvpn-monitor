@@ -73,6 +73,13 @@ ROUTING TABLE
     fixed_uuid = uuid.UUID("12345678-1234-5678-1234-567812345678")
     monkeypatch.setattr(parser.uuid, "uuid4", lambda: fixed_uuid)
 
+    # Mock geolocation to avoid network calls
+    monkeypatch.setattr(
+        parser,
+        "fetch_geolocation",
+        lambda ip: {"city": None, "country": None, "latitude": None, "longitude": None},
+    )
+
     clients = parser.parse_status_log(str(status_path))
     assert len(clients) == 1
     client = clients[0]
@@ -110,6 +117,7 @@ ROUTING TABLE
             "vpn_ipv6": "2001:db8:abcd::100",
             "port": "443",
             "session_end": None,
+            "location": {"city": None, "country": None, "latitude": None, "longitude": None},
         }
     ]
 
@@ -163,6 +171,7 @@ ROUTING TABLE
             "vpn_ipv6": None,
             "port": "443",
             "session_end": "2024-01-01 13:00:00",
+            "location": {"city": None, "country": None, "latitude": None, "longitude": None},
         }
     ]
 
@@ -187,6 +196,13 @@ ROUTING TABLE
     fixed_uuid = uuid.UUID("87654321-4321-6789-4321-678943216789")
     monkeypatch.setattr(parser.uuid, "uuid4", lambda: fixed_uuid)
 
+    # Mock geolocation to avoid network calls
+    monkeypatch.setattr(
+        parser,
+        "fetch_geolocation",
+        lambda ip: {"city": None, "country": None, "latitude": None, "longitude": None},
+    )
+
     clients = parser.parse_status_log(str(status_path))
 
     assert clients[0]["common_name"] == "alice"
@@ -210,6 +226,7 @@ ROUTING TABLE
             "bytes_sent": 1024,
             "port": "51820",
             "session_id": str(fixed_uuid),
+            "location": {"city": None, "country": None, "latitude": None, "longitude": None},
         }
     }
 
@@ -242,6 +259,13 @@ ROUTING TABLE
         ]
     )
     monkeypatch.setattr(parser.uuid, "uuid4", lambda: next(generated_ids))
+
+    # Mock geolocation to avoid network calls
+    monkeypatch.setattr(
+        parser,
+        "fetch_geolocation",
+        lambda ip: {"city": None, "country": None, "latitude": None, "longitude": None},
+    )
 
     barrier = threading.Barrier(2)
 

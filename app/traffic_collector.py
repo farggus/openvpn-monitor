@@ -84,7 +84,9 @@ def save_metrics(metrics: Dict[str, List[Dict]], path: str = TRAFFIC_METRICS_PAT
     os.replace(tmp_file.name, target_path)
 
 
-def cleanup_old_metrics(metrics: Dict[str, List[Dict]], now: datetime.datetime) -> Dict[str, List[Dict]]:
+def cleanup_old_metrics(
+    metrics: Dict[str, List[Dict]], now: datetime.datetime
+) -> Dict[str, List[Dict]]:
     """
     Remove metric points older than 24 hours.
 
@@ -105,8 +107,7 @@ def cleanup_old_metrics(metrics: Dict[str, List[Dict]], now: datetime.datetime) 
 
         # Keep only recent points
         recent_points = [
-            p for p in points
-            if isinstance(p, dict) and p.get("timestamp", "") >= cutoff_str
+            p for p in points if isinstance(p, dict) and p.get("timestamp", "") >= cutoff_str
         ]
 
         if recent_points:
@@ -186,7 +187,9 @@ def collect_traffic_metrics(clients_data: List[Dict]):
                         prev_dt = datetime.datetime.fromisoformat(prev_timestamp)
                         time_delta = (now - prev_dt).total_seconds()
 
-                        speed_rx = calculate_speed(bytes_received, prev["bytes_received"], time_delta)
+                        speed_rx = calculate_speed(
+                            bytes_received, prev["bytes_received"], time_delta
+                        )
                         speed_tx = calculate_speed(bytes_sent, prev["bytes_sent"], time_delta)
                     except (ValueError, TypeError) as e:
                         logger.debug(f"Failed to calculate speed for {common_name}: {e}")
@@ -214,9 +217,7 @@ def collect_traffic_metrics(clients_data: List[Dict]):
 
 
 def get_metrics_for_period(
-    client_name: Optional[str] = None,
-    minutes: int = 30,
-    path: str = TRAFFIC_METRICS_PATH
+    client_name: Optional[str] = None, minutes: int = 30, path: str = TRAFFIC_METRICS_PATH
 ) -> Dict[str, List[Dict]]:
     """
     Get traffic metrics for a specific time period.
@@ -243,8 +244,7 @@ def get_metrics_for_period(
         if client_name in all_metrics:
             points = all_metrics[client_name]
             filtered_points = [
-                p for p in points
-                if isinstance(p, dict) and p.get("timestamp", "") >= cutoff_str
+                p for p in points if isinstance(p, dict) and p.get("timestamp", "") >= cutoff_str
             ]
             if filtered_points:
                 filtered[client_name] = filtered_points
@@ -252,8 +252,7 @@ def get_metrics_for_period(
         # Return all clients
         for name, points in all_metrics.items():
             filtered_points = [
-                p for p in points
-                if isinstance(p, dict) and p.get("timestamp", "") >= cutoff_str
+                p for p in points if isinstance(p, dict) and p.get("timestamp", "") >= cutoff_str
             ]
             if filtered_points:
                 filtered[name] = filtered_points

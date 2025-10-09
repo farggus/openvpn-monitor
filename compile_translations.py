@@ -3,9 +3,9 @@
 Compile .po files to .mo files for Flask-Babel
 This script uses the babel library to compile translations
 """
-import os
 import sys
 from pathlib import Path
+
 
 def compile_translations():
     """Compile all .po files to .mo files in the translations directory"""
@@ -36,10 +36,10 @@ def compile_translations():
         print(f"Compiling {po_file.relative_to(translations_dir)} -> {mo_file.name}")
 
         try:
-            with open(po_file, 'rb') as f:
+            with open(po_file, "rb") as f:
                 catalog = read_po(f)
 
-            with open(mo_file, 'wb') as f:
+            with open(mo_file, "wb") as f:
                 write_mo(f, catalog)
 
             print(f"  ✓ Successfully compiled to {mo_file.relative_to(translations_dir)}")
@@ -48,6 +48,7 @@ def compile_translations():
             sys.exit(1)
 
     print(f"\nSuccessfully compiled {len(po_files)} translation file(s)")
+
 
 if __name__ == "__main__":
     compile_translations()
