@@ -1,68 +1,68 @@
 /**
- * Управление темами - Переключение между светлой и темной темой
- * Описание: Обеспечивает переключение темы интерфейса и сохранение выбора пользователя
+ * Theme management - Toggle between light and dark theme
+ * Description: Provides interface theme switching and saves user preference
  */
 
 /**
- * Переключает тему интерфейса между светлой и темной
- * Изменяет классы Bootstrap для body, таблиц, модальных окон и форм
+ * Toggles interface theme between light and dark
+ * Changes Bootstrap classes for body, tables, modals, and forms
  *
  * @example
- * // При клике на кнопку "Switch Theme"
- * toggleTheme(); // Переключит тему с текущей на противоположную
+ * // On "Switch Theme" button click
+ * toggleTheme(); // Switches theme from current to opposite
  */
 function toggleTheme() {
-  // Определяем текущую тему по наличию класса bg-dark у body
+  // Determine current theme by presence of bg-dark class on body
   const isDark = document.body.classList.contains("bg-dark");
 
   /**
-   * Вспомогательная функция для переключения классов у группы элементов
-   * @param {string} selector - CSS селектор элементов
-   * @param {string} darkClass - Класс для темной темы
-   * @param {string} lightClass - Класс для светлой темы
+   * Helper function to toggle classes for a group of elements
+   * @param {string} selector - CSS selector for elements
+   * @param {string} darkClass - Class for dark theme
+   * @param {string} lightClass - Class for light theme
    */
   const toggle = (selector, darkClass, lightClass) => {
     document.querySelectorAll(selector).forEach(el => {
-      // Если сейчас темная - переключаем на светлую (!isDark = true)
-      // Если сейчас светлая - переключаем на темную (!isDark = false)
-      el.classList.toggle(darkClass, !isDark);  // Добавить темный класс если переходим в темную тему
-      el.classList.toggle(lightClass, isDark);   // Добавить светлый класс если переходим в светлую тему
+      // If currently dark - switch to light (!isDark = true)
+      // If currently light - switch to dark (!isDark = false)
+      el.classList.toggle(darkClass, !isDark);  // Add dark class if switching to dark theme
+      el.classList.toggle(lightClass, isDark);   // Add light class if switching to light theme
     });
   };
 
-  // === ОСНОВНОЙ ФОН ===
-  // Переключаем фон body
+  // === MAIN BACKGROUND ===
+  // Toggle body background
   document.body.classList.toggle("bg-dark", !isDark);
   document.body.classList.toggle("bg-light", isDark);
 
-  // === ТАБЛИЦЫ ===
-  // Переключаем цвет таблиц
+  // === TABLES ===
+  // Toggle table color
   toggle("table", "table-dark", "table-light");
-  // Переключаем заголовки таблиц
+  // Toggle table headers
   toggle("thead", "table-dark", "table-light");
-  // Переключаем подвалы таблиц
+  // Toggle table footers
   toggle("tfoot", "table-dark", "table-light");
 
-  // === МОДАЛЬНЫЕ ОКНА ===
-  // Переключаем фон модальных окон
+  // === MODALS ===
+  // Toggle modal background
   toggle(".modal-content, .modal-header, .modal-body", "bg-dark", "bg-light");
-  // Переключаем цвет текста в модальных окнах
+  // Toggle text color in modals
   toggle(".modal-content, .modal-header, .modal-body", "text-light", "text-dark");
 
-  // === ТЕКСТОВЫЕ ЭЛЕМЕНТЫ ===
-  // Переключаем цвет заголовков, ячеек таблиц и элементов форм
+  // === TEXT ELEMENTS ===
+  // Toggle color for headings, table cells, and form elements
   toggle("h1, h2, h3, h4, h5, h6, th, label, button", "text-light", "text-dark");
 
-  // === ЭЛЕМЕНТЫ ФОРМ ===
-  // Переключаем фон полей ввода
+  // === FORM ELEMENTS ===
+  // Toggle input field background
   toggle("input, select, textarea", "bg-dark", "bg-light");
-  // Переключаем цвет текста в полях ввода
+  // Toggle text color in input fields
   toggle("input, select, textarea", "text-light", "text-dark");
-  // Переключаем цвет границ полей ввода
+  // Toggle border color of input fields
   toggle("input, select, textarea", "border-light", "border-dark");
 
-  // === ВЫПАДАЮЩИЕ СПИСКИ И КАЛЕНДАРИ ===
-  // Задержка необходима для элементов, которые могут быть созданы динамически
+  // === DROPDOWNS AND CALENDARS ===
+  // Delay necessary for elements that may be created dynamically
   setTimeout(() => {
     toggle(
       ".dropdown-menu, .select2-dropdown, datalist, .datepicker, .flatpickr-calendar, .ui-datepicker",
@@ -76,7 +76,7 @@ function toggleTheme() {
     );
   }, 100);
 
-  // === СПИСОК КЛИЕНТОВ ===
-  // Стили для списка клиентов наследуются от .modal-content.bg-dark
-  // Дополнительное переключение не требуется
+  // === CLIENTS LIST ===
+  // Styles for clients list are inherited from .modal-content.bg-dark
+  // No additional toggling required
 }

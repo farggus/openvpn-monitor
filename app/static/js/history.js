@@ -1,23 +1,23 @@
 /**
- * История подключений - Управление историей VPN сессий
- * Описание: Загрузка, фильтрация и отображение истории подключений, а также визуализация на карте
+ * Connection history - VPN sessions history management
+ * Description: Loading, filtering and displaying connection history, as well as map visualization
  */
 
-// === МОДАЛЬНОЕ ОКНО ИСТОРИИ ===
+// === HISTORY MODAL ===
 
 /**
- * Отображает статусное сообщение в таблице истории
+ * Displays status message in history table
  *
- * @param {string} message - Текст сообщения
- * @param {Object} options - Опции отображения
- * @param {boolean} [options.spinner=false] - Показывать ли спиннер загрузки
- * @param {string} [options.tone='muted'] - Тон сообщения (muted, danger)
+ * @param {string} message - Message text
+ * @param {Object} options - Display options
+ * @param {boolean} [options.spinner=false] - Show loading spinner
+ * @param {string} [options.tone='muted'] - Message tone (muted, danger)
  */
 function showHistoryStatus(message, { spinner = false, tone = 'muted' } = {}) {
-  // Определение CSS класса в зависимости от тона
+  // Determine CSS class based on tone
   const toneClass = tone === 'danger' ? 'text-danger' : 'text-muted';
 
-  // Формирование контента со спиннером или без
+  // Build content with or without spinner
   const content = spinner
     ? `<div class="d-flex align-items-center justify-content-center gap-2">
          <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
@@ -25,67 +25,67 @@ function showHistoryStatus(message, { spinner = false, tone = 'muted' } = {}) {
        </div>`
     : message;
 
-  // Обновление tbody таблицы истории
+  // Update history table tbody
   document.getElementById('history-body').innerHTML =
     `<tr><td colspan="11" class="text-center py-4 ${toneClass}">${content}</td></tr>`;
 }
 
 /**
- * Применяет фильтры к данным истории и обновляет таблицу
- * Фильтрует по дате и имени клиента
+ * Applies filters to history data and updates the table
+ * Filters by date and client name
  */
 function applyFilters() {
-  // Получение значений фильтров
+  // Get filter values
   const dateFilter = document.getElementById("filterDate").value;
   const userFilter = document.getElementById("filterUser").value.toLowerCase();
   const cityFilter = document.getElementById("filterCity").value.toLowerCase();
 
-  // Фильтрация данных
+  // Filter data
   const filtered = window.fullHistoryData.filter(entry =>
-    // Фильтр по дате: если не задан или timestamp начинается с даты
+    // Date filter: if not set or timestamp starts with date
     (!dateFilter || entry.timestamp.startsWith(dateFilter)) &&
-    // Фильтр по имени: если не задан или имя содержит строку поиска
+    // Name filter: if not set or name contains search string
     (!userFilter || entry.name.toLowerCase().includes(userFilter)) &&
-    // Фильтр по городу: если не задан или город содержит строку поиска
+    // City filter: if not set or city contains search string
     (!cityFilter || (entry.location?.city || "").toLowerCase().includes(cityFilter))
   );
 
-  // Отображение отфильтрованных данных
+  // Display filtered data
   renderHistoryTable(filtered);
 }
 
 /**
- * Отрисовывает таблицу с историей подключений
+ * Renders connection history table
  *
- * @param {Array<Object>} data - Массив записей истории
+ * @param {Array<Object>} data - Array of history entries
  */
 function renderHistoryTable(data) {
-  // Проверка на пустой результат
+  // Check for empty result
   if (!data.length) {
     document.getElementById("history-body").innerHTML =
-      `<tr><td colspan="11" class="text-center py-4 text-muted">Нет записей истории</td></tr>`;
+      `<tr><td colspan="11" class="text-center py-4 text-muted">No history entries</td></tr>`;
     return;
   }
 
-  // Формирование HTML строк таблицы
+  // Build HTML table rows
   const rows = data.map(entry => {
-    // === ОБРАБОТКА IP АДРЕСОВ ===
-    // Поддержка legacy поля vpn_ip и новых полей vpn_ipv4/vpn_ipv6
+    // === PROCESS IP ADDRESSES ===
+    // Support legacy vpn_ip field and new vpn_ipv4/vpn_ipv6 fields
     const legacyVpnIp = entry.vpn_ip ?? "";
 
-    // Определение IPv4
+    // Determine IPv4
     const vpnIpv4 = entry.vpn_ipv4 ||
                     (legacyVpnIp && legacyVpnIp.includes('.') ? legacyVpnIp : "");
 
-    // Определение IPv6
+    // Determine IPv6
     const rawIpv6 = entry.vpn_ipv6 ||
                     (legacyVpnIp && legacyVpnIp.includes(':') ? legacyVpnIp : "");
     const vpnIpv6 = rawIpv6 || "—";
 
-    // Извлечение города из location
+    // Extract city from location
     const city = entry.location?.city ?? "—";
 
-    // Формирование HTML строки
+    // Build HTML row
     return `
       <tr>
         <td>${entry.timestamp}</td>
@@ -103,70 +103,70 @@ function renderHistoryTable(data) {
     `;
   }).join("");
 
-  // Обновление таблицы
+  // Update table
   document.getElementById("history-body").innerHTML = rows;
 }
 
-// === КАРТА ИСТОРИИ ===
+// === HISTORY MAP ===
 
 /**
- * Переменные для работы с картой истории
- * (отдельная карта для модального окна истории)
+ * Variables for history map functionality
+ * (separate map for history modal)
  */
 let historyMapInstance = null;
 let historyMapInitialized = false;
 let historyMapMarkers = [];
 
 /**
- * Создает или обновляет карту с маркерами из отфильтрованной истории
- * Использует данные о местоположении, сохраненные в записях истории
+ * Creates or updates map with markers from filtered history
+ * Uses location data saved in history entries
  *
  * @async
  * @returns {Promise<void>}
  */
 async function buildHistoryMap() {
-  // Поиск модального окна карты истории
+  // Find history map modal
   const modalEl = document.getElementById('historyMapModal');
   if (!modalEl) {
-    alert('Добавьте модальное окно #historyMapModal в HTML');
+    alert('Add #historyMapModal modal to HTML');
     return;
   }
 
-  // === ПРИМЕНЕНИЕ ФИЛЬТРОВ К ДАННЫМ ИСТОРИИ ===
-  // Получение текущих значений фильтров
+  // === APPLY FILTERS TO HISTORY DATA ===
+  // Get current filter values
   const dateFilter = document.getElementById("filterDate")?.value || '';
   const userFilter = document.getElementById("filterUser")?.value.toLowerCase() || '';
   const cityFilter = document.getElementById("filterCity")?.value.toLowerCase() || '';
 
-  // Фильтрация данных (используем window.fullHistoryData для доступа из IIFE)
+  // Filter data (use window.fullHistoryData for IIFE access)
   const filtered = window.fullHistoryData.filter(entry =>
     (!dateFilter || entry.timestamp.startsWith(dateFilter)) &&
     (!userFilter || entry.name.toLowerCase().includes(userFilter)) &&
     (!cityFilter || (entry.location?.city || "").toLowerCase().includes(cityFilter))
   );
 
-  // Проверка на пустой результат
+  // Check for empty result
   if (filtered.length === 0) {
-    alert('Нет записей для отображения на карте. Измените фильтры.');
+    alert('No entries to display on map. Change filters.');
     return;
   }
 
-  // === ИНИЦИАЛИЗАЦИЯ КАРТЫ (ОДИН РАЗ) ===
+  // === MAP INITIALIZATION (ONCE) ===
   if (!historyMapInitialized) {
-    // Создание экземпляра Leaflet карты
+    // Create Leaflet map instance
     historyMapInstance = L.map('historyMap').setView([20, 0], 2);
 
-    // Добавление тайлового слоя OpenStreetMap
+    // Add OpenStreetMap tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: 'Map data © OpenStreetMap contributors'
     }).addTo(historyMapInstance);
 
-    // Обработчик события показа модального окна
-    // Исправление размеров карты после анимации открытия
+    // Modal show event handler
+    // Fix map dimensions after opening animation
     modalEl.addEventListener('shown.bs.modal', () => {
       setTimeout(() => {
         historyMapInstance.invalidateSize();
-        // Пересчитываем bounds после invalidateSize, если есть маркеры
+        // Recalculate bounds after invalidateSize, if there are markers
         if (historyMapMarkers.length > 0) {
           const bounds = historyMapMarkers.map(m => m.getLatLng());
           historyMapInstance.fitBounds(bounds, { padding: [30, 30] });
@@ -177,23 +177,23 @@ async function buildHistoryMap() {
     historyMapInitialized = true;
   }
 
-  // === ОЧИСТКА СТАРЫХ МАРКЕРОВ ===
+  // === CLEAR OLD MARKERS ===
   historyMapMarkers.forEach(marker => historyMapInstance.removeLayer(marker));
   historyMapMarkers = [];
 
-  // === ДЕДУПЛИКАЦИЯ ПО IP ===
-  // Собираем уникальные IP адреса с их местоположением
+  // === DEDUPLICATION BY IP ===
+  // Collect unique IP addresses with their locations
   const ipLocationMap = new Map();
 
   for (const entry of filtered) {
     const ip = entry.ip;
     const location = entry.location;
 
-    // Пропуск записей без IP или геолокации
+    // Skip entries without IP or geolocation
     if (!ip || !location) continue;
     if (location.latitude == null || location.longitude == null) continue;
 
-    // Сохраняем только первую запись для каждого IP
+    // Save only the first entry for each IP
     if (!ipLocationMap.has(ip)) {
       ipLocationMap.set(ip, {
         ip: ip,
@@ -205,28 +205,28 @@ async function buildHistoryMap() {
     }
   }
 
-  // Проверка наличия данных для отображения
+  // Check for data availability to display
   if (ipLocationMap.size === 0) {
-    alert('Нет записей с геолокацией для отображения на карте.');
+    alert('No entries with geolocation to display on map.');
     return;
   }
 
-  // === ДОБАВЛЕНИЕ МАРКЕРОВ НА КАРТУ ===
+  // === ADD MARKERS TO MAP ===
   const bounds = [];
 
   /**
-   * Вспомогательная функция для добавления зеленого маркера
-   * @param {number} lat - Широта
-   * @param {number} lon - Долгота
-   * @param {string} label - Текст всплывающего окна
+   * Helper function to add green marker
+   * @param {number} lat - Latitude
+   * @param {number} lon - Longitude
+   * @param {string} label - Popup text
    */
   const addGreenMarker = (lat, lon, label) => {
     const marker = L.circleMarker([lat, lon], {
-      radius: 8,              // Размер маркера
-      color: '#2e7d32',       // Цвет обводки (темно-зеленый)
-      weight: 2,              // Толщина обводки
-      fillColor: '#43a047',   // Цвет заливки (светло-зеленый)
-      fillOpacity: 0.9        // Прозрачность заливки
+      radius: 8,              // Marker size
+      color: '#2e7d32',       // Border color (dark green)
+      weight: 2,              // Border thickness
+      fillColor: '#43a047',   // Fill color (light green)
+      fillOpacity: 0.9        // Fill opacity
     })
       .addTo(historyMapInstance)
       .bindPopup(label);
@@ -235,7 +235,7 @@ async function buildHistoryMap() {
     bounds.push([lat, lon]);
   };
 
-  // Добавление маркера для каждого уникального IP
+  // Add marker for each unique IP
   for (const [ip, loc] of ipLocationMap.entries()) {
     addGreenMarker(
       loc.latitude,
@@ -244,26 +244,26 @@ async function buildHistoryMap() {
     );
   }
 
-  // === ОБНОВЛЕНИЕ ЗАГОЛОВКА МОДАЛЬНОГО ОКНА ===
+  // === UPDATE MODAL TITLE ===
   const modalTitle = modalEl.querySelector('.modal-title');
   if (modalTitle) {
-    modalTitle.textContent = `История — Просмотр на карте (${ipLocationMap.size} уникальных мест)`;
+    modalTitle.textContent = `History — Map View (${ipLocationMap.size} unique locations)`;
   }
 
-  // === АВТОМАТИЧЕСКОЕ ПОЗИЦИОНИРОВАНИЕ КАРТЫ ===
+  // === AUTOMATIC MAP POSITIONING ===
   if (bounds.length) {
     historyMapInstance.fitBounds(bounds, { padding: [30, 30] });
   }
 
-  // === ПОКАЗ МОДАЛЬНОГО ОКНА ===
-  // Показываем модальное окно после добавления всех маркеров
+  // === SHOW MODAL ===
+  // Show modal after adding all markers
   const modal = new bootstrap.Modal(modalEl);
   modal.show();
 }
 
 /**
- * Проверяет, открыто ли модальное окно карты истории
- * @returns {boolean} true если окно открыто
+ * Checks if history map modal is open
+ * @returns {boolean} true if window is open
  */
 function historyMapIsOpen() {
   const el = document.getElementById('historyMapModal');
@@ -271,8 +271,8 @@ function historyMapIsOpen() {
 }
 
 /**
- * Обновляет карту истории если она открыта
- * Вызывается при изменении фильтров
+ * Updates history map if it's open
+ * Called when filters change
  */
 function tryRefreshOpenHistoryMap() {
   if (historyMapIsOpen()) {

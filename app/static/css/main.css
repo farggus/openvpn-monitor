@@ -49,38 +49,38 @@
 /* === Status Indicators (Online/Offline) === */
 
 /**
- * Базовый класс для круглого индикатора статуса
- * Используется для отображения состояния клиента (онлайн/оффлайн)
+ * Base class for round status indicator
+ * Used to display client state (online/offline)
  */
 .status-dot {
   display: inline-block;
-  width: 0.75rem;         /* Ширина точки */
-  height: 0.75rem;        /* Высота точки */
-  border-radius: 50%;     /* Делает элемент круглым */
-  margin-right: 0.5rem;   /* Отступ справа от точки */
+  width: 0.75rem;         /* Dot width */
+  height: 0.75rem;        /* Dot height */
+  border-radius: 50%;     /* Makes element circular */
+  margin-right: 0.5rem;   /* Right margin from dot */
 }
 
 /**
- * Стиль для индикатора онлайн-статуса
- * Цвет: зеленый (#198754 - Bootstrap success)
+ * Style for online status indicator
+ * Color: green (#198754 - Bootstrap success)
  */
 .status-dot-online {
   background-color: #198754;
 }
 
 /**
- * Стиль для индикатора оффлайн-статуса
- * Цвет: красный (#dc3545 - Bootstrap danger)
+ * Style for offline status indicator
+ * Color: red (#dc3545 - Bootstrap danger)
  */
 .status-dot-offline {
   background-color: #dc3545;
 }
 
-/* === Стили для accordion-списка клиентов === */
+/* === Styles for accordion client list === */
 
 /**
- * Контейнер для элемента списка с accordion
- * Убирает padding чтобы кнопка и collapse-панель заполняли весь элемент
+ * Container for list item with accordion
+ * Removes padding so button and collapse panel fill entire element
  */
 #clientsList .list-group-item {
   padding: 0;
@@ -88,8 +88,8 @@
 }
 
 /**
- * Кнопка-заголовок клиента в accordion
- * Стилизация для лучшего визуального представления
+ * Client header button in accordion
+ * Styling for better visual representation
  */
 #clientsList .list-group-item .btn-link {
   color: inherit;
@@ -99,28 +99,28 @@
 }
 
 /**
- * Hover эффект для кнопки-заголовка
+ * Hover effect for header button
  */
 #clientsList .list-group-item .btn-link:hover {
   background-color: rgba(0, 0, 0, 0.05);
 }
 
 /**
- * Тёмная тема: hover эффект
+ * Dark theme: hover effect
  */
 [data-bs-theme="dark"] #clientsList .list-group-item .btn-link:hover {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
 /**
- * Активная (раскрытая) кнопка-заголовок
+ * Active (expanded) header button
  */
 #clientsList .list-group-item .btn-link:not(.collapsed) {
   background-color: rgba(var(--bs-primary-rgb), 0.1);
 }
 
 /**
- * Фокус для кнопки-заголовка
+ * Focus for header button
  */
 #clientsList .list-group-item .btn-link:focus {
   box-shadow: none;
@@ -128,16 +128,16 @@
 }
 
 /**
- * Collapse-панель с деталями клиента
- * Добавляет плавную анимацию раскрытия/закрытия
+ * Collapse panel with client details
+ * Adds smooth expand/collapse animation
  */
 #clientsList .collapse {
   transition: height 0.35s ease;
 }
 
 /**
- * Контент внутри collapse-панели
- * Добавляет верхний отступ для разделения от заголовка
+ * Content inside collapse panel
+ * Adds top spacing to separate from header
  */
 #clientsList .collapse .border-top {
   padding-top: 1rem;
@@ -145,7 +145,7 @@
 }
 
 /**
- * Имя клиента в светлой теме
+ * Client name in light theme
  */
 .client-name {
   color: #212529;
@@ -153,7 +153,7 @@
 }
 
 /**
- * Имя клиента в тёмной теме
+ * Client name in dark theme
  */
 .bg-dark .client-name,
 .modal-content.bg-dark .client-name {
@@ -161,7 +161,7 @@
 }
 
 /**
- * Подзаголовок клиента в тёмной теме
+ * Client subtitle in dark theme
  */
 .bg-dark .client-subtitle,
 .modal-content.bg-dark .client-subtitle {
@@ -169,7 +169,7 @@
 }
 
 /**
- * Border для деталей клиента в тёмной теме
+ * Border for client details in dark theme
  */
 .bg-dark .client-details-content,
 .modal-content.bg-dark .client-details-content {
@@ -177,7 +177,7 @@
 }
 
 /**
- * List group items в тёмной теме
+ * List group items in dark theme
  */
 .bg-dark .list-group-item,
 .modal-content.bg-dark .list-group-item {
@@ -187,7 +187,7 @@
 }
 
 /**
- * Активная панель accordion в тёмной теме
+ * Active accordion panel in dark theme
  */
 .bg-dark #clientsList .list-group-item .btn-link:not(.collapsed),
 .modal-content.bg-dark #clientsList .list-group-item .btn-link:not(.collapsed) {
@@ -195,7 +195,7 @@
 }
 
 /**
- * Description list (dl) элементы в деталях клиента для тёмной темы
+ * Description list (dl) elements in client details for dark theme
  */
 .bg-dark .client-details-content dt,
 .modal-content.bg-dark .client-details-content dt {
@@ -208,7 +208,7 @@
 }
 
 /**
- * Заголовки и текст внутри деталей клиента в тёмной теме
+ * Headers and text inside client details in dark theme
  */
 .bg-dark .client-details-content h6,
 .modal-content.bg-dark .client-details-content h6 {
@@ -225,43 +225,43 @@
   color: #adb5bd;
 }
 
-/* === Стили для модального окна History === */
+/* === Styles for History modal window === */
 
 /**
- * Контейнер для таблицы истории с фиксированными заголовками
- * Обеспечивает прокрутку только для строк таблицы
+ * Container for history table with fixed headers
+ * Ensures scrolling only for table rows
  */
 .history-table-container {
-  max-height: 60vh;           /* Максимальная высота контейнера */
-  overflow-y: auto;           /* Вертикальная прокрутка */
-  overflow-x: auto;           /* Горизонтальная прокрутка при необходимости */
-  position: relative;         /* Для корректной работы sticky */
-  border: 1px solid #dee2e6; /* Граница контейнера */
-  border-radius: 0.375rem;    /* Скругление углов */
+  max-height: 60vh;           /* Maximum container height */
+  overflow-y: auto;           /* Vertical scrolling */
+  overflow-x: auto;           /* Horizontal scrolling when needed */
+  position: relative;         /* For correct sticky operation */
+  border: 1px solid #dee2e6; /* Container border */
+  border-radius: 0.375rem;    /* Corner rounding */
 }
 
 /**
- * Заголовки таблицы истории фиксированы при прокрутке
+ * History table headers are fixed during scrolling
  */
 .history-table-container thead th {
-  position: sticky;           /* Фиксирует заголовки */
-  top: 0;                     /* Прижимает к верху контейнера */
-  z-index: 10;                /* Над строками таблицы */
-  background-color: var(--bs-table-bg); /* Фон заголовка */
-  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1); /* Тень для визуального разделения */
+  position: sticky;           /* Fixes headers */
+  top: 0;                     /* Pins to top of container */
+  z-index: 10;                /* Above table rows */
+  background-color: var(--bs-table-bg); /* Header background */
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1); /* Shadow for visual separation */
 }
 
 /**
- * Таблица внутри контейнера без дополнительных отступов
+ * Table inside container without additional margins
  */
 .history-table-container table {
-  margin-bottom: 0;           /* Убирает нижний отступ таблицы */
+  margin-bottom: 0;           /* Removes table bottom margin */
 }
 
-/* === Стили для графиков трафика === */
+/* === Styles for traffic charts === */
 
 /**
- * Карточки статистики графиков
+ * Chart statistics cards
  */
 #chartStats .card {
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -274,7 +274,7 @@
 }
 
 /**
- * Заголовки статистики
+ * Statistics headers
  */
 #chartStats .small.text-muted {
   font-size: 0.75rem;
@@ -284,7 +284,7 @@
 }
 
 /**
- * Значения статистики
+ * Statistics values
  */
 #chartStats .fw-bold {
   font-size: 1.1rem;
@@ -292,7 +292,7 @@
 }
 
 /**
- * Тёмная тема: карточки статистики
+ * Dark theme: statistics cards
  */
 [data-bs-theme="dark"] #chartStats .card {
   background-color: #212529;
@@ -304,7 +304,7 @@
 }
 
 /**
- * Кнопки переключения режима графика
+ * Chart mode toggle buttons
  */
 .btn-group .btn-check:checked + .btn-outline-primary {
   background-color: #0d6efd;
@@ -313,7 +313,7 @@
 }
 
 /**
- * Селект выбора клиента
+ * Client selection dropdown
  */
 #clientSelect {
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
@@ -325,7 +325,7 @@
 }
 
 /**
- * Контейнер графика
+ * Chart container
  */
 #trafficChartModal {
   background: rgba(255, 255, 255, 0.05);
@@ -334,7 +334,7 @@
 }
 
 /**
- * Тёмная тема: контейнер графика
+ * Dark theme: chart container
  */
 [data-bs-theme="dark"] #trafficChartModal {
   background: rgba(0, 0, 0, 0.2);

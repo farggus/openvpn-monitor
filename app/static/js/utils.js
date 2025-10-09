@@ -1,79 +1,79 @@
 /**
- * Утилиты - Вспомогательные функции
- * Описание: Содержит общие вспомогательные функции для форматирования и обработки данных
+ * Utilities - Helper functions
+ * Description: Contains common utility functions for formatting and data processing
  */
 
 /**
- * Экранирует HTML-символы в строке для безопасного отображения
- * Защищает от XSS-атак при выводе пользовательских данных
+ * Escapes HTML characters in a string for safe display
+ * Protects against XSS attacks when outputting user data
  *
- * @param {*} value - Значение для экранирования
- * @returns {string} Экранированная строка
+ * @param {*} value - Value to escape
+ * @returns {string} Escaped string
  *
  * @example
  * escapeHtml("<script>alert('xss')</script>")
- * // Вернет: "&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;"
+ * // Returns: "&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;"
  */
 function escapeHtml(value) {
-  // Если значение null или undefined - вернуть пустую строку
+  // If value is null or undefined - return empty string
   if (value === null || value === undefined) return '';
 
-  // Преобразовать в строку и заменить опасные символы на HTML-сущности
+  // Convert to string and replace dangerous characters with HTML entities
   return String(value)
-    .replace(/&/g, '&amp;')      // & должен быть первым
-    .replace(/</g, '&lt;')       // < меньше
-    .replace(/>/g, '&gt;')       // > больше
-    .replace(/"/g, '&quot;')     // " двойные кавычки
-    .replace(/'/g, '&#39;');     // ' одинарные кавычки
+    .replace(/&/g, '&amp;')      // & must be first
+    .replace(/</g, '&lt;')       // < less than
+    .replace(/>/g, '&gt;')       // > greater than
+    .replace(/"/g, '&quot;')     // " double quotes
+    .replace(/'/g, '&#39;');     // ' single quotes
 }
 
 /**
- * Форматирует значение в гигабайтах с двумя знаками после запятой
+ * Formats a value in gigabytes with two decimal places
  *
- * @param {number} value - Значение в гигабайтах
- * @returns {string} Отформатированная строка вида "X.XX GB"
+ * @param {number} value - Value in gigabytes
+ * @returns {string} Formatted string like "X.XX GB"
  *
  * @example
- * formatGb(1.5678) // Вернет: "1.57 GB"
- * formatGb(null)   // Вернет: "0.00 GB"
+ * formatGb(1.5678) // Returns: "1.57 GB"
+ * formatGb(null)   // Returns: "0.00 GB"
  */
 function formatGb(value) {
-  // Проверка на валидное число
+  // Check for valid number
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return '0.00 GB';
   }
-  // Округление до 2 знаков и добавление единицы измерения
+  // Round to 2 decimal places and add unit of measurement
   return `${value.toFixed(2)} GB`;
 }
 
 /**
- * Вычисляет время работы сервера на основе времени запуска
+ * Calculates server uptime based on start time
  *
- * @param {string} uptimeStr - Строка с датой и временем запуска сервера
- * @returns {string} Форматированная строка времени работы (например, "2d 5h 30m")
+ * @param {string} uptimeStr - String with server start date and time
+ * @returns {string} Formatted uptime string (e.g., "2d 5h 30m")
  *
  * @example
  * formatUptime("2025-10-06T10:00:00")
- * // Если сейчас 2025-10-08T15:30:00, вернет: "2d 5h 30m"
+ * // If current time is 2025-10-08T15:30:00, returns: "2d 5h 30m"
  */
 function formatUptime(uptimeStr) {
-  // Парсинг строки в объект Date
+  // Parse string into Date object
   const uptime = new Date(uptimeStr);
   const now = new Date();
 
-  // Вычисление разницы в миллисекундах
+  // Calculate difference in milliseconds
   const diffMs = now - uptime;
 
-  // Проверка на валидность даты и положительную разницу
+  // Check for valid date and positive difference
   if (isNaN(uptime.getTime()) || diffMs < 0) {
     return "Unknown";
   }
 
-  // Конвертация миллисекунд в минуты и часы
-  const minutes = Math.floor(diffMs / 60000);  // 1 минута = 60000 мс
-  const hours = Math.floor(minutes / 60);       // 1 час = 60 минут
-  const days = Math.floor(hours / 24);          // 1 день = 24 часа
+  // Convert milliseconds to minutes and hours
+  const minutes = Math.floor(diffMs / 60000);  // 1 minute = 60000 ms
+  const hours = Math.floor(minutes / 60);       // 1 hour = 60 minutes
+  const days = Math.floor(hours / 24);          // 1 day = 24 hours
 
-  // Формирование строки вывода
+  // Build output string
   return `${days > 0 ? days + "d " : ""}${hours % 24}h ${minutes % 60}m`;
 }

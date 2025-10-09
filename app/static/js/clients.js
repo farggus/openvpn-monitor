@@ -1,115 +1,115 @@
 /**
- * Клиенты - Управление данными подключенных клиентов VPN
- * Описание: Загрузка, обработка и отображение информации о клиентах
+ * Clients - Connected VPN clients data management
+ * Description: Loading, processing and displaying client information
  */
 
-// === ОСНОВНАЯ ТАБЛИЦА КЛИЕНТОВ ===
+// === MAIN CLIENTS TABLE ===
 
 /**
- * Загружает данные о подключенных клиентах из API и обновляет таблицу
- * Также обновляет графики трафика и вычисляет скорость передачи данных
+ * Loads connected clients data from API and updates the table
+ * Also updates traffic charts and calculates data transfer speed
  *
- * @param {boolean} [forceInitChart=false] - Принудительная инициализация графика
+ * @param {boolean} [forceInitChart=false] - Force chart initialization
  * @async
  * @returns {Promise<void>}
  */
 function fetchData(forceInitChart = false) {
-  // Запрос данных о клиентах через jQuery AJAX
+  // Request clients data via jQuery AJAX
   $.getJSON("/api/clients", function(data) {
-    // Текущее время для расчета скорости
+    // Current time for speed calculation
     const now = Date.now();
     const timeLabel = new Date().toLocaleTimeString();
 
-    // Переменные для общей статистики трафика
+    // Variables for total traffic statistics
     let total_received = 0;
     let total_sent = 0;
 
-    // Извлечение списка клиентов из ответа
+    // Extract clients list from response
     const clients = data.clients || [];
     let users = clients.map(c => c.common_name);
 
-    // === ИНИЦИАЛИЗАЦИЯ ГРАФИКА ===
-    // Проверяем, нужно ли создать или пересоздать график
+    // === CHART INITIALIZATION ===
+    // Check if we need to create or recreate the chart
     const needsChartInit = forceInitChart || !chart || chartData.datasets.length !== users.length * 2;
 
     if (needsChartInit) {
-      // Если canvas не готов (модалка не открыта) - откладываем инициализацию
+      // If canvas is not ready (modal not opened) - postpone initialization
       if (!chart && !chartCanvas) {
-        // График будет создан при открытии модального окна
+        // Chart will be created when modal opens
       } else {
-        // Инициализация графика с текущим списком клиентов
+        // Initialize chart with current client list
         initializeChart(users, currentChartMode, currentSelectedClient);
       }
     }
 
-    // === ОБНОВЛЕНИЕ МЕТОК ВРЕМЕНИ НА ГРАФИКЕ ===
+    // === UPDATE TIME LABELS ON CHART ===
     if (chartData.labels) {
       chartData.labels.push(timeLabel);
 
-      // Ограничение количества меток (показываем последние 20 точек)
+      // Limit number of labels (show last 20 points)
       if (chartData.labels.length > 20) {
         chartData.labels.shift();
       }
     }
 
-    // Создание карты наборов данных для быстрого доступа
+    // Create dataset map for quick access
     const datasetMap = chartData.datasets ?
       Object.fromEntries(chartData.datasets.map(ds => [ds.label, ds.data])) : {};
 
-    // === ОБРАБОТКА ДАННЫХ КАЖДОГО КЛИЕНТА ===
+    // === PROCESS EACH CLIENT'S DATA ===
     const rows = clients.map(client => {
-      // Суммирование общего трафика
+      // Sum total traffic
       total_received += client.bytes_received;
       total_sent += client.bytes_sent;
 
-      // === РАСЧЕТ СКОРОСТИ ПЕРЕДАЧИ ДАННЫХ ===
-      let speed_rx = 0;  // Скорость приема (MB/s)
-      let speed_tx = 0;  // Скорость отправки (MB/s)
+      // === CALCULATE DATA TRANSFER SPEED ===
+      let speed_rx = 0;  // Receive speed (MB/s)
+      let speed_tx = 0;  // Transmit speed (MB/s)
 
-      // Получение предыдущих значений из кэша
+      // Get previous values from cache
       const last = lastStats[client.common_name];
 
       if (last) {
-        // Вычисление времени между измерениями (в секундах)
+        // Calculate time between measurements (in seconds)
         const dt = (now - last.timestamp) / 1000;
 
-        // Расчет скорости: (новое значение - старое значение) / время / 1024 / 1024 = MB/s
+        // Calculate speed: (new value - old value) / time / 1024 / 1024 = MB/s
         speed_rx = (client.bytes_received - last.rx) / dt / 1024 / 1024;
         speed_tx = (client.bytes_sent - last.tx) / dt / 1024 / 1024;
       }
 
-      // Сохранение текущих значений в кэш для следующего расчета
+      // Save current values to cache for next calculation
       lastStats[client.common_name] = {
         rx: client.bytes_received,
         tx: client.bytes_sent,
         timestamp: now
       };
 
-      // === ОБНОВЛЕНИЕ ДАННЫХ ГРАФИКА ===
+      // === UPDATE CHART DATA ===
       updateChartData(timeLabel, datasetMap, client.common_name, speed_rx, speed_tx);
 
-      // === ОБРАБОТКА IP АДРЕСОВ ===
-      // Приоритет отдается раздельным полям ipv4/ipv6, fallback на vpn_ip
+      // === PROCESS IP ADDRESSES ===
+      // Priority given to separate ipv4/ipv6 fields, fallback to vpn_ip
       const ipv4Candidate = client.vpn_ipv4 ?? null;
       const ipv6Candidate = client.vpn_ipv6 ?? null;
 
       let vpnIPv4 = ipv4Candidate;
       let vpnIPv6 = ipv6Candidate;
 
-      // Если раздельных полей нет, пытаемся определить тип из vpn_ip
+      // If no separate fields, try to determine type from vpn_ip
       if (vpnIPv4 == null && vpnIPv6 == null && client.vpn_ip) {
         if (client.vpn_ip.includes(':')) {
-          vpnIPv6 = client.vpn_ip;  // Содержит : → IPv6
+          vpnIPv6 = client.vpn_ip;  // Contains : → IPv6
         } else {
-          vpnIPv4 = client.vpn_ip;  // Не содержит : → IPv4
+          vpnIPv4 = client.vpn_ip;  // No : → IPv4
         }
       }
 
-      // Форматирование для отображения
+      // Format for display
       const displayIPv4 = vpnIPv4 ?? "";
       const displayIPv6 = vpnIPv6 && vpnIPv6.trim() ? vpnIPv6 : "—";
 
-      // === ФОРМИРОВАНИЕ HTML СТРОКИ ТАБЛИЦЫ ===
+      // === BUILD TABLE ROW HTML ===
       return `<tr>
         <td>${client.common_name}</td>
         <td>${displayIPv4}</td>
@@ -124,42 +124,42 @@ function fetchData(forceInitChart = false) {
       </tr>`;
     }).join("");
 
-    // === ОБНОВЛЕНИЕ DOM ===
-    // Обновление тела таблицы клиентов
+    // === UPDATE DOM ===
+    // Update clients table body
     $("#vpn-clients-body").html(rows);
 
-    // Обновление итоговых значений в футере таблицы
+    // Update totals in table footer
     $("#total-received").text((total_received / 1024 / 1024).toFixed(2) + " MB");
     $("#total-sent").text((total_sent / 1024 / 1024).toFixed(2) + " MB");
 
-    // Обновление графика
+    // Update chart
     refreshChart();
   });
 }
 
-// === МОДАЛЬНОЕ ОКНО: СПИСОК ВСЕХ КЛИЕНТОВ ===
+// === MODAL WINDOW: ALL CLIENTS LIST ===
 
 /**
- * Отображает статусное сообщение в модальном окне списка клиентов
+ * Displays status message in clients list modal
  *
- * @param {string} message - Текст сообщения
- * @param {Object} options - Опции отображения
- * @param {boolean} [options.spinner=false] - Показывать ли спиннер загрузки
- * @param {string} [options.tone='muted'] - Тон сообщения (muted, success, danger)
+ * @param {string} message - Message text
+ * @param {Object} options - Display options
+ * @param {boolean} [options.spinner=false] - Show loading spinner
+ * @param {string} [options.tone='muted'] - Message tone (muted, success, danger)
  */
 function showClientsStatus(message, { spinner = false, tone = 'muted' } = {}) {
   const listEl = document.getElementById('clientsList');
   if (!listEl) return;
 
-  // Определение CSS класса по тону
+  // Determine CSS class by tone
   const toneClass = tone === 'danger' ? 'text-danger' :
                     tone === 'success' ? 'text-success' :
                     'text-muted';
 
-  // Экранирование HTML для безопасности
+  // Escape HTML for security
   const safeMessage = escapeHtml(message);
 
-  // Формирование контента со спиннером или без
+  // Build content with or without spinner
   const content = spinner
     ? `<div class="d-flex align-items-center justify-content-center gap-2">
          <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
@@ -171,8 +171,8 @@ function showClientsStatus(message, { spinner = false, tone = 'muted' } = {}) {
 }
 
 /**
- * Загружает сводную информацию о клиентах из API
- * Вызывается при открытии модального окна списка клиентов
+ * Loads clients summary from API
+ * Called when opening clients list modal
  *
  * @async
  * @returns {Promise<void>}
@@ -186,15 +186,15 @@ function fetchClientsSummary() {
       return response.json();
     })
     .then(data => {
-      // Валидация ответа
+      // Validate response
       if (!data || !Array.isArray(data.clients)) {
         throw new Error(t('error_invalid_response'));
       }
 
-      // Сохранение данных в глобальной переменной
+      // Save data to global variable
       clientsSummary = data.clients;
 
-      // Отображение списка клиентов
+      // Display clients list
       renderClientsList(clientsSummary);
     })
     .catch(error => {
@@ -204,70 +204,70 @@ function fetchClientsSummary() {
 }
 
 /**
- * Отрисовывает список клиентов в модальном окне с accordion-интерфейсом
+ * Renders clients list in modal with accordion interface
  *
- * @param {Array<Object>} clients - Массив объектов с данными о клиентах
+ * @param {Array<Object>} clients - Array of client data objects
  */
 function renderClientsList(clients) {
   const listEl = document.getElementById('clientsList');
   if (!listEl) return;
 
-  // Проверка на пустой список
+  // Check for empty list
   if (!Array.isArray(clients) || clients.length === 0) {
     showClientsStatus(t('no_clients_connected'));
     return;
   }
 
-  // Сортировка: сначала онлайн клиенты по алфавиту, затем офлайн по алфавиту
+  // Sort: online clients alphabetically first, then offline alphabetically
   const sortedClients = [...clients].sort((a, b) => {
-    // Если статус отличается, онлайн идут первыми
+    // If status differs, online comes first
     if (a.is_online !== b.is_online) {
       return b.is_online - a.is_online;
     }
-    // Если статус одинаковый, сортируем по имени
+    // If status is the same, sort by name
     const nameA = (a.name || '').toLowerCase();
     const nameB = (b.name || '').toLowerCase();
     return nameA.localeCompare(nameB, 'ru');
   });
 
-  // Формирование HTML для каждого клиента с accordion-структурой
+  // Build HTML for each client with accordion structure
   const itemsHtml = sortedClients.map((client, index) => {
     const name = client.name || t('unknown_client');
     const statusClass = client.is_online ? 'status-dot-online' : 'status-dot-offline';
 
-    // Уникальный ID для collapse-панели
+    // Unique ID for collapse panel
     const collapseId = `collapse-client-${index}`;
 
-    // Массив частей подзаголовка
+    // Subtitle parts array
     const subtitleParts = [];
 
-    // Количество сессий
+    // Sessions count
     if (typeof client.sessions === 'number' && client.sessions > 0) {
       const sessionWord = client.sessions === 1 ? t('session') : t('sessions');
       subtitleParts.push(`${client.sessions} ${sessionWord}`);
     }
 
-    // Общее время подключения
+    // Total connection time
     if (client.total_duration_human) {
       subtitleParts.push(`${t('total_time')}: ${escapeHtml(client.total_duration_human)}`);
     }
 
-    // Трафик
+    // Traffic
     if (typeof client.total_rx_gb === 'number' && typeof client.total_tx_gb === 'number') {
       subtitleParts.push(`${t('traffic')}: ${formatGb(client.total_rx_gb)} / ${formatGb(client.total_tx_gb)}`);
     }
 
-    // Последняя активность
+    // Last activity
     if (client.last_seen) {
       subtitleParts.push(`${t('last_seen_time')} ${escapeHtml(client.last_seen)}`);
     }
 
     const subtitle = subtitleParts.join(' · ');
 
-    // Генерация детальной информации
+    // Generate detailed information
     const detailsHtml = generateClientDetailsHTML(client);
 
-    // Формирование HTML элемента списка с collapse-панелью
+    // Build list item HTML with collapse panel
     return `
       <div class="list-group-item p-0">
         <button type="button"
@@ -295,37 +295,37 @@ function renderClientsList(clients) {
   listEl.innerHTML = itemsHtml;
 }
 
-// === МОДАЛЬНОЕ ОКНО: ДЕТАЛИ КЛИЕНТА ===
+// === MODAL WINDOW: CLIENT DETAILS ===
 
 /**
- * Генерирует HTML с детальной информацией о клиенте
- * Используется для встраивания в collapse-панель
+ * Generates HTML with detailed client information
+ * Used for embedding in collapse panel
  *
- * @param {Object} client - Объект с данными о клиенте
- * @returns {string} HTML-строка с деталями клиента
+ * @param {Object} client - Client data object
+ * @returns {string} HTML string with client details
  */
 function generateClientDetailsHTML(client) {
-  // === ОСНОВНАЯ ИНФОРМАЦИЯ ===
+  // === BASIC INFORMATION ===
   const sessions = typeof client.sessions === 'number' ? client.sessions : 0;
   const totalTime = client.total_duration_human ? escapeHtml(client.total_duration_human) : '0:00:00';
   const lastSeen = client.last_seen ? escapeHtml(client.last_seen) : t('unknown');
   const totalRx = formatGb(client.total_rx_gb);
   const totalTx = formatGb(client.total_tx_gb);
 
-  // === ТЕКУЩАЯ СЕССИЯ (если клиент онлайн) ===
+  // === CURRENT SESSION (if client is online) ===
   let currentSessionHtml = '';
 
   if (client.current_session) {
     const session = client.current_session;
     const infoItems = [];
 
-    // Время подключения
+    // Connection time
     const connectedSince = session.connected_since ? escapeHtml(session.connected_since) : t('unknown');
     const timeOnline = session.time_online ? escapeHtml(session.time_online) : t('unknown');
     infoItems.push(`<li><strong>${t('connected_since_label')}</strong> ${connectedSince}</li>`);
     infoItems.push(`<li><strong>${t('time_online_label')}</strong> ${timeOnline}</li>`);
 
-    // IP адрес клиента
+    // Client IP address
     if (session.ip) {
       const withPort = session.port ?
         `${escapeHtml(session.ip)}:${escapeHtml(session.port)}` :
@@ -333,7 +333,7 @@ function generateClientDetailsHTML(client) {
       infoItems.push(`<li><strong>${t('client_ip_label')}</strong> ${withPort}</li>`);
     }
 
-    // VPN IP адреса
+    // VPN IP addresses
     if (session.vpn_ipv4) {
       infoItems.push(`<li><strong>VPN IPv4:</strong> ${escapeHtml(session.vpn_ipv4)}</li>`);
     }
@@ -344,7 +344,7 @@ function generateClientDetailsHTML(client) {
       infoItems.push(`<li><strong>VPN IP:</strong> ${escapeHtml(session.vpn_ip)}</li>`);
     }
 
-    // Трафик текущей сессии
+    // Current session traffic
     infoItems.push(`<li><strong>${t('received_label')}</strong> ${formatGb(session.bytes_received_gb)}</li>`);
     infoItems.push(`<li><strong>${t('sent_label')}</strong> ${formatGb(session.bytes_sent_gb)}</li>`);
 
@@ -358,7 +358,7 @@ function generateClientDetailsHTML(client) {
     `;
   }
 
-  // === ФОРМИРОВАНИЕ HTML ===
+  // === BUILD HTML ===
   return `
     <dl class="row mb-0">
       <dt class="col-sm-5">${t('sessions')}</dt>
@@ -381,11 +381,11 @@ function generateClientDetailsHTML(client) {
 }
 
 /**
- * Отрисовывает детальную информацию о выбранном клиенте
- * Показывает модальное окно с подробной статистикой
- * (УСТАРЕВШАЯ ФУНКЦИЯ - оставлена для совместимости)
+ * Renders detailed information for selected client
+ * Shows modal with detailed statistics
+ * (DEPRECATED FUNCTION - kept for compatibility)
  *
- * @param {Object} client - Объект с данными о клиенте
+ * @param {Object} client - Client data object
  */
 function renderClientDetails(client) {
   const titleEl = document.getElementById('clientDetailsTitle');
@@ -393,13 +393,13 @@ function renderClientDetails(client) {
 
   if (!titleEl || !bodyEl) return;
 
-  // === ЗАГОЛОВОК МОДАЛЬНОГО ОКНА ===
+  // === MODAL TITLE ===
   const name = client.name || t('client_details');
   titleEl.textContent = name;
 
   const statusClass = client.is_online ? 'status-dot-online' : 'status-dot-offline';
 
-  // === ФОРМИРОВАНИЕ HTML ТЕЛА МОДАЛЬНОГО ОКНА ===
+  // === BUILD MODAL BODY HTML ===
   bodyEl.innerHTML = `
     <div class="d-flex align-items-center gap-2 mb-3">
       <span class="status-dot ${statusClass}"></span>
@@ -408,7 +408,7 @@ function renderClientDetails(client) {
     ${generateClientDetailsHTML(client)}
   `;
 
-  // Показать модальное окно
+  // Show modal
   if (clientDetailsModalInstance) {
     clientDetailsModalInstance.show();
   }

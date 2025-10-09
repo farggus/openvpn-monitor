@@ -1,30 +1,30 @@
 /**
- * Сервер - Управление статусом сервера OpenVPN
- * Описание: Загружает и отображает информацию о состоянии сервера
+ * Server - OpenVPN server status management
+ * Description: Loads and displays server state information
  */
 
 /**
- * Загружает статус сервера OpenVPN из API и обновляет таблицу
- * Вызывается периодически для обновления информации в реальном времени
+ * Loads OpenVPN server status from API and updates the table
+ * Called periodically to update information in real-time
  *
- * Информация о сервере включает:
- * - Режим работы VPN (mode)
- * - Статус сервера (status)
- * - Доступность по ping (pingable)
- * - Количество подключенных клиентов (clients)
- * - Общий трафик входящий/исходящий (total_rx/total_tx)
- * - Время работы (uptime)
- * - Локальный и публичный IP адреса
+ * Server information includes:
+ * - VPN operation mode (mode)
+ * - Server status (status)
+ * - Ping availability (pingable)
+ * - Number of connected clients (clients)
+ * - Total inbound/outbound traffic (total_rx/total_tx)
+ * - Uptime (uptime)
+ * - Local and public IP addresses
  *
  * @async
  * @returns {Promise<void>}
  */
 function fetchServerStatus() {
-  // Запрос к API статуса сервера
+  // Request to server status API
   fetch("/api/server-status")
-    .then(response => response.json())  // Парсинг JSON ответа
+    .then(response => response.json())  // Parse JSON response
     .then(data => {
-      // Формирование HTML строки таблицы с данными сервера
+      // Build HTML table row with server data
       const row = `<tr>
         <td>${data.mode}</td>
         <td>${data.status}</td>
@@ -37,18 +37,18 @@ function fetchServerStatus() {
         <td>${data.public_ip}</td>
       </tr>`;
 
-      // Обновление содержимого tbody таблицы статуса сервера
+      // Update server status table tbody content
       document.getElementById("server-status-body").innerHTML = row;
     })
     .catch(error => {
-      // Обработка ошибок при загрузке данных
-      console.error("Ошибка загрузки статуса сервера:", error);
+      // Handle errors during data loading
+      console.error("Error loading server status:", error);
 
-      // Отображение сообщения об ошибке в таблице
+      // Display error message in table
       document.getElementById("server-status-body").innerHTML = `
         <tr>
           <td colspan="9" class="text-center text-danger">
-            Ошибка загрузки данных сервера
+            Server data loading error
           </td>
         </tr>
       `;

@@ -1,95 +1,95 @@
 /**
- * Конфигурация - Глобальные переменные приложения
- * Описание: Содержит все глобальные переменные состояния для работы приложения
+ * Configuration - Application global variables
+ * Description: Contains all global state variables for the application
  */
 
-// === СТАТИСТИКА И ТРАФИК ===
+// === STATISTICS AND TRAFFIC ===
 
 /**
- * Хранилище последних показателей трафика клиентов
- * Используется для вычисления скорости передачи данных
- * Структура: { имя_клиента: { rx: байты_получено, tx: байты_отправлено, timestamp: время } }
+ * Storage for last client traffic metrics
+ * Used to calculate data transfer speed
+ * Structure: { client_name: { rx: bytes_received, tx: bytes_sent, timestamp: time } }
  */
 let lastStats = {};
 
-// === ГРАФИКИ (CHARTS) ===
+// === CHARTS ===
 
 /**
- * Экземпляр графика Chart.js
- * null до инициализации
+ * Chart.js chart instance
+ * null until initialization
  */
 let chart = null;
 
 /**
- * Данные для отображения на графике трафика
- * Содержит метки времени и наборы данных для каждого клиента
+ * Data for displaying on traffic chart
+ * Contains time labels and datasets for each client
  */
 let chartData = {
-  labels: [],      // Метки времени (например, "14:30:25")
-  datasets: []     // Наборы данных (Rx/Tx для каждого клиента)
+  labels: [],      // Time labels (e.g., "14:30:25")
+  datasets: []     // Datasets (Rx/Tx for each client)
 };
 
 /**
- * Ссылка на canvas элемент графика в модальном окне
- * Используется для отложенной инициализации графика
+ * Reference to chart canvas element in modal
+ * Used for deferred chart initialization
  */
 let chartCanvas = null;
 
-// === ИСТОРИЯ ПОДКЛЮЧЕНИЙ ===
+// === CONNECTION HISTORY ===
 
 /**
- * Полные данные истории подключений
- * Загружается из API при открытии модального окна истории
+ * Full connection history data
+ * Loaded from API when opening history modal
  * @type {Array}
  */
 let fullHistoryData = [];
 
-// === КЛИЕНТЫ ===
+// === CLIENTS ===
 
 /**
- * Сводная информация о клиентах (статистика, сессии, трафик)
- * Загружается из /api/clients/summary
+ * Client summary information (statistics, sessions, traffic)
+ * Loaded from /api/clients/summary
  * @type {Array}
  */
 let clientsSummary = [];
 
 /**
- * Экземпляр Bootstrap модального окна списка клиентов
+ * Bootstrap clients list modal instance
  * @type {bootstrap.Modal|null}
  */
 let clientsModalInstance = null;
 
 /**
- * Экземпляр Bootstrap модального окна деталей клиента
+ * Bootstrap client details modal instance
  * @type {bootstrap.Modal|null}
- * (УСТАРЕЛО - заменено на accordion)
+ * (DEPRECATED - replaced with accordion)
  */
 // let clientDetailsModalInstance = null;
 
-// === КАРТЫ (MAPS) ===
+// === MAPS ===
 
 /**
- * Флаг инициализации карты Leaflet
- * true после первого создания карты
+ * Leaflet map initialization flag
+ * true after first map creation
  */
 let mapInitialized = false;
 
 /**
- * Экземпляр карты Leaflet
+ * Leaflet map instance
  * @type {L.Map|null}
  */
 let mapInstance = null;
 
 /**
- * Массив маркеров на карте
- * Используется для очистки при обновлении карты
+ * Array of markers on the map
+ * Used for clearing when updating map
  * @type {Array<L.Marker>}
  */
 let mapMarkers = [];
 
 /**
- * Кэш геолокации IP-адресов
- * Предотвращает повторные запросы к API геолокации
- * Структура: { "IP_адрес": { latitude, longitude, city, country_name, ... } }
+ * IP address geolocation cache
+ * Prevents repeated geolocation API requests
+ * Structure: { "IP_address": { latitude, longitude, city, country_name, ... } }
  */
 const geoCache = {};

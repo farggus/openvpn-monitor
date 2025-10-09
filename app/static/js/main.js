@@ -1,104 +1,104 @@
 /**
- * Главный модуль приложения - Инициализация и координация
- * Описание: Точка входа приложения, настройка обработчиков событий и периодического обновления данных
+ * Main application module - Initialization and coordination
+ * Description: Application entry point, event handler setup and periodic data updates
  */
 
-// === ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ===
+// === APPLICATION INITIALIZATION ===
 
 /**
- * Главная функция инициализации
- * Выполняется после загрузки DOM
+ * Main initialization function
+ * Executed after DOM is loaded
  */
 document.addEventListener("DOMContentLoaded", function () {
 
-  // === ПЕРИОДИЧЕСКОЕ ОБНОВЛЕНИЕ ДАННЫХ ===
+  // === PERIODIC DATA UPDATES ===
 
   /**
-   * Обновляет данные сервера и клиентов
-   * Вызывается при инициализации и каждую секунду
+   * Updates server and clients data
+   * Called on initialization and every second
    */
   const refreshAll = () => {
-    fetchData();           // Обновление данных клиентов (из clients.js)
-    fetchServerStatus();   // Обновление статуса сервера (из server.js)
+    fetchData();           // Update client data (from clients.js)
+    fetchServerStatus();   // Update server status (from server.js)
   };
 
-  // Первоначальная загрузка данных
+  // Initial data load
   refreshAll();
 
-  // Автоматическое обновление каждые 10 секунд
+  // Automatic update every 10 seconds
   setInterval(refreshAll, 10000);
 
-  // === НАСТРОЙКА ОБРАБОТЧИКОВ КНОПОК ===
+  // === BUTTON HANDLERS SETUP ===
 
-  // --- Кнопка переключения темы ---
+  // --- Theme toggle button ---
   document.getElementById("themeToggle").addEventListener("click", toggleTheme);
 
-  // --- Кнопка "Charts" - Открытие модального окна с графиками ---
+  // --- "Charts" button - Open charts modal ---
   document.getElementById("chartsBtn").addEventListener("click", () => {
     const chartsModalEl = document.getElementById('chartsModal');
     const chartsModal = new bootstrap.Modal(chartsModalEl);
     chartsModal.show();
   });
 
-  // Обработчик события показа модального окна графиков
-  // Инициализация/обновление графика при открытии
+  // Charts modal show event handler
+  // Initialize/update chart when opening
   let chartModeHandlerInitialized = false;
 
   document.getElementById('chartsModal').addEventListener('shown.bs.modal', () => {
     chartCanvas = document.getElementById('trafficChartModal');
 
-    // Инициализация обработчиков переключения режима графика (только один раз)
+    // Initialize chart mode change handlers (only once)
     if (!chartModeHandlerInitialized) {
       handleChartModeChange();
       chartModeHandlerInitialized = true;
     }
 
     if (!chart) {
-      // График будет инициализирован при первом fetchData()
-      // Принудительный запрос данных для гарантии создания графика
+      // Chart will be initialized on first fetchData()
+      // Force data request to ensure chart creation
       fetchData(true);
     } else {
-      // Обновление размеров графика после открытия модального окна
+      // Update chart size after modal opening
       chart.resize();
       chart.update();
     }
   });
 
-  // --- Кнопка "Map View" - Открытие модального окна с картой ---
+  // --- "Map View" button - Open map modal ---
   document.getElementById("mapBtn").addEventListener("click", () => {
     const mapModalEl = document.getElementById('mapModal');
     const mapModal = new bootstrap.Modal(mapModalEl);
     mapModal.show();
   });
 
-  // Обработчик события показа модального окна карты
-  // Инициализация карты и загрузка маркеров при открытии
+  // Map modal show event handler
+  // Initialize map and load markers when opening
   document.getElementById('mapModal').addEventListener('shown.bs.modal', () => {
     if (!mapInitialized) {
-      // Первоначальная инициализация карты
+      // Initial map initialization
       mapInstance = L.map('mapModalMap').setView([20, 0], 2);
 
-      // Добавление слоя тайлов OpenStreetMap
+      // Add OpenStreetMap tile layer
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data © OpenStreetMap contributors'
       }).addTo(mapInstance);
 
       mapInitialized = true;
     } else {
-      // Обновление размеров карты после открытия модального окна
+      // Update map size after modal opening
       mapInstance.invalidateSize();
     }
 
-    // Загрузка маркеров клиентов и сервера
+    // Load client and server markers
     loadClientAndServerMarkers();
   });
 
-  // === НАСТРОЙКА МОДАЛЬНОГО ОКНА ИСТОРИИ ===
+  // === HISTORY MODAL SETUP ===
 
   const historyModalEl = document.getElementById('historyModal');
   const historyModal = new bootstrap.Modal(historyModalEl);
 
-  // Элементы управления фильтрами истории
+  // History filter controls
   const historyControls = [
     document.getElementById('filterDate'),
     document.getElementById('filterUser'),
@@ -108,8 +108,8 @@ document.addEventListener("DOMContentLoaded", function () {
   ];
 
   /**
-   * Включает или отключает элементы управления фильтрами
-   * @param {boolean} disabled - true для отключения, false для включения
+   * Enables or disables filter controls
+   * @param {boolean} disabled - true to disable, false to enable
    */
   const setHistoryControlsDisabled = (disabled) => {
     historyControls.forEach(ctrl => {
@@ -117,133 +117,133 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   };
 
-  // --- Кнопка "Connection history" - Открытие модального окна истории ---
+  // --- "Connection history" button - Open history modal ---
   document.getElementById("historyBtn").addEventListener("click", () => {
-    // Сброс данных
+    // Reset data
     fullHistoryData = [];
     window.fullHistoryData = fullHistoryData;
     document.getElementById("userList").innerHTML = "";
     document.getElementById("cityList").innerHTML = "";
 
-    // Отображение индикатора загрузки
-    showHistoryStatus("Загрузка истории...", { spinner: true });
+    // Show loading indicator
+    showHistoryStatus("Loading history...", { spinner: true });
     setHistoryControlsDisabled(true);
 
-    // Показать модальное окно
+    // Show modal
     historyModal.show();
 
-    // Загрузка данных истории из API
+    // Load history data from API
     $.getJSON("/api/history")
       .done(entries => {
-        // Валидация ответа
+        // Validate response
         if (!Array.isArray(entries)) {
-          const errorMessage = entries && entries.error ? entries.error : "Не удалось загрузить историю";
+          const errorMessage = entries && entries.error ? entries.error : "Failed to load history";
           showHistoryStatus(errorMessage, { tone: 'danger' });
           return;
         }
 
-        // Фильтрация записей с валидными данными трафика
+        // Filter entries with valid traffic data
         fullHistoryData = entries.filter(e => e.rx !== null && e.tx !== null);
         window.fullHistoryData = fullHistoryData;
 
-        // Извлечение уникальных имен клиентов для автозаполнения
+        // Extract unique client names for autocomplete
         const names = [...new Set(fullHistoryData.map(e => e.name))];
         document.getElementById("userList").innerHTML = names.map(n => `<option value="${n}">`).join("");
 
-        // Извлечение уникальных городов для автозаполнения
+        // Extract unique cities for autocomplete
         const cities = [...new Set(fullHistoryData.map(e => e.location?.city).filter(c => c))];
         document.getElementById("cityList").innerHTML = cities.map(c => `<option value="${c}">`).join("");
 
-        // Установка текущей даты в фильтр по умолчанию
+        // Set current date in filter by default
         document.getElementById("filterDate").value = new Date().toISOString().split('T')[0];
 
-        // Применение фильтров и отображение таблицы
+        // Apply filters and display table
         applyFilters();
       })
       .fail(() => {
-        showHistoryStatus("Не удалось загрузить историю", { tone: 'danger' });
+        showHistoryStatus("Failed to load history", { tone: 'danger' });
       })
       .always(() => {
-        // Включение элементов управления после завершения загрузки
+        // Enable controls after load completes
         setHistoryControlsDisabled(false);
       });
   });
 
-  // === НАСТРОЙКА МОДАЛЬНОГО ОКНА КЛИЕНТОВ ===
+  // === CLIENTS MODAL SETUP ===
 
   const clientsModalEl = document.getElementById('clientsModal');
   if (clientsModalEl) {
     clientsModalInstance = new bootstrap.Modal(clientsModalEl);
   }
 
-  // Модальное окно деталей клиента больше не используется (заменено на accordion)
+  // Client details modal is no longer used (replaced with accordion)
   // const clientDetailsModalEl = document.getElementById('clientDetailsModal');
   // if (clientDetailsModalEl) {
   //   clientDetailsModalInstance = new bootstrap.Modal(clientDetailsModalEl);
   // }
 
-  // --- Кнопка "Clients" - Открытие модального окна списка клиентов ---
+  // --- "Clients" button - Open clients list modal ---
   const clientsBtn = document.getElementById('clientsBtn');
   if (clientsBtn) {
     clientsBtn.addEventListener('click', () => {
-      showClientsStatus('Загрузка клиентов...', { spinner: true });
+      showClientsStatus('Loading clients...', { spinner: true });
 
       if (clientsModalInstance) {
         clientsModalInstance.show();
       }
 
-      // Загрузка сводной информации о клиентах
+      // Load clients summary
       fetchClientsSummary();
     });
   }
 
-  // --- Обработчик клика по элементу списка клиентов ---
-  // Bootstrap Collapse автоматически обрабатывает клики через data-bs-toggle="collapse"
-  // Старый обработчик для открытия модального окна деталей удален
+  // --- Click handler for client list items ---
+  // Bootstrap Collapse automatically handles clicks via data-bs-toggle="collapse"
+  // Old handler for opening details modal removed
 
-  // === НАСТРОЙКА ФИЛЬТРОВ ИСТОРИИ ===
+  // === HISTORY FILTERS SETUP ===
 
-  // Обработчик изменения фильтра по дате
+  // Date filter change handler
   document.getElementById("filterDate").addEventListener("input", () => {
     applyFilters();
-    // Автоматическое обновление карты истории если она открыта
+    // Auto-update history map if it's open
     setTimeout(tryRefreshOpenHistoryMap, 120);
   });
 
-  // Обработчик изменения фильтра по имени пользователя
+  // User name filter change handler
   document.getElementById("filterUser").addEventListener("input", () => {
     applyFilters();
-    // Автоматическое обновление карты истории если она открыта
+    // Auto-update history map if it's open
     setTimeout(tryRefreshOpenHistoryMap, 120);
   });
 
-  // Обработчик изменения фильтра по городу
+  // City filter change handler
   document.getElementById("filterCity").addEventListener("input", () => {
     applyFilters();
-    // Автоматическое обновление карты истории если она открыта
+    // Auto-update history map if it's open
     setTimeout(tryRefreshOpenHistoryMap, 120);
   });
 
-  // Кнопка сброса фильтров
+  // Reset filters button
   document.getElementById("resetFilters").addEventListener("click", () => {
     document.getElementById("filterDate").value = "";
     document.getElementById("filterUser").value = "";
     document.getElementById("filterCity").value = "";
     renderHistoryTable(window.fullHistoryData);
 
-    // Автоматическое обновление карты истории если она открыта
+    // Auto-update history map if it's open
     setTimeout(tryRefreshOpenHistoryMap, 150);
   });
 
-  // === КНОПКА "VIEW ON MAP" В ИСТОРИИ ===
+  // === "VIEW ON MAP" BUTTON IN HISTORY ===
 
-  // Кнопка уже существует в HTML, привязываем обработчик
+  // Button already exists in HTML, attach handler
   const viewOnMapBtn = document.getElementById('viewOnMap');
   if (viewOnMapBtn) {
     viewOnMapBtn.addEventListener('click', buildHistoryMap);
   }
 
-  // === ЭКСПОРТ ГЛОБАЛЬНЫХ ПЕРЕМЕННЫХ ===
-  // Для доступа из других модулей (например, history.js использует window.fullHistoryData)
+  // === EXPORT GLOBAL VARIABLES ===
+  // For access from other modules (e.g., history.js uses window.fullHistoryData)
   window.fullHistoryData = fullHistoryData;
 });

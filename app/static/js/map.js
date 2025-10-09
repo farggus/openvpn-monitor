@@ -1,118 +1,118 @@
 /**
- * Карты - Отображение географического расположения клиентов
- * Описание: Работа с Leaflet картами для визуализации местоположения клиентов и сервера
+ * Maps - Display geographic location of clients
+ * Description: Work with Leaflet maps to visualize client and server locations
  */
 
 /**
- * Загружает маркеры клиентов и сервера на карту
- * Получает данные о местоположении из API и отображает их на интерактивной карте
+ * Loads client and server markers onto the map
+ * Gets location data from API and displays it on interactive map
  *
  * @async
  * @returns {Promise<void>}
  */
 async function loadClientAndServerMarkers() {
-  // Очистка существующих маркеров с карты
+  // Clear existing markers from map
   mapMarkers.forEach(marker => mapInstance.removeLayer(marker));
   mapMarkers = [];
 
-  // Массив координат для автоматического позиционирования карты
+  // Array of coordinates for automatic map positioning
   const bounds = [];
 
   try {
-    // === ЗАГРУЗКА МАРКЕРОВ КЛИЕНТОВ ===
+    // === LOAD CLIENT MARKERS ===
 
-    // Получение данных о клиентах из API
+    // Get client data from API
     const clientsRes = await fetch("/api/clients");
     const clientsData = await clientsRes.json();
     const clients = clientsData.clients || [];
 
-    // Обработка каждого клиента
+    // Process each client
     for (const client of clients) {
       const clientName = client.common_name || 'unknown';
       const location = client.location;
 
-      // Проверка наличия данных о местоположении
+      // Check for location data availability
       if (location && location.latitude != null && location.longitude != null) {
-        // Создание маркера на карте
+        // Create marker on map
         const marker = L.marker([location.latitude, location.longitude])
-          .addTo(mapInstance)  // Добавление маркера на карту
-          .bindPopup(          // Привязка всплывающего окна к маркеру
+          .addTo(mapInstance)  // Add marker to map
+          .bindPopup(          // Bind popup to marker
             `<strong>${clientName}</strong><br>${location.city || ''}, ${location.country || ''}`
           );
 
-        // Сохранение ссылки на маркер для последующей очистки
+        // Save marker reference for later cleanup
         mapMarkers.push(marker);
 
-        // Добавление координат в массив границ для автопозиционирования
+        // Add coordinates to bounds array for auto-positioning
         bounds.push([location.latitude, location.longitude]);
       }
     }
 
-    // === ЗАГРУЗКА МАРКЕРА СЕРВЕРА ===
+    // === LOAD SERVER MARKER ===
 
-    // Получение данных о сервере из API
+    // Get server data from API
     const serverRes = await fetch("/api/server-status");
     const serverData = await serverRes.json();
     const serverLocation = serverData.location;
 
-    // Проверка наличия данных о местоположении сервера
+    // Check for server location data availability
     if (serverLocation && serverLocation.latitude != null && serverLocation.longitude != null) {
-      // Создание красного кружочка для сервера
+      // Create red circle for server
       const serverMarker = L.circleMarker([serverLocation.latitude, serverLocation.longitude], {
-        radius: 8,           // Радиус кружочка
-        fillColor: "#ff0000", // Красный цвет заливки
-        color: "#cc0000",     // Темно-красный цвет обводки
-        weight: 2,            // Толщина обводки
-        opacity: 1,           // Непрозрачность обводки
-        fillOpacity: 0.8      // Непрозрачность заливки
+        radius: 8,           // Circle radius
+        fillColor: "#ff0000", // Red fill color
+        color: "#cc0000",     // Dark red border color
+        weight: 2,            // Border thickness
+        opacity: 1,           // Border opacity
+        fillOpacity: 0.8      // Fill opacity
       })
-        .addTo(mapInstance)   // Добавление маркера на карту
-        .bindPopup(           // Привязка всплывающего окна к маркеру
+        .addTo(mapInstance)   // Add marker to map
+        .bindPopup(           // Bind popup to marker
           `<strong>VPN Server</strong><br>${serverLocation.city || ''}, ${serverLocation.country || ''}<br>IP: ${serverData.public_ip || ''}`
         );
 
-      // Сохранение ссылки на маркер для последующей очистки
+      // Save marker reference for later cleanup
       mapMarkers.push(serverMarker);
 
-      // Добавление координат сервера в массив границ для автопозиционирования
+      // Add server coordinates to bounds array for auto-positioning
       bounds.push([serverLocation.latitude, serverLocation.longitude]);
     }
 
-    // Автоматическое позиционирование карты по всем маркерам
+    // Automatic map positioning to all markers
     if (bounds.length) {
-      // fitBounds подбирает масштаб и центр карты так, чтобы все маркеры были видны
+      // fitBounds adjusts map scale and center so all markers are visible
       mapInstance.fitBounds(bounds, { padding: [30, 30] });
     }
 
   } catch (error) {
-    console.error('Ошибка загрузки маркеров на карту:', error);
+    console.error('Error loading markers onto map:', error);
   }
 }
 
 /**
- * Добавляет один маркер на карту (устаревшая функция, оставлена для совместимости)
- * Рекомендуется использовать loadClientAndServerMarkers() вместо этого
+ * Adds one marker to the map (deprecated function, kept for compatibility)
+ * Recommended to use loadClientAndServerMarkers() instead
  *
  * @deprecated
- * @param {Object} location - Объект с данными о местоположении
- * @param {number} location.latitude - Широта
- * @param {number} location.longitude - Долгота
- * @param {string} location.city - Город
- * @param {string} location.country_name - Название страны
- * @param {Object} client - Объект с данными о клиенте
- * @param {string} client.common_name - Имя клиента
- * @param {Array} bounds - Массив координат для границ карты
+ * @param {Object} location - Location data object
+ * @param {number} location.latitude - Latitude
+ * @param {number} location.longitude - Longitude
+ * @param {string} location.city - City
+ * @param {string} location.country_name - Country name
+ * @param {Object} client - Client data object
+ * @param {string} client.common_name - Client name
+ * @param {Array} bounds - Coordinates array for map bounds
  */
 function addMarker(location, client, bounds) {
-  // Создание маркера на карте
+  // Create marker on map
   const marker = L.marker([location.latitude, location.longitude])
     .addTo(mapInstance)
     .bindPopup(`<strong>${client.common_name}</strong><br>${location.city}, ${location.country_name}`);
 
-  // Сохранение маркера и обновление границ
+  // Save marker and update bounds
   mapMarkers.push(marker);
   bounds.push([location.latitude, location.longitude]);
 
-  // Автоматическое позиционирование карты
+  // Automatic map positioning
   mapInstance.fitBounds(bounds, { padding: [30, 30] });
 }

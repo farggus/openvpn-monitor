@@ -31,9 +31,9 @@ services:
       - "traefik.http.routers.openvpn-secure.service=openvpn"
       - "traefik.http.services.openvpn.loadbalancer.server.port=5000"
 
-      # NEW: локальный middleware
+      # NEW: local middleware
       - "traefik.http.middlewares.openvpn-user-auth.basicauth.users=openvpn:$$apr1$$AxHp9Acv$$so9EImC8Jv7YULdyknjHQ."
-      # подвесить его на https-роутер
+      # attach it to https router
       - "traefik.http.routers.openvpn-secure.middlewares=openvpn-user-auth"
 
       - "traefik.docker.network=proxy"

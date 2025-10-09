@@ -1,19 +1,19 @@
 /**
- * Графики трафика - Визуализация скорости передачи данных
- * Описание: Создание и обновление графиков Chart.js для отображения трафика клиентов
+ * Traffic charts - Data transfer speed visualization
+ * Description: Creating and updating Chart.js charts to display client traffic
  */
 
-// === ДОПОЛНИТЕЛЬНЫЕ ПЕРЕМЕННЫЕ ===
-let currentChartMode = 'all'; // 'all' или 'individual'
-let currentSelectedClient = null; // имя выбранного клиента для индивидуального графика
-let chartStatistics = {}; // статистика для каждого клиента
-let currentPeriod = 30; // текущий период в минутах
-let historicalDataLoaded = false; // флаг загрузки исторических данных
-let hideZeroValues = true; // скрывать нулевые значения Rx/Tx (активно по умолчанию)
-let showDetailedMode = false; // режим подробного отображения (false = усредненный, max 40 точек)
+// === ADDITIONAL VARIABLES ===
+let currentChartMode = 'all'; // 'all' or 'individual'
+let currentSelectedClient = null; // selected client name for individual chart
+let chartStatistics = {}; // statistics for each client
+let currentPeriod = 30; // current period in minutes
+let historicalDataLoaded = false; // historical data loading flag
+let hideZeroValues = true; // hide zero Rx/Tx values (active by default)
+let showDetailedMode = false; // detailed display mode (false = averaged, max 40 points)
 
 /**
- * Расширенная палитра цветов для графиков
+ * Extended color palette for charts
  */
 const CHART_COLORS = [
   { primary: 'rgba(54, 162, 235, 1)', secondary: 'rgba(255, 99, 132, 1)', gradient: 'rgba(54, 162, 235, 0.2)' },
@@ -25,10 +25,10 @@ const CHART_COLORS = [
 ];
 
 /**
- * Создает градиент для заливки области под графиком
- * @param {CanvasRenderingContext2D} ctx - Контекст canvas
- * @param {string} color - Цвет градиента
- * @returns {CanvasGradient} Градиент для заливки
+ * Creates gradient for chart area fill
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {string} color - Gradient color
+ * @returns {CanvasGradient} Gradient for fill
  */
 function createGradient(ctx, color) {
   const gradient = ctx.createLinearGradient(0, 0, 0, 400);
@@ -38,10 +38,10 @@ function createGradient(ctx, color) {
 }
 
 /**
- * Загружает исторические данные метрик трафика из API
- * @param {number} period - Период в минутах
- * @param {string|null} clientName - Имя клиента (опционально)
- * @returns {Promise<Object>} Промис с данными метрик
+ * Loads historical traffic metrics data from API
+ * @param {number} period - Period in minutes
+ * @param {string|null} clientName - Client name (optional)
+ * @returns {Promise<Object>} Promise with metrics data
  */
 async function loadHistoricalMetrics(period, clientName = null) {
   try {
@@ -64,9 +64,9 @@ async function loadHistoricalMetrics(period, clientName = null) {
 }
 
 /**
- * Фильтрует нулевые значения, заменяя их на null для разрывов в графике
- * @param {number} value - Значение для проверки
- * @returns {number|null} Исходное значение или null если нужно скрыть ноль
+ * Filters zero values, replacing them with null for chart gaps
+ * @param {number} value - Value to check
+ * @returns {number|null} Original value or null if zero should be hidden
  */
 function filterZeroValue(value) {
   if (hideZeroValues && value === 0) {
@@ -76,20 +76,20 @@ function filterZeroValue(value) {
 }
 
 /**
- * Агрегирует данные до максимум 40 точек, усредняя значения
- * @param {Array} labels - Массив меток времени
- * @param {Array} data - Массив значений данных
- * @returns {Object} Объект с агрегированными labels и data
+ * Aggregates data to maximum 40 points, averaging values
+ * @param {Array} labels - Array of time labels
+ * @param {Array} data - Array of data values
+ * @returns {Object} Object with aggregated labels and data
  */
 function aggregateDataPoints(labels, data) {
   const maxPoints = 40;
 
   if (labels.length <= maxPoints) {
-    // Если точек меньше или равно 40, возвращаем как есть
+    // If points are less than or equal to 40, return as is
     return { labels, data };
   }
 
-  // Рассчитываем размер группы для агрегации
+  // Calculate group size for aggregation
   const groupSize = Math.ceil(labels.length / maxPoints);
   const aggregatedLabels = [];
   const aggregatedData = [];
@@ -97,11 +97,11 @@ function aggregateDataPoints(labels, data) {
   for (let i = 0; i < labels.length; i += groupSize) {
     const group = data.slice(i, i + groupSize);
 
-    // Берем среднюю метку времени из группы (центральную)
+    // Take average time label from group (center)
     const middleIndex = i + Math.floor(groupSize / 2);
     aggregatedLabels.push(labels[Math.min(middleIndex, labels.length - 1)]);
 
-    // Усредняем значения, игнорируя null
+    // Average values, ignoring null
     const validValues = group.filter(v => v !== null && v !== undefined);
     if (validValues.length > 0) {
       const avg = validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
@@ -115,15 +115,15 @@ function aggregateDataPoints(labels, data) {
 }
 
 /**
- * Преобразует исторические данные в формат для Chart.js
- * @param {Object} metricsData - Данные метрик из API
- * @returns {Object} Объект с метками времени и данными наборов
+ * Converts historical data to Chart.js format
+ * @param {Object} metricsData - Metrics data from API
+ * @returns {Object} Object with time labels and dataset data
  */
 function processHistoricalData(metricsData) {
   const allTimestamps = new Set();
   const clientData = {};
 
-  // Собираем все метки времени и данные для каждого клиента
+  // Collect all time labels and data for each client
   for (const [clientName, points] of Object.entries(metricsData)) {
     clientData[clientName] = { rx: {}, tx: {} };
 
@@ -139,10 +139,10 @@ function processHistoricalData(metricsData) {
     }
   }
 
-  // Сортируем метки времени
+  // Sort time labels
   const sortedTimestamps = Array.from(allTimestamps).sort();
 
-  // Форматируем метки времени для отображения
+  // Format time labels for display
   const formattedLabels = sortedTimestamps.map(ts => {
     const date = new Date(ts);
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -156,35 +156,35 @@ function processHistoricalData(metricsData) {
 }
 
 /**
- * Инициализирует или переинициализирует график трафика с историческими данными
- * @param {Array<string>} users - Массив имен клиентов для отображения на графике
- * @param {string} mode - Режим отображения ('all' или 'individual')
- * @param {string} selectedClient - Имя выбранного клиента (для режима 'individual')
- * @param {Object|null} historicalData - Исторические данные (опционально)
+ * Initializes or reinitializes traffic chart with historical data
+ * @param {Array<string>} users - Array of client names to display on chart
+ * @param {string} mode - Display mode ('all' or 'individual')
+ * @param {string} selectedClient - Selected client name (for 'individual' mode)
+ * @param {Object|null} historicalData - Historical data (optional)
  */
 async function initializeChart(users, mode = 'all', selectedClient = null, historicalData = null) {
-  // Если график уже существует - уничтожаем его перед созданием нового
+  // If chart already exists - destroy it before creating new one
   if (chart) {
     chart.destroy();
   }
 
-  // Сброс данных графика
+  // Reset chart data
   chartData = { labels: [], datasets: [] };
 
-  // Если есть исторические данные, загружаем их
+  // If no historical data provided, load it
   if (!historicalData) {
     const clientToLoad = mode === 'individual' ? selectedClient : null;
     const metricsData = await loadHistoricalMetrics(currentPeriod, clientToLoad);
     historicalData = processHistoricalData(metricsData);
   }
 
-  // Заполняем график историческими данными
+  // Fill chart with historical data
   if (historicalData && historicalData.labels.length > 0) {
-    // В режиме усреднения (showDetailedMode = false) агрегируем данные
+    // In averaging mode (showDetailedMode = false) aggregate data
     if (!showDetailedMode) {
       const aggregated = aggregateDataPoints(historicalData.labels, historicalData.labels);
       chartData.labels = aggregated.labels;
-      // Сохраняем информацию об агрегации для использования при обработке datasets
+      // Save aggregation info for use when processing datasets
       historicalData.isAggregated = true;
       historicalData.aggregatedLabels = aggregated.labels;
     } else {
@@ -193,7 +193,7 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
     }
   }
 
-  // Инициализация статистики для клиентов
+  // Initialize client statistics
   users.forEach(user => {
     if (!chartStatistics[user]) {
       chartStatistics[user] = {
@@ -208,32 +208,32 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
     }
   });
 
-  // Определяем, каких клиентов отображать
+  // Determine which clients to display
   const displayUsers = mode === 'individual' && selectedClient
     ? [selectedClient]
     : users;
 
-  // Создание наборов данных для каждого клиента
+  // Create datasets for each client
   displayUsers.forEach((user, i) => {
     const colorScheme = CHART_COLORS[i % CHART_COLORS.length];
 
-    // Подготовка исторических данных для этого клиента
+    // Prepare historical data for this client
     const rxData = [];
     const txData = [];
 
     if (historicalData && historicalData.clientData && historicalData.clientData[user]) {
       const clientHistData = historicalData.clientData[user];
 
-      // Заполняем данные для каждой метки времени
+      // Fill data for each time label
       historicalData.timestamps.forEach(timestamp => {
         const rxVal = clientHistData.rx[timestamp];
         const txVal = clientHistData.tx[timestamp];
 
-        // Применяем фильтрацию (null уже может быть установлен в processHistoricalData)
+        // Apply filtering (null may already be set in processHistoricalData)
         rxData.push(rxVal !== undefined && rxVal !== null ? rxVal : filterZeroValue(0));
         txData.push(txVal !== undefined && txVal !== null ? txVal : filterZeroValue(0));
 
-        // Обновляем статистику (используем реальные значения, не null)
+        // Update statistics (use real values, not null)
         const rxValForStats = rxVal !== null && rxVal !== undefined ? rxVal : 0;
         const txValForStats = txVal !== null && txVal !== undefined ? txVal : 0;
 
@@ -260,13 +260,13 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
         chartStatistics[user].avgTx = chartStatistics[user].sumTx / chartStatistics[user].totalPoints;
       });
 
-      // Текущие значения - последние в массиве
+      // Current values - last in array
       if (rxData.length > 0) {
         chartStatistics[user].currentRx = rxData[rxData.length - 1];
         chartStatistics[user].currentTx = txData[txData.length - 1];
       }
 
-      // Применяем агрегацию в режиме неподробного отображения
+      // Apply aggregation in non-detailed display mode
       if (!showDetailedMode && historicalData.isAggregated) {
         const aggregatedRx = aggregateDataPoints(historicalData.labels, rxData);
         const aggregatedTx = aggregateDataPoints(historicalData.labels, txData);
@@ -278,20 +278,20 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
     }
 
     chartData.datasets.push(
-      // Линия входящего трафика (Receive)
+      // Inbound traffic line (Receive)
       {
         label: `${user} ↓ Rx`,
         data: rxData,
         borderColor: colorScheme.primary,
         backgroundColor: colorScheme.gradient,
-        fill: mode === 'individual', // Заливка только в индивидуальном режиме
+        fill: mode === 'individual', // Fill only in individual mode
         borderWidth: 2,
-        tension: 0.4, // Сглаживание линии
-        pointRadius: mode === 'individual' ? 3 : 0, // Точки только в индивидуальном режиме
+        tension: 0.4, // Line smoothing
+        pointRadius: mode === 'individual' ? 3 : 0, // Points only in individual mode
         pointHoverRadius: 5,
-        spanGaps: true // Не прерывать линию на null значениях
+        spanGaps: true // Don't break line on null values
       },
-      // Линия исходящего трафика (Transmit)
+      // Outbound traffic line (Transmit)
       {
         label: `${user} ↑ Tx`,
         data: txData,
@@ -303,13 +303,13 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
         tension: 0.4,
         pointRadius: mode === 'individual' ? 3 : 0,
         pointHoverRadius: 5,
-        spanGaps: true // Не прерывать линию на null значениях
+        spanGaps: true // Don't break line on null values
       }
     );
   });
 
-  // Вычисляем максимальное значение для динамической шкалы Y
-  let maxValue = 0.5; // Минимальная шкала по умолчанию
+  // Calculate maximum value for dynamic Y scale
+  let maxValue = 0.5; // Minimum scale by default
   chartData.datasets.forEach(dataset => {
     if (dataset.data && dataset.data.length > 0) {
       const dataMax = Math.max(...dataset.data.filter(v => v !== null && v !== undefined));
@@ -319,19 +319,19 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
     }
   });
 
-  // Округляем вверх до ближайшего 0.1
+  // Round up to nearest 0.1
   maxValue = Math.ceil(maxValue * 10) / 10;
 
-  // Убеждаемся, что минимум 0.5
+  // Ensure minimum 0.5
   if (maxValue < 0.5) {
     maxValue = 0.5;
   }
 
-  // Проверяем, что canvas элемент доступен (модальное окно графика открыто)
+  // Check that canvas element is available (chart modal is open)
   if (chartCanvas) {
     const ctx = chartCanvas.getContext('2d');
 
-    // Создание экземпляра Chart.js с улучшенными настройками
+    // Create Chart.js instance with improved settings
     chart = new Chart(ctx, {
       type: 'line',
       data: chartData,
@@ -356,7 +356,7 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
             }
           },
           tooltip: {
-            enabled: showDetailedMode, // Отключаем tooltips в режиме усреднения
+            enabled: showDetailedMode, // Disable tooltips in averaging mode
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
             titleFont: { size: 13, weight: 'bold' },
             bodyFont: { size: 12 },
@@ -380,10 +380,10 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
                   if (stats) {
                     return [
                       '',
-                      `Пик Rx: ${stats.peakRx.toFixed(3)} MB/s`,
-                      `Пик Tx: ${stats.peakTx.toFixed(3)} MB/s`,
-                      `Средняя Rx: ${stats.avgRx.toFixed(3)} MB/s`,
-                      `Средняя Tx: ${stats.avgTx.toFixed(3)} MB/s`
+                      `Peak Rx: ${stats.peakRx.toFixed(3)} MB/s`,
+                      `Peak Tx: ${stats.peakTx.toFixed(3)} MB/s`,
+                      `Average Rx: ${stats.avgRx.toFixed(3)} MB/s`,
+                      `Average Tx: ${stats.avgTx.toFixed(3)} MB/s`
                     ];
                   }
                 }
@@ -397,7 +397,7 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
             display: true,
             title: {
               display: true,
-              text: 'Время',
+              text: 'Time',
               font: { size: 12 }
             },
             grid: {
@@ -408,7 +408,7 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
             display: true,
             title: {
               display: true,
-              text: 'Скорость (MB/s)',
+              text: 'Speed (MB/s)',
               font: { size: 12 }
             },
             beginAtZero: true,
@@ -430,23 +430,23 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
 }
 
 /**
- * Обновляет данные графика новыми значениями скорости передачи
- * Добавляет новые точки данных в реальном времени
+ * Updates chart data with new transfer speed values
+ * Adds new data points in real-time
  *
- * @param {string} timeLabel - Метка времени для оси X (например, "14:30:25")
- * @param {Object} datasetMap - Карта наборов данных {имя_набора: массив_данных}
- * @param {string} clientName - Имя клиента
- * @param {number} speedRx - Скорость входящего трафика в MB/s
- * @param {number} speedTx - Скорость исходящего трафика в MB/s
+ * @param {string} timeLabel - Time label for X axis (e.g., "14:30:25")
+ * @param {Object} datasetMap - Dataset map {dataset_name: data_array}
+ * @param {string} clientName - Client name
+ * @param {number} speedRx - Inbound traffic speed in MB/s
+ * @param {number} speedTx - Outbound traffic speed in MB/s
  */
 function updateChartData(timeLabel, datasetMap, clientName, speedRx, speedTx) {
-  // Добавление новой метки времени на ось X
+  // Add new time label to X axis
   if (chartData.labels) {
     chartData.labels.push(timeLabel);
 
-    // Удаляем старые точки, которые выходят за пределы текущего периода
-    // Рассчитываем максимальное количество точек на основе периода
-    // При обновлении каждые 10 секунд: 30 мин = 180 точек, 1 час = 360 точек и т.д.
+    // Remove old points that are outside current period
+    // Calculate maximum number of points based on period
+    // With updates every 10 seconds: 30 min = 180 points, 1 hour = 360 points, etc.
     const maxPoints = (currentPeriod * 60) / 10;
 
     if (chartData.labels.length > maxPoints) {
@@ -454,7 +454,7 @@ function updateChartData(timeLabel, datasetMap, clientName, speedRx, speedTx) {
     }
   }
 
-  // Обновление статистики клиента
+  // Update client statistics
   if (!chartStatistics[clientName]) {
     chartStatistics[clientName] = {
       peakRx: 0,
@@ -480,26 +480,26 @@ function updateChartData(timeLabel, datasetMap, clientName, speedRx, speedTx) {
   stats.avgRx = stats.sumRx / stats.totalPoints;
   stats.avgTx = stats.sumTx / stats.totalPoints;
 
-  // Обновление данных входящего трафика (Rx)
+  // Update inbound traffic data (Rx)
   const rxDatasetName = `${clientName} ↓ Rx`;
   if (datasetMap[rxDatasetName]) {
-    // Применяем фильтрацию нулевых значений
+    // Apply zero value filtering
     datasetMap[rxDatasetName].push(filterZeroValue(speedRx));
 
-    // Удаляем старые точки на основе текущего периода
+    // Remove old points based on current period
     const maxPoints = (currentPeriod * 60) / 10;
     if (datasetMap[rxDatasetName].length > maxPoints) {
       datasetMap[rxDatasetName].shift();
     }
   }
 
-  // Обновление данных исходящего трафика (Tx)
+  // Update outbound traffic data (Tx)
   const txDatasetName = `${clientName} ↑ Tx`;
   if (datasetMap[txDatasetName]) {
-    // Применяем фильтрацию нулевых значений
+    // Apply zero value filtering
     datasetMap[txDatasetName].push(filterZeroValue(speedTx));
 
-    // Удаляем старые точки на основе текущего периода
+    // Remove old points based on current period
     const maxPoints = (currentPeriod * 60) / 10;
     if (datasetMap[txDatasetName].length > maxPoints) {
       datasetMap[txDatasetName].shift();
@@ -508,8 +508,8 @@ function updateChartData(timeLabel, datasetMap, clientName, speedRx, speedTx) {
 }
 
 /**
- * Обновляет отображение статистики на странице
- * @param {string} clientName - Имя клиента (null для общей статистики)
+ * Updates statistics display on page
+ * @param {string} clientName - Client name (null for total statistics)
  */
 function updateChartStatistics(clientName = null) {
   let totalCurrentRx = 0;
@@ -524,7 +524,7 @@ function updateChartStatistics(clientName = null) {
     totalPeakRx = stats.peakRx;
     totalPeakTx = stats.peakTx;
   } else {
-    // Суммируем статистику всех клиентов
+    // Sum statistics for all clients
     Object.values(chartStatistics).forEach(stats => {
       totalCurrentRx += stats.currentRx;
       totalCurrentTx += stats.currentTx;
@@ -533,7 +533,7 @@ function updateChartStatistics(clientName = null) {
     });
   }
 
-  // Обновляем DOM элементы
+  // Update DOM elements
   const statCurrentRx = document.getElementById('statCurrentRx');
   const statCurrentTx = document.getElementById('statCurrentTx');
   const statPeakRx = document.getElementById('statPeakRx');
@@ -546,14 +546,14 @@ function updateChartStatistics(clientName = null) {
 }
 
 /**
- * Принудительно перерисовывает график
- * Вызывается после обновления всех данных
+ * Force chart redraw
+ * Called after updating all data
  */
 function refreshChart() {
   if (chart) {
     chart.update();
 
-    // Обновляем статистику
+    // Update statistics
     if (currentChartMode === 'individual' && currentSelectedClient) {
       updateChartStatistics(currentSelectedClient);
     } else {
@@ -563,7 +563,7 @@ function refreshChart() {
 }
 
 /**
- * Обрабатывает переключение режима отображения графика
+ * Handles chart display mode switching
  */
 function handleChartModeChange() {
   const viewAllRadio = document.getElementById('chartViewAll');
@@ -580,9 +580,9 @@ function handleChartModeChange() {
       clientSelect.style.display = 'block';
       clientSelectLabel.style.display = 'block';
 
-      // Заполняем селект клиентами, если еще не заполнен
+      // Fill select with clients if not already filled
       if (clientSelect.options.length <= 1) {
-        // Получаем список клиентов из lastStats
+        // Get client list from lastStats
         const clients = Object.keys(lastStats);
         clients.forEach(clientName => {
           const option = document.createElement('option');
@@ -596,7 +596,7 @@ function handleChartModeChange() {
       clientSelectLabel.style.display = 'none';
     }
 
-    // Переинициализируем график
+    // Reinitialize chart
     const users = Object.keys(lastStats);
     if (users.length > 0) {
       initializeChart(users, currentChartMode, currentSelectedClient);
@@ -614,13 +614,13 @@ function handleChartModeChange() {
     }
   });
 
-  // Обработчики фильтров периодов
+  // Period filter handlers
   const periodRadios = document.querySelectorAll('input[name="chartPeriod"]');
   periodRadios.forEach(radio => {
     radio.addEventListener('change', (e) => {
       currentPeriod = parseInt(e.target.value, 10);
 
-      // Переинициализируем график с новым периодом
+      // Reinitialize chart with new period
       const users = Object.keys(lastStats);
       if (users.length > 0) {
         initializeChart(users, currentChartMode, currentSelectedClient);
@@ -628,13 +628,13 @@ function handleChartModeChange() {
     });
   });
 
-  // Обработчик чекбокса скрытия нулевых значений
+  // Hide zero values checkbox handler
   const hideZeroCheckbox = document.getElementById('hideZeroValues');
   if (hideZeroCheckbox) {
     hideZeroCheckbox.addEventListener('change', (e) => {
       hideZeroValues = e.target.checked;
 
-      // Переинициализируем график с новой настройкой
+      // Reinitialize chart with new setting
       const users = Object.keys(lastStats);
       if (users.length > 0) {
         initializeChart(users, currentChartMode, currentSelectedClient);
@@ -642,13 +642,13 @@ function handleChartModeChange() {
     });
   }
 
-  // Обработчик чекбокса режима подробного отображения
+  // Detailed display mode checkbox handler
   const showDetailedCheckbox = document.getElementById('showDetailedMode');
   if (showDetailedCheckbox) {
     showDetailedCheckbox.addEventListener('change', (e) => {
       showDetailedMode = e.target.checked;
 
-      // Переинициализируем график с новым режимом
+      // Reinitialize chart with new mode
       const users = Object.keys(lastStats);
       if (users.length > 0) {
         initializeChart(users, currentChartMode, currentSelectedClient);
