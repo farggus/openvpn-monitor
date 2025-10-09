@@ -10,6 +10,7 @@ let chartStatistics = {}; // статистика для каждого клие
 let currentPeriod = 30; // текущий период в минутах
 let historicalDataLoaded = false; // флаг загрузки исторических данных
 let hideZeroValues = true; // скрывать нулевые значения Rx/Tx (активно по умолчанию)
+let showDetailedMode = false; // режим подробного отображения (false = усредненный, max 40 точек)
 
 /**
  * Расширенная палитра цветов для графиков
@@ -72,6 +73,45 @@ function filterZeroValue(value) {
     return null;
   }
   return value;
+}
+
+/**
+ * Агрегирует данные до максимум 40 точек, усредняя значения
+ * @param {Array} labels - Массив меток времени
+ * @param {Array} data - Массив значений данных
+ * @returns {Object} Объект с агрегированными labels и data
+ */
+function aggregateDataPoints(labels, data) {
+  const maxPoints = 40;
+
+  if (labels.length <= maxPoints) {
+    // Если точек меньше или равно 40, возвращаем как есть
+    return { labels, data };
+  }
+
+  // Рассчитываем размер группы для агрегации
+  const groupSize = Math.ceil(labels.length / maxPoints);
+  const aggregatedLabels = [];
+  const aggregatedData = [];
+
+  for (let i = 0; i < labels.length; i += groupSize) {
+    const group = data.slice(i, i + groupSize);
+
+    // Берем среднюю метку времени из группы (центральную)
+    const middleIndex = i + Math.floor(groupSize / 2);
+    aggregatedLabels.push(labels[Math.min(middleIndex, labels.length - 1)]);
+
+    // Усредняем значения, игнорируя null
+    const validValues = group.filter(v => v !== null && v !== undefined);
+    if (validValues.length > 0) {
+      const avg = validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
+      aggregatedData.push(avg);
+    } else {
+      aggregatedData.push(null);
+    }
+  }
+
+  return { labels: aggregatedLabels, data: aggregatedData };
 }
 
 /**
@@ -140,7 +180,17 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
 
   // Заполняем график историческими данными
   if (historicalData && historicalData.labels.length > 0) {
-    chartData.labels = historicalData.labels;
+    // В режиме усреднения (showDetailedMode = false) агрегируем данные
+    if (!showDetailedMode) {
+      const aggregated = aggregateDataPoints(historicalData.labels, historicalData.labels);
+      chartData.labels = aggregated.labels;
+      // Сохраняем информацию об агрегации для использования при обработке datasets
+      historicalData.isAggregated = true;
+      historicalData.aggregatedLabels = aggregated.labels;
+    } else {
+      chartData.labels = historicalData.labels;
+      historicalData.isAggregated = false;
+    }
   }
 
   // Инициализация статистики для клиентов
@@ -215,6 +265,16 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
         chartStatistics[user].currentRx = rxData[rxData.length - 1];
         chartStatistics[user].currentTx = txData[txData.length - 1];
       }
+
+      // Применяем агрегацию в режиме неподробного отображения
+      if (!showDetailedMode && historicalData.isAggregated) {
+        const aggregatedRx = aggregateDataPoints(historicalData.labels, rxData);
+        const aggregatedTx = aggregateDataPoints(historicalData.labels, txData);
+        rxData.length = 0;
+        txData.length = 0;
+        rxData.push(...aggregatedRx.data);
+        txData.push(...aggregatedTx.data);
+      }
     }
 
     chartData.datasets.push(
@@ -248,6 +308,25 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
     );
   });
 
+  // Вычисляем максимальное значение для динамической шкалы Y
+  let maxValue = 0.5; // Минимальная шкала по умолчанию
+  chartData.datasets.forEach(dataset => {
+    if (dataset.data && dataset.data.length > 0) {
+      const dataMax = Math.max(...dataset.data.filter(v => v !== null && v !== undefined));
+      if (dataMax > maxValue) {
+        maxValue = dataMax;
+      }
+    }
+  });
+
+  // Округляем вверх до ближайшего 0.1
+  maxValue = Math.ceil(maxValue * 10) / 10;
+
+  // Убеждаемся, что минимум 0.5
+  if (maxValue < 0.5) {
+    maxValue = 0.5;
+  }
+
   // Проверяем, что canvas элемент доступен (модальное окно графика открыто)
   if (chartCanvas) {
     const ctx = chartCanvas.getContext('2d');
@@ -277,7 +356,7 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
             }
           },
           tooltip: {
-            enabled: true,
+            enabled: showDetailedMode, // Отключаем tooltips в режиме усреднения
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
             titleFont: { size: 13, weight: 'bold' },
             bodyFont: { size: 12 },
@@ -333,7 +412,7 @@ async function initializeChart(users, mode = 'all', selectedClient = null, histo
               font: { size: 12 }
             },
             beginAtZero: true,
-            max: 0.6,
+            max: maxValue,
             grid: {
               color: 'rgba(0, 0, 0, 0.05)'
             },
@@ -556,6 +635,20 @@ function handleChartModeChange() {
       hideZeroValues = e.target.checked;
 
       // Переинициализируем график с новой настройкой
+      const users = Object.keys(lastStats);
+      if (users.length > 0) {
+        initializeChart(users, currentChartMode, currentSelectedClient);
+      }
+    });
+  }
+
+  // Обработчик чекбокса режима подробного отображения
+  const showDetailedCheckbox = document.getElementById('showDetailedMode');
+  if (showDetailedCheckbox) {
+    showDetailedCheckbox.addEventListener('change', (e) => {
+      showDetailedMode = e.target.checked;
+
+      // Переинициализируем график с новым режимом
       const users = Object.keys(lastStats);
       if (users.length > 0) {
         initializeChart(users, currentChartMode, currentSelectedClient);
