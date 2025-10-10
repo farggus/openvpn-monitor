@@ -32,15 +32,15 @@
   --bs-btn-focus-shadow-rgb: 206, 212, 218;
 }
 
-.btn-outline-dark:focus:not(:focus-visible),
-.btn-outline-secondary:focus:not(:focus-visible) {
+.btn-outline-dark:focus,
+.btn-outline-secondary:focus {
   color: var(--bs-btn-color);
   background-color: var(--bs-btn-bg);
   border-color: var(--bs-btn-border-color);
 }
 
-.btn-outline-dark:focus-visible,
-.btn-outline-secondary:focus-visible {
+body.user-is-tabbing .btn-outline-dark:focus-visible,
+body.user-is-tabbing .btn-outline-secondary:focus-visible {
   color: var(--bs-btn-hover-color);
   background-color: var(--bs-btn-hover-bg);
   border-color: var(--bs-btn-hover-border-color);
