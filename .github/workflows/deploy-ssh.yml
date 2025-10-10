@@ -62,6 +62,10 @@ jobs:
             if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
               echo "==> Sync with origin/${TARGET_REF} (fast & clean)"
               git fetch origin --tags --prune
+
+              echo "==> Fix file ownership (prevent permission denied errors)"
+              sudo chown -R "$(id -u):$(id -g)" . || echo "⚠️  Could not fix ownership, continuing..."
+
               git checkout -B "${TARGET_REF}" "origin/${TARGET_REF}"
               git reset --hard "origin/${TARGET_REF}"
               # ВНИМАНИЕ: не чистим -x, чтобы не удалить .env и локальные файлы
