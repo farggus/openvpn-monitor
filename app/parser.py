@@ -185,6 +185,81 @@ def fetch_geolocation(ip: str):
     return {"city": None, "country": None, "latitude": None, "longitude": None}
 
 
+def _should_skip_undef_session(common_name, connected_at, session_end, rx, tx):
+    """
+    Check if session should be skipped (Variant 4: short UNDEF sessions).
+
+    Skip sessions that are:
+    - Named "UNDEF"
+    - Duration < 60 seconds
+    - Traffic < 1 MB total
+    """
+    if common_name != "UNDEF":
+        return False
+
+    # If session_end is None (session just started), don't skip yet
+    if not session_end or not connected_at:
+        return False
+
+    try:
+        start_dt = datetime.datetime.strptime(connected_at, "%Y-%m-%d %H:%M:%S")
+        end_dt = datetime.datetime.strptime(session_end, "%Y-%m-%d %H:%M:%S")
+        start_dt = LOCAL_TZ.localize(start_dt)
+        end_dt = LOCAL_TZ.localize(end_dt)
+        duration_seconds = (end_dt - start_dt).total_seconds()
+
+        # Check if session is short and has minimal traffic
+        if duration_seconds < 60 and (rx or 0) + (tx or 0) < 1:
+            return True
+    except (ValueError, TypeError):
+        pass
+
+    return False
+
+
+def _find_duplicate_session(entries, ip, port, connected_at, time_window_seconds=30):
+    """
+    Check if there's already a session with the same IP, port, and similar connect time.
+
+    Returns:
+        - Index of duplicate session if found
+        - None if no duplicate
+    """
+    if not ip or not port or not connected_at:
+        return None
+
+    try:
+        search_dt = datetime.datetime.strptime(connected_at, "%Y-%m-%d %H:%M:%S")
+        search_dt = LOCAL_TZ.localize(search_dt)
+    except (ValueError, TypeError):
+        return None
+
+    for idx, entry in enumerate(entries):
+        entry_ip = entry.get("ip")
+        entry_port = entry.get("port")
+        entry_timestamp = entry.get("timestamp")
+
+        if not entry_ip or not entry_port or not entry_timestamp:
+            continue
+
+        # Check if IP and port match
+        if entry_ip != ip or entry_port != port:
+            continue
+
+        try:
+            entry_dt = datetime.datetime.strptime(entry_timestamp, "%Y-%m-%d %H:%M:%S")
+            entry_dt = LOCAL_TZ.localize(entry_dt)
+
+            # Check if timestamps are within time window
+            time_diff = abs((entry_dt - search_dt).total_seconds())
+            if time_diff <= time_window_seconds:
+                return idx
+        except (ValueError, TypeError):
+            continue
+
+    return None
+
+
 def parse_status_log(filepath=STATUS_LOG_PATH):
     clients = []
     current_common_names = set()
@@ -322,9 +397,26 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                                             vpn_ipv6 = vpn_ip
 
                                 # Close old session in history
-                                with history_log() as entries:
-                                    entries.append(
-                                        {
+                                # Apply filters: skip short UNDEF sessions and duplicates
+                                skip_undef = _should_skip_undef_session(
+                                    common_name,
+                                    old_session["connected_at"],
+                                    disconnect_time,
+                                    rx,
+                                    tx,
+                                )
+
+                                if not skip_undef:
+                                    with history_log() as entries:
+                                        # Check for duplicates
+                                        duplicate_idx = _find_duplicate_session(
+                                            entries,
+                                            old_session.get("ip"),
+                                            old_port,
+                                            old_session["connected_at"],
+                                        )
+
+                                        new_entry = {
                                             "timestamp": old_session["connected_at"],
                                             "name": common_name,
                                             "ip": old_session.get("ip"),
@@ -346,7 +438,16 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                                                 },
                                             ),
                                         }
-                                    )
+
+                                        if duplicate_idx is not None:
+                                            # Replace duplicate if current session has a proper name
+                                            existing_entry = entries[duplicate_idx]
+                                            if existing_entry.get("name") == "UNDEF" and common_name != "UNDEF":
+                                                entries[duplicate_idx] = new_entry
+                                            # Otherwise keep existing entry (don't add duplicate)
+                                        else:
+                                            # No duplicate found, add new entry
+                                            entries.append(new_entry)
 
                                 # Create new session
                                 session_id = str(uuid.uuid4())
@@ -417,31 +518,48 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                 session["vpn_ipv4"] = vpn_ipv4 or None
                 session["vpn_ipv6"] = vpn_ipv6 or None
 
+                # Apply duplicate filter for new sessions
                 with history_log() as entries:
-                    entries.append(
-                        {
-                            "timestamp": session["connected_at"],
-                            "name": common_name,
-                            "ip": session.get("ip"),
-                            "session_id": session["session_id"],
-                            "rx": None,
-                            "tx": None,
-                            "vpn_ip": vpn_ip or None,
-                            "vpn_ipv4": vpn_ipv4 or None,
-                            "vpn_ipv6": vpn_ipv6 or None,
-                            "port": port or None,
-                            "session_end": None,
-                            "location": session.get(
-                                "location",
-                                {
-                                    "city": None,
-                                    "country": None,
-                                    "latitude": None,
-                                    "longitude": None,
-                                },
-                            ),
-                        }
+                    # Check for duplicates
+                    duplicate_idx = _find_duplicate_session(
+                        entries,
+                        session.get("ip"),
+                        port,
+                        session["connected_at"],
                     )
+
+                    new_entry = {
+                        "timestamp": session["connected_at"],
+                        "name": common_name,
+                        "ip": session.get("ip"),
+                        "session_id": session["session_id"],
+                        "rx": None,
+                        "tx": None,
+                        "vpn_ip": vpn_ip or None,
+                        "vpn_ipv4": vpn_ipv4 or None,
+                        "vpn_ipv6": vpn_ipv6 or None,
+                        "port": port or None,
+                        "session_end": None,
+                        "location": session.get(
+                            "location",
+                            {
+                                "city": None,
+                                "country": None,
+                                "latitude": None,
+                                "longitude": None,
+                            },
+                        ),
+                    }
+
+                    if duplicate_idx is not None:
+                        # Replace duplicate if current session has a proper name
+                        existing_entry = entries[duplicate_idx]
+                        if existing_entry.get("name") == "UNDEF" and common_name != "UNDEF":
+                            entries[duplicate_idx] = new_entry
+                        # Otherwise keep existing entry (don't add duplicate)
+                    else:
+                        # No duplicate found, add new entry
+                        entries.append(new_entry)
 
             disconnected = [cn for cn in list(active_sessions) if cn not in current_common_names]
             for cn in disconnected:
@@ -465,9 +583,26 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                         else:
                             vpn_ipv6 = vpn_ip
 
-                with history_log() as entries:
-                    entries.append(
-                        {
+                # Apply filters: skip short UNDEF sessions and duplicates
+                skip_undef = _should_skip_undef_session(
+                    cn,
+                    session["connected_at"],
+                    disconnect_time,
+                    rx,
+                    tx,
+                )
+
+                if not skip_undef:
+                    with history_log() as entries:
+                        # Check for duplicates
+                        duplicate_idx = _find_duplicate_session(
+                            entries,
+                            session.get("ip"),
+                            port,
+                            session["connected_at"],
+                        )
+
+                        new_entry = {
                             "timestamp": session["connected_at"],
                             "name": cn,
                             "ip": session.get("ip"),
@@ -489,7 +624,16 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                                 },
                             ),
                         }
-                    )
+
+                        if duplicate_idx is not None:
+                            # Replace duplicate if current session has a proper name
+                            existing_entry = entries[duplicate_idx]
+                            if existing_entry.get("name") == "UNDEF" and cn != "UNDEF":
+                                entries[duplicate_idx] = new_entry
+                            # Otherwise keep existing entry (don't add duplicate)
+                        else:
+                            # No duplicate found, add new entry
+                            entries.append(new_entry)
 
                 del active_sessions[cn]
 
