@@ -52,7 +52,8 @@ function toggleTheme() {
 
   // === TEXT ELEMENTS ===
   // Toggle color for headings, table cells, and form elements
-  toggle("h1, h2, h3, h4, h5, h6, th, label, button", "text-light", "text-dark");
+  // Buttons rely on their own Bootstrap variables for contrast, so exclude them
+  toggle("h1, h2, h3, h4, h5, h6, th, label", "text-light", "text-dark");
 
   // === FORM ELEMENTS ===
   // Toggle input field background
