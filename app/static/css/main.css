@@ -13,6 +13,31 @@
   color: #adb5bd !important;
 }
 
+/* Dark theme: improve outline button visibility */
+[data-bs-theme="dark"] .btn-outline-dark {
+  color: #f8f9fa;
+  border-color: #f8f9fa;
+}
+
+[data-bs-theme="dark"] .btn-outline-dark:hover,
+[data-bs-theme="dark"] .btn-outline-dark:focus {
+  color: #212529;
+  background-color: #f8f9fa;
+  border-color: #f8f9fa;
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary {
+  color: #f8f9fa;
+  border-color: #ced4da;
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary:hover,
+[data-bs-theme="dark"] .btn-outline-secondary:focus {
+  color: #212529;
+  background-color: #ced4da;
+  border-color: #ced4da;
+}
+
 /* Dark theme: ensure background is dark */
 [data-bs-theme="dark"] body {
   background-color: #212529 !important;
