@@ -11,6 +11,42 @@
  */
 document.addEventListener("DOMContentLoaded", function () {
 
+  // Track keyboard navigation to show focus styling only when needed
+  const body = document.body;
+  if (body) {
+    const navigationKeys = new Set([
+      "Tab",
+      "ArrowUp",
+      "ArrowDown",
+      "ArrowLeft",
+      "ArrowRight",
+      "Home",
+      "End",
+      "PageUp",
+      "PageDown"
+    ]);
+
+    function disableKeyboardFocus() {
+      body.classList.remove("user-is-tabbing");
+      window.removeEventListener("mousedown", disableKeyboardFocus);
+      window.removeEventListener("touchstart", disableKeyboardFocus);
+      window.addEventListener("keydown", enableKeyboardFocus, { once: true });
+    }
+
+    function enableKeyboardFocus(event) {
+      if (!navigationKeys.has(event.key)) {
+        return;
+      }
+
+      body.classList.add("user-is-tabbing");
+      window.removeEventListener("keydown", enableKeyboardFocus);
+      window.addEventListener("mousedown", disableKeyboardFocus, { once: true });
+      window.addEventListener("touchstart", disableKeyboardFocus, { once: true });
+    }
+
+    window.addEventListener("keydown", enableKeyboardFocus, { once: true });
+  }
+
   // === PERIODIC DATA UPDATES ===
 
   /**

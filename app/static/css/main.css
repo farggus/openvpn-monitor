@@ -15,27 +15,35 @@
 
 /* Dark theme: improve outline button visibility */
 [data-bs-theme="dark"] .btn-outline-dark {
-  color: #f8f9fa;
-  border-color: #f8f9fa;
-}
-
-[data-bs-theme="dark"] .btn-outline-dark:hover,
-[data-bs-theme="dark"] .btn-outline-dark:focus {
-  color: #212529;
-  background-color: #f8f9fa;
-  border-color: #f8f9fa;
+  --bs-btn-color: #f8f9fa;
+  --bs-btn-border-color: #f8f9fa;
+  --bs-btn-hover-color: #212529;
+  --bs-btn-hover-bg: #f8f9fa;
+  --bs-btn-hover-border-color: #f8f9fa;
+  --bs-btn-focus-shadow-rgb: 248, 249, 250;
 }
 
 [data-bs-theme="dark"] .btn-outline-secondary {
-  color: #f8f9fa;
-  border-color: #ced4da;
+  --bs-btn-color: #f8f9fa;
+  --bs-btn-border-color: #ced4da;
+  --bs-btn-hover-color: #212529;
+  --bs-btn-hover-bg: #ced4da;
+  --bs-btn-hover-border-color: #ced4da;
+  --bs-btn-focus-shadow-rgb: 206, 212, 218;
 }
 
-[data-bs-theme="dark"] .btn-outline-secondary:hover,
-[data-bs-theme="dark"] .btn-outline-secondary:focus {
-  color: #212529;
-  background-color: #ced4da;
-  border-color: #ced4da;
+.btn-outline-dark:focus,
+.btn-outline-secondary:focus {
+  color: var(--bs-btn-color);
+  background-color: var(--bs-btn-bg);
+  border-color: var(--bs-btn-border-color);
+}
+
+body.user-is-tabbing .btn-outline-dark:focus-visible,
+body.user-is-tabbing .btn-outline-secondary:focus-visible {
+  color: var(--bs-btn-hover-color);
+  background-color: var(--bs-btn-hover-bg);
+  border-color: var(--bs-btn-hover-border-color);
 }
 
 /* Dark theme: ensure background is dark */
