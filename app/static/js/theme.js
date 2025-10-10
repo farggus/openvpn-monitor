@@ -12,8 +12,11 @@
  * toggleTheme(); // Switches theme from current to opposite
  */
 function toggleTheme() {
-  // Determine current theme by presence of bg-dark class on body
-  const isDark = document.body.classList.contains("bg-dark");
+  const htmlElement = document.documentElement;
+  const isDark = htmlElement.getAttribute("data-bs-theme") === "dark";
+  const nextIsDark = !isDark;
+
+  htmlElement.setAttribute("data-bs-theme", nextIsDark ? "dark" : "light");
 
   /**
    * Helper function to toggle classes for a group of elements
@@ -23,17 +26,15 @@ function toggleTheme() {
    */
   const toggle = (selector, darkClass, lightClass) => {
     document.querySelectorAll(selector).forEach(el => {
-      // If currently dark - switch to light (!isDark = true)
-      // If currently light - switch to dark (!isDark = false)
-      el.classList.toggle(darkClass, !isDark);  // Add dark class if switching to dark theme
-      el.classList.toggle(lightClass, isDark);   // Add light class if switching to light theme
+      el.classList.toggle(darkClass, nextIsDark);
+      el.classList.toggle(lightClass, !nextIsDark);
     });
   };
 
   // === MAIN BACKGROUND ===
   // Toggle body background
-  document.body.classList.toggle("bg-dark", !isDark);
-  document.body.classList.toggle("bg-light", isDark);
+  document.body.classList.toggle("bg-dark", nextIsDark);
+  document.body.classList.toggle("bg-light", !nextIsDark);
 
   // === TABLES ===
   // Toggle table color
