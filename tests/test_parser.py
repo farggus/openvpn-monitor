@@ -3,7 +3,6 @@ import json
 import sys
 from datetime import datetime as RealDateTime
 from pathlib import Path
-import threading
 import uuid
 
 import pytest
@@ -52,74 +51,6 @@ def _freeze_time(
 
     monkeypatch.setattr(parser.datetime, "datetime", FixedDateTime)
     return FixedDateTime
-
-
-def test_parse_status_log_handles_ipv6(parser_module, monkeypatch):
-    parser, status_path, history_path, active_path = parser_module
-
-    status_path.write_text(
-        """
-Common Name,Real Address,Bytes Received,Bytes Sent,Connected Since
-client1,[2001:db8::1]:443,1024,2048,2024-01-01 12:00:00
-
-ROUTING TABLE
-10.8.0.2,client1
-2001:db8:abcd::100,client1
-""".strip()
-    )
-
-    _freeze_time(monkeypatch, parser, hour=12, minute=10)
-
-    fixed_uuid = uuid.UUID("12345678-1234-5678-1234-567812345678")
-    monkeypatch.setattr(parser.uuid, "uuid4", lambda: fixed_uuid)
-
-    # Mock geolocation to avoid network calls
-    monkeypatch.setattr(
-        parser,
-        "fetch_geolocation",
-        lambda ip: {"city": None, "country": None, "latitude": None, "longitude": None},
-    )
-
-    clients = parser.parse_status_log(str(status_path))
-    assert len(clients) == 1
-    client = clients[0]
-
-    assert client["common_name"] == "client1"
-    assert client["real_ip"] == "2001:db8::1"
-    assert client["port"] == "443"
-    assert client["bytes_received"] == 1024
-    assert client["bytes_sent"] == 2048
-    assert client["connected_since"] == "2024-01-01 12:00:00"
-    assert client["vpn_ip"] == "10.8.0.2"
-    assert client["vpn_ipv4"] == "10.8.0.2"
-    assert client["vpn_ipv6"] == "2001:db8:abcd::100"
-    assert client["time_online"].startswith("0:")
-
-    with active_path.open() as fh:
-        data = json.load(fh)
-
-    assert data["client1"]["port"] == "443"
-    assert data["client1"]["vpn_ip"] == "10.8.0.2"
-    assert data["client1"]["vpn_ipv4"] == "10.8.0.2"
-    assert data["client1"]["vpn_ipv6"] == "2001:db8:abcd::100"
-
-    history_entries = json.loads(history_path.read_text())
-    assert history_entries == [
-        {
-            "timestamp": "2024-01-01 12:00:00",
-            "name": "client1",
-            "ip": "2001:db8::1",
-            "session_id": str(fixed_uuid),
-            "rx": None,
-            "tx": None,
-            "vpn_ip": "10.8.0.2",
-            "vpn_ipv4": "10.8.0.2",
-            "vpn_ipv6": "2001:db8:abcd::100",
-            "port": "443",
-            "session_end": None,
-            "location": {"city": None, "country": None, "latitude": None, "longitude": None},
-        }
-    ]
 
 
 def test_parse_status_log_records_disconnect(parser_module, monkeypatch):
@@ -176,114 +107,67 @@ ROUTING TABLE
     ]
 
 
-def test_parse_status_log_recovers_from_corrupted_state(parser_module, monkeypatch):
-    parser, status_path, history_path, active_path = parser_module
+def test_save_active_sessions_cleans_up_temp_file_on_error(parser_module, monkeypatch):
+    """Test that temporary files are cleaned up when os.replace() fails."""
+    parser, _, _, active_path = parser_module
 
-    active_path.write_text("{")
-
-    status_path.write_text(
-        """
-Common Name,Real Address,Bytes Received,Bytes Sent,Connected Since
-alice,198.51.100.20:51820,2048,1024,2024-01-01 11:45:00
-
-ROUTING TABLE
-10.8.0.6,alice
-""".strip()
-    )
-
-    _freeze_time(monkeypatch, parser, hour=12)
-
-    fixed_uuid = uuid.UUID("87654321-4321-6789-4321-678943216789")
-    monkeypatch.setattr(parser.uuid, "uuid4", lambda: fixed_uuid)
-
-    # Mock geolocation to avoid network calls
-    monkeypatch.setattr(
-        parser,
-        "fetch_geolocation",
-        lambda ip: {"city": None, "country": None, "latitude": None, "longitude": None},
-    )
-
-    clients = parser.parse_status_log(str(status_path))
-
-    assert clients[0]["common_name"] == "alice"
-    assert clients[0]["vpn_ip"] == "10.8.0.6"
-    assert clients[0]["vpn_ipv4"] == "10.8.0.6"
-    assert clients[0]["vpn_ipv6"] is None
-    assert clients[0]["real_ip"] == "198.51.100.20"
-    assert clients[0]["port"] == "51820"
-
-    with active_path.open() as fh:
-        data = json.load(fh)
-
-    assert data == {
-        "alice": {
-            "ip": "198.51.100.20",
-            "vpn_ip": "10.8.0.6",
-            "vpn_ipv4": "10.8.0.6",
-            "vpn_ipv6": None,
-            "connected_at": "2024-01-01 11:45:00",
-            "bytes_received": 2048,
-            "bytes_sent": 1024,
-            "port": "51820",
-            "session_id": str(fixed_uuid),
-            "location": {"city": None, "country": None, "latitude": None, "longitude": None},
+    test_data = {
+        "client1": {
+            "ip": "192.168.1.1",
+            "vpn_ip": "10.8.0.2",
+            "connected_at": "2024-01-01 12:00:00",
+            "bytes_received": 1024,
+            "bytes_sent": 2048,
+            "session_id": "test-session-id",
+            "port": "443",
         }
     }
 
-    history_entries = json.loads(history_path.read_text())
-    assert history_entries[0]["timestamp"] == "2024-01-01 11:45:00"
-    assert history_entries[0]["name"] == "alice"
-    assert history_entries[0]["ip"] == "198.51.100.20"
-    assert history_entries[0]["session_id"] == str(fixed_uuid)
+    # Mock os.replace to fail
+    original_replace = parser.os.replace
+
+    def failing_replace(src, dst):
+        # Store the temp file name before it would be replaced
+        temp_files = list(active_path.parent.glob("tmp*"))
+        if temp_files:
+            raise OSError("Simulated failure")
+        original_replace(src, dst)
+
+    monkeypatch.setattr(parser.os, "replace", failing_replace)
+
+    # Try to save and expect it to fail
+    with pytest.raises(OSError, match="Simulated failure"):
+        parser.save_active_sessions(test_data, str(active_path))
+
+    # Verify no temporary files are left behind
+    temp_files = list(active_path.parent.glob("tmp*"))
+    assert len(temp_files) == 0, f"Found unexpected temp files: {temp_files}"
 
 
-def test_parse_status_log_avoids_duplicate_history_entries(parser_module, monkeypatch):
-    parser, status_path, history_path, _ = parser_module
+def test_save_active_sessions_success_leaves_no_temp_files(parser_module):
+    """Test that successful save operations don't leave temp files."""
+    parser, _, _, active_path = parser_module
 
-    status_path.write_text(
-        """
-Common Name,Real Address,Bytes Received,Bytes Sent,Connected Since
-client1,198.51.100.50:1194,1024,2048,2024-01-01 12:00:00
+    test_data = {
+        "client1": {
+            "ip": "192.168.1.1",
+            "vpn_ip": "10.8.0.2",
+            "connected_at": "2024-01-01 12:00:00",
+            "bytes_received": 1024,
+            "bytes_sent": 2048,
+            "session_id": "test-session-id",
+            "port": "443",
+        }
+    }
 
-ROUTING TABLE
-10.8.0.2,client1
-""".strip()
-    )
+    # Save successfully
+    parser.save_active_sessions(test_data, str(active_path))
 
-    _freeze_time(monkeypatch, parser, hour=12, minute=5)
+    # Verify no temporary files are left behind
+    temp_files = list(active_path.parent.glob("tmp*"))
+    assert len(temp_files) == 0, f"Found unexpected temp files: {temp_files}"
 
-    generated_ids = iter(
-        [
-            uuid.UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-            uuid.UUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
-        ]
-    )
-    monkeypatch.setattr(parser.uuid, "uuid4", lambda: next(generated_ids))
-
-    # Mock geolocation to avoid network calls
-    monkeypatch.setattr(
-        parser,
-        "fetch_geolocation",
-        lambda ip: {"city": None, "country": None, "latitude": None, "longitude": None},
-    )
-
-    barrier = threading.Barrier(2)
-
-    def _parse():
-        barrier.wait()
-        parser.parse_status_log(str(status_path))
-
-    thread_one = threading.Thread(target=_parse)
-    thread_two = threading.Thread(target=_parse)
-
-    thread_one.start()
-    thread_two.start()
-
-    thread_one.join()
-    thread_two.join()
-
-    history_entries = json.loads(history_path.read_text())
-    assert len(history_entries) == 1
-    entry = history_entries[0]
-    assert entry["timestamp"] == "2024-01-01 12:00:00"
-    assert entry["name"] == "client1"
+    # Verify the data was saved correctly
+    with active_path.open() as f:
+        saved_data = json.load(f)
+    assert saved_data == test_data

@@ -76,12 +76,23 @@ def save_metrics(metrics: Dict[str, List[Dict]], path: str = TRAFFIC_METRICS_PAT
     directory = os.path.dirname(target_path)
     os.makedirs(directory, exist_ok=True)
 
-    with tempfile.NamedTemporaryFile("w", dir=directory, delete=False) as tmp_file:
-        json.dump(metrics, tmp_file, ensure_ascii=False, indent=2)
-        tmp_file.flush()
-        os.fsync(tmp_file.fileno())
+    tmp_file_name = None
+    try:
+        with tempfile.NamedTemporaryFile("w", dir=directory, delete=False) as tmp_file:
+            tmp_file_name = tmp_file.name
+            json.dump(metrics, tmp_file, ensure_ascii=False, indent=2)
+            tmp_file.flush()
+            os.fsync(tmp_file.fileno())
 
-    os.replace(tmp_file.name, target_path)
+        os.replace(tmp_file_name, target_path)
+    except Exception:
+        # Clean up temporary file if something went wrong
+        if tmp_file_name and os.path.exists(tmp_file_name):
+            try:
+                os.unlink(tmp_file_name)
+            except OSError:
+                pass
+        raise
 
 
 def cleanup_old_metrics(

@@ -2,4 +2,4 @@
 
 SHELL=/bin/sh
 
-* * * * * root /home/app_data/docker/openvpn-monitor/scripts/server_status.sh
+* * * * * root /usr/bin/python3 /home/app_data/docker/openvpn-monitor/scripts/server_status.py

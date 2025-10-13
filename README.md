@@ -26,7 +26,7 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
 | **Traffic Collector** | Collects and stores traffic metrics every 10 seconds, maintains 24-hour history, calculates speeds (MB/s) | `app/traffic_collector.py` |
 | **Background Logger** | Runs parser and traffic collector in a loop every 10 seconds to keep data fresh | `logger.py` |
 | **Internationalization** | Flask-Babel for Python/Jinja2 templates, custom API endpoint for JavaScript translations | `app/routes.py` (`/api/translations`), `translations/`, `app/static/js/i18n.js` |
-| **Server Status Script** | Shell script that captures OpenVPN server operational status (PID, local/public IP, ping check); should run via cron every minute | `scripts/server_status.sh` |
+| **Server Status Script** | Python script that captures OpenVPN server operational status (PID, local/public IP, ping check); should run via cron every minute | `scripts/server_status.py` |
 | **Containerization** | Python 3.12 Docker image with supervisord managing both Flask web server and background logger | `Dockerfile`, `docker-compose.yml`, `supervisord.conf` |
 
 ### Data Flow
@@ -46,7 +46,7 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
 - Linux host with Docker 24+ and Docker Compose v2, OR Python ≥3.11 for manual setup
 - Directory on host for state files (`active_sessions.json`, `session_history.json`, `server_status.json`, `traffic_metrics.json`)
 - (Optional) Traefik v2 reverse proxy with external network `proxy` for publishing the dashboard
-- (Optional) Internet access for `server_status.sh` script and parser to determine public IP and client geolocation
+- (Optional) Internet access for `server_status.py` script and parser to determine public IP and client geolocation
 
 ## Installation
 
@@ -87,12 +87,12 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
 
    Copy script and make executable:
    ```bash
-   chmod +x /var/www/openvpn-monitor/scripts/server_status.sh
+   chmod +x /var/www/openvpn-monitor/scripts/server_status.py
    ```
 
    Add cron job (every minute):
    ```cron
-   * * * * * root /var/www/openvpn-monitor/scripts/server_status.sh
+   * * * * * root /usr/bin/python3 /var/www/openvpn-monitor/scripts/server_status.py
    ```
 
    Verify JSON is being updated:
@@ -557,7 +557,7 @@ time.sleep(5)  # 5 seconds
 | Symptom | Solution |
 |---------|----------|
 | **Empty client table** | Verify container can read `/var/log/openvpn/status.log` with correct permissions |
-| **"Unknown" server status** | Ensure `scripts/server_status.sh` is running via cron and path to JSON matches `OPENVPN_SERVER_STATUS` |
+| **"Unknown" server status** | Ensure `scripts/server_status.py` is running via cron and path to JSON matches `OPENVPN_SERVER_STATUS` |
 | **No client map** | Check ip-api.com availability and rate limit (45/min). Geolocation is added automatically on first client connection |
 | **Timezone errors** | Verify `OPENVPN_MONITOR_TZ` is a valid IANA timezone (e.g., `Europe/Moscow`, not `MSK`) |
 | **File lock timeouts** | Check for stale `.lock` files in data directory |

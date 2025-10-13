@@ -73,12 +73,23 @@ def save_active_sessions(sessions, path: str = ACTIVE_SESSIONS_PATH):
     directory = os.path.dirname(target_path)
     os.makedirs(directory, exist_ok=True)
 
-    with tempfile.NamedTemporaryFile("w", dir=directory, delete=False) as tmp_file:
-        json.dump(sessions, tmp_file, ensure_ascii=False, indent=2)
-        tmp_file.flush()
-        os.fsync(tmp_file.fileno())
+    tmp_file_name = None
+    try:
+        with tempfile.NamedTemporaryFile("w", dir=directory, delete=False) as tmp_file:
+            tmp_file_name = tmp_file.name
+            json.dump(sessions, tmp_file, ensure_ascii=False, indent=2)
+            tmp_file.flush()
+            os.fsync(tmp_file.fileno())
 
-    os.replace(tmp_file.name, target_path)
+        os.replace(tmp_file_name, target_path)
+    except Exception:
+        # Clean up temporary file if something went wrong
+        if tmp_file_name and os.path.exists(tmp_file_name):
+            try:
+                os.unlink(tmp_file_name)
+            except OSError:
+                pass
+        raise
 
 
 @contextmanager
@@ -447,7 +458,7 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                             if stored_connected_at != current_connected_at:
                                 # Client reconnected - close old session and create new one
                                 old_session = active_sessions[common_name]
-                                disconnect_time = connected_dt.strftime("%Y-%m-%d %H:%M:%S")
+                                disconnect_time = now.strftime("%Y-%m-%d %H:%M:%S")
 
                                 # Complete the old session
                                 _complete_session(old_session, common_name, disconnect_time)
