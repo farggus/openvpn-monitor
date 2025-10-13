@@ -4,9 +4,11 @@ import json
 import logging
 import os
 import tempfile
+import threading
 import uuid
 from contextlib import contextmanager
 from ipaddress import ip_address
+from pathlib import Path
 
 import fcntl
 import requests
@@ -19,6 +21,12 @@ from .config import (
 
 
 logger = logging.getLogger(__name__)
+
+# Geolocation cache with thread-safe lock
+_geolocation_cache = {}
+_geolocation_cache_lock = threading.Lock()
+_geolocation_cache_loaded = False
+_GEOLOCATION_CACHE_FILE = Path("data/geolocation_cache.json")
 
 
 def format_duration(seconds):
@@ -45,10 +53,16 @@ def validate_active_sessions(data):
         except (TypeError, ValueError):
             continue
 
+        # Ensure location field is present and valid
+        location = session.get("location")
+        if not isinstance(location, dict):
+            location = {"city": None, "country": None, "latitude": None, "longitude": None}
+
         validated[common_name] = {
             **session,
             "bytes_received": bytes_received,
             "bytes_sent": bytes_sent,
+            "location": location,
         }
 
     return validated
@@ -196,6 +210,72 @@ def fetch_geolocation(ip: str):
     return {"city": None, "country": None, "latitude": None, "longitude": None}
 
 
+def _load_geolocation_cache():
+    """Load geolocation cache from disk."""
+    if _GEOLOCATION_CACHE_FILE.exists():
+        try:
+            with open(_GEOLOCATION_CACHE_FILE, "r") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning(f"Failed to load geolocation cache: {e}")
+            return {}
+    return {}
+
+
+def _save_geolocation_cache():
+    """Save geolocation cache to disk."""
+    try:
+        _GEOLOCATION_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(_GEOLOCATION_CACHE_FILE, "w") as f:
+            json.dump(_geolocation_cache, f, indent=2)
+    except OSError as e:
+        logger.warning(f"Failed to save geolocation cache: {e}")
+
+
+def fetch_geolocation_cached(ip: str):
+    """
+    Fetch geolocation with in-memory and persistent caching.
+
+    Cache is kept in memory for the lifetime of the process and persisted to disk.
+    This dramatically reduces API calls when clients reconnect with the same IP.
+
+    Args:
+        ip: IP address to look up
+
+    Returns:
+        dict with city, country, latitude, longitude (or None values on error)
+    """
+    global _geolocation_cache_loaded
+
+    if not ip:
+        return {"city": None, "country": None, "latitude": None, "longitude": None}
+
+    # Lazy load cache from disk on first use
+    with _geolocation_cache_lock:
+        if not _geolocation_cache_loaded:
+            loaded_cache = _load_geolocation_cache()
+            _geolocation_cache.update(loaded_cache)
+            _geolocation_cache_loaded = True
+            if loaded_cache:
+                logger.info(f"Loaded {len(loaded_cache)} geolocation entries from cache")
+
+        # Check in-memory cache
+        if ip in _geolocation_cache:
+            logger.debug(f"Geolocation cache hit for {ip}")
+            return _geolocation_cache[ip]
+
+    # Cache miss - fetch from API
+    logger.info(f"Fetching geolocation for {ip} (cache miss)")
+    location = fetch_geolocation(ip)
+
+    # Save to cache (both memory and disk)
+    with _geolocation_cache_lock:
+        _geolocation_cache[ip] = location
+        _save_geolocation_cache()
+
+    return location
+
+
 def _should_skip_undef_session(common_name, connected_at, session_end, rx, tx):
     """
     Check if session should be skipped (Variant 4: short UNDEF sessions).
@@ -230,49 +310,6 @@ def _should_skip_undef_session(common_name, connected_at, session_end, rx, tx):
         pass
 
     return False
-
-
-def _find_duplicate_session(entries, ip, port, connected_at, time_window_seconds=30):
-    """
-    Check if there's already a session with the same IP, port, and similar connect time.
-
-    Returns:
-        - Index of duplicate session if found
-        - None if no duplicate
-    """
-    if not ip or not port or not connected_at:
-        return None
-
-    try:
-        search_dt = datetime.datetime.strptime(connected_at, "%Y-%m-%d %H:%M:%S")
-        search_dt = LOCAL_TZ.localize(search_dt)
-    except (ValueError, TypeError):
-        return None
-
-    for idx, entry in enumerate(entries):
-        entry_ip = entry.get("ip")
-        entry_port = entry.get("port")
-        entry_timestamp = entry.get("timestamp")
-
-        if not entry_ip or not entry_port or not entry_timestamp:
-            continue
-
-        # Check if IP and port match
-        if entry_ip != ip or entry_port != port:
-            continue
-
-        try:
-            entry_dt = datetime.datetime.strptime(entry_timestamp, "%Y-%m-%d %H:%M:%S")
-            entry_dt = LOCAL_TZ.localize(entry_dt)
-
-            # Check if timestamps are within time window
-            time_diff = abs((entry_dt - search_dt).total_seconds())
-            if time_diff <= time_window_seconds:
-                return idx
-        except (ValueError, TypeError):
-            continue
-
-    return None
 
 
 def _complete_session(session, common_name, disconnect_time):
@@ -347,6 +384,7 @@ def _complete_session(session, common_name, disconnect_time):
 
 def parse_status_log(filepath=STATUS_LOG_PATH):
     clients = []
+    active_sessions_result = {}
     current_common_names = set()
     vpn_ip_map = {}
     new_sessions = []
@@ -413,15 +451,27 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                         if len(parts) < 5:
                             continue
 
-                        common_name = parts[0]
-                        real_ip, port = _split_real_address(parts[1])
-                        bytes_received = int(parts[2])
-                        bytes_sent = int(parts[3])
-                        connected_since = parts[4]
+                        try:
+                            common_name = parts[0]
+                            real_ip, port = _split_real_address(parts[1])
+                            bytes_received = int(parts[2])
+                            bytes_sent = int(parts[3])
+                            connected_since = parts[4]
 
-                        naive_dt = datetime.datetime.strptime(connected_since, "%Y-%m-%d %H:%M:%S")
-                        connected_dt = LOCAL_TZ.localize(naive_dt)
-                        time_online = format_duration(int((now - connected_dt).total_seconds()))
+                            # Validate byte counts
+                            if bytes_received < 0 or bytes_sent < 0:
+                                raise ValueError("Negative byte count")
+
+                            naive_dt = datetime.datetime.strptime(
+                                connected_since, "%Y-%m-%d %H:%M:%S"
+                            )
+                            connected_dt = LOCAL_TZ.localize(naive_dt)
+                            time_online = format_duration(int((now - connected_dt).total_seconds()))
+                        except (ValueError, IndexError) as e:
+                            logger.warning(
+                                f"Invalid client data in status.log: {line.strip()} - Error: {e}"
+                            )
+                            continue
 
                         client_records.append(
                             {
@@ -439,8 +489,8 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
 
                         if common_name not in active_sessions:
                             session_id = str(uuid.uuid4())
-                            # Fetch geolocation for new session
-                            location = fetch_geolocation(real_ip)
+                            # Fetch geolocation for new session (with caching)
+                            location = fetch_geolocation_cached(real_ip)
                             active_sessions[common_name] = {
                                 "ip": real_ip,
                                 "vpn_ip": None,
@@ -469,8 +519,8 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
 
                                 # Create new session
                                 session_id = str(uuid.uuid4())
-                                # Fetch geolocation for new session
-                                location = fetch_geolocation(real_ip)
+                                # Fetch geolocation for new session (with caching)
+                                location = fetch_geolocation_cached(real_ip)
                                 active_sessions[common_name] = {
                                     "ip": real_ip,
                                     "vpn_ip": None,
@@ -550,7 +600,9 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                 del active_sessions[cn]
 
             save_active_sessions(active_sessions)
+            # Store copy for return value (outside the lock context)
+            active_sessions_result = dict(active_sessions)
     except Exception:  # pragma: no cover - safeguard logging
         logger.exception("Error parsing status log")
 
-    return clients
+    return clients, active_sessions_result

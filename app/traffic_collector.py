@@ -220,11 +220,29 @@ def collect_traffic_metrics(clients_data: List[Dict]):
 
             metrics[common_name].append(metric_point)
 
-        # Cleanup old metrics
-        metrics = cleanup_old_metrics(metrics, now)
-
-        # Save updated metrics
+        # Save updated metrics (cleanup is done separately, once per hour)
         save_metrics(metrics)
+
+
+def cleanup_old_traffic_metrics(path: str = TRAFFIC_METRICS_PATH):
+    """
+    Clean up old metrics (should be called periodically, not on every collection).
+
+    This function should be called once per hour to remove metrics older than 24 hours.
+    Calling it on every collection (every 10 seconds) is wasteful.
+    """
+    now = datetime.datetime.now(LOCAL_TZ)
+
+    with metrics_lock(path):
+        metrics = load_metrics(path)
+        cleaned = cleanup_old_metrics(metrics, now)
+
+        # Calculate how many points were removed
+        removed = sum(len(v) for v in metrics.values()) - sum(len(v) for v in cleaned.values())
+
+        if removed > 0:
+            logger.info(f"Cleaned up {removed} old metric points")
+            save_metrics(cleaned, path)
 
 
 def get_metrics_for_period(

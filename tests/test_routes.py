@@ -80,10 +80,12 @@ def test_api_history_includes_vpn_ip_versions(app_client):
     response = client.get("/api/history")
     assert response.status_code == 200
 
-    entries = json.loads(response.data)
+    data = json.loads(response.data)
+    entries = data["entries"]
     assert len(entries) == 3
 
-    alice, bob, carol = entries
+    # API sorts by timestamp descending (newest first)
+    carol, bob, alice = entries
 
     assert alice["vpn_ip"] == "10.8.0.5"
     assert alice["vpn_ipv4"] == "10.8.0.5"
@@ -146,7 +148,7 @@ def test_clients_summary_counts_closed_sessions(app_client, monkeypatch):
 
     from app import routes
 
-    monkeypatch.setattr(routes, "parse_status_log", lambda: [])
+    monkeypatch.setattr(routes, "parse_status_log", lambda: ([], {}))
 
     response = client.get("/api/clients/summary")
     assert response.status_code == 200
@@ -191,7 +193,7 @@ def test_clients_summary_includes_active_session(app_client, monkeypatch):
 
     from app import routes
 
-    monkeypatch.setattr(routes, "parse_status_log", lambda: active_clients)
+    monkeypatch.setattr(routes, "parse_status_log", lambda: (active_clients, {}))
 
     response = client.get("/api/clients/summary")
     assert response.status_code == 200

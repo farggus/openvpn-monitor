@@ -1,10 +1,13 @@
 """Application configuration helpers for log parsing and API."""
 
 import json
+import logging
 import os
 from pathlib import Path
 
 import pytz
+
+logger = logging.getLogger(__name__)
 
 _DEFAULT_TIMEZONE = "Europe/Bucharest"
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -14,9 +17,15 @@ _DEFAULT_DATA_DIR = _PROJECT_ROOT / "data"
 def _load_timezone():
     tz_name = os.getenv("OPENVPN_MONITOR_TZ", _DEFAULT_TIMEZONE)
     try:
-        return pytz.timezone(tz_name)
+        tz = pytz.timezone(tz_name)
+        logger.info(f"Using timezone: {tz_name}")
+        return tz
     except pytz.UnknownTimeZoneError:
-        # Fallback to default to keep the application running.
+        logger.warning(
+            f"Unknown timezone '{tz_name}' specified in OPENVPN_MONITOR_TZ, "
+            f"falling back to default '{_DEFAULT_TIMEZONE}'. "
+            f"See https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for valid values."
+        )
         return pytz.timezone(_DEFAULT_TIMEZONE)
 
 

@@ -80,8 +80,9 @@ ROUTING TABLE
 
     _freeze_time(monkeypatch, parser, hour=13)
 
-    clients = parser.parse_status_log(str(status_path))
+    clients, active_sessions = parser.parse_status_log(str(status_path))
     assert clients == []
+    assert active_sessions == {}
 
     with active_path.open() as fh:
         data = json.load(fh)

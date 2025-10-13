@@ -10,8 +10,8 @@ from typing import Any, Dict, List, Optional
 from flask import Flask, g, jsonify, render_template, request
 from flask_babel import Babel, gettext
 
-from .config import ACTIVE_SESSIONS_PATH, HISTORY_LOG_PATH, SERVER_STATUS_PATH
-from .parser import load_active_sessions, parse_status_log
+from .config import HISTORY_LOG_PATH, SERVER_STATUS_PATH
+from .parser import parse_status_log
 from .traffic_collector import get_metrics_for_period
 from .view_counter import get_view_counter, increment_view_counter
 
@@ -90,10 +90,17 @@ def _json_error(message: str, status_code: int = 500, *, code: str = "internal_e
     return jsonify(payload), status_code
 
 
-def _get_cached_clients() -> List[Dict[str, Any]]:
-    if "parsed_clients" not in g:
-        g.parsed_clients = parse_status_log()
-    return g.parsed_clients
+def _get_cached_data():
+    """
+    Get cached parsed clients and active sessions.
+
+    Returns:
+        tuple: (clients, active_sessions)
+    """
+    if "parsed_data" not in g:
+        clients, active_sessions = parse_status_log()
+        g.parsed_data = (clients, active_sessions)
+    return g.parsed_data
 
 
 def _normalize_history_entry(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -221,7 +228,7 @@ def _aggregate_client_stats() -> List[Dict[str, Any]]:
             if current_last_seen is None or candidate_dt > current_last_seen:
                 info["last_seen"] = candidate_dt
 
-    active_clients = _get_cached_clients()
+    active_clients, _ = _get_cached_data()
     now = datetime.now()
 
     for client in active_clients:
@@ -312,18 +319,10 @@ def index():
     return render_template("index.html")
 
 
-# @app.route('/api/clients')
-# def api_clients():
-#    clients = parse_status_log()
-#    return jsonify({"clients": clients})
-
-
 @app.route("/api/clients")
 def api_clients():
     try:
-        clients = _get_cached_clients()
-        # Load active sessions to enrich with location data
-        active_sessions = load_active_sessions(ACTIVE_SESSIONS_PATH)
+        clients, active_sessions = _get_cached_data()
 
         # Add location from active_sessions to each client
         for client in clients:
@@ -349,13 +348,82 @@ def api_clients():
 
 @app.route("/api/history")
 def get_history():
+    """
+    Get connection history with pagination and filtering.
+
+    Query parameters:
+    - limit: Max number of entries to return (default: 100, max: 1000)
+    - offset: Number of entries to skip (default: 0)
+    - client: Filter by client name (optional)
+    - from_date: Filter sessions after date (format: YYYY-MM-DD, optional)
+    - to_date: Filter sessions before date (format: YYYY-MM-DD, optional)
+
+    Returns:
+        JSON object with:
+        - entries: List of history entries
+        - pagination: Metadata (total, limit, offset, has_more)
+    """
     try:
-        entries = _load_history_entries()
+        # Parse and validate parameters
+        try:
+            limit = min(int(request.args.get("limit", 100)), 1000)
+            offset = int(request.args.get("offset", 0))
+        except (TypeError, ValueError):
+            return _json_error(
+                gettext("Invalid limit or offset parameter"), 400, code="invalid_parameter"
+            )
+
+        if limit < 1 or offset < 0:
+            return _json_error(
+                gettext("Limit must be >= 1 and offset must be >= 0"),
+                400,
+                code="invalid_parameter",
+            )
+
+        client_filter = request.args.get("client")
+        from_date = request.args.get("from_date")
+        to_date = request.args.get("to_date")
+
+        # Load all entries
+        all_entries = _load_history_entries()
+
+        # Apply filters
+        filtered = all_entries
+
+        if client_filter:
+            filtered = [e for e in filtered if e.get("name") == client_filter]
+
+        if from_date:
+            # Filter by timestamp (session start time)
+            filtered = [e for e in filtered if e.get("timestamp", "") >= from_date]
+
+        if to_date:
+            # Add time component to include entire day
+            to_date_end = f"{to_date} 23:59:59"
+            filtered = [e for e in filtered if e.get("timestamp", "") <= to_date_end]
+
+        # Sort by timestamp descending (newest first)
+        filtered.sort(key=lambda e: e.get("timestamp", ""), reverse=True)
+
+        # Apply pagination
+        total = len(filtered)
+        paginated = filtered[offset : offset + limit]
+
+        return jsonify(
+            {
+                "entries": paginated,
+                "pagination": {
+                    "total": total,
+                    "limit": limit,
+                    "offset": offset,
+                    "has_more": (offset + limit) < total,
+                },
+            }
+        )
+
     except Exception:  # pragma: no cover - defensive logging
         logger.exception("Error reading history log")
         return _json_error(gettext("Failed to read history log"))
-
-    return jsonify(entries)
 
 
 @app.route("/api/server-status")
@@ -363,7 +431,7 @@ def get_server_status():
     data = _load_server_status()
 
     try:
-        clients = _get_cached_clients()
+        clients, _ = _get_cached_data()
     except Exception:  # pragma: no cover - defensive logging
         logger.exception("[server-status] Failed to parse status log")
         clients = []
