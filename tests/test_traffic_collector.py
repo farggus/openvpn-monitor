@@ -102,8 +102,6 @@ def test_save_metrics_handles_write_error_during_json_dump(traffic_collector_mod
     test_data = {"client1": [{"timestamp": "2024-01-01T12:00:00"}]}
 
     # Mock json.dump to fail
-    original_dump = collector.json.dump
-
     def failing_dump(obj, fp, **kwargs):
         raise ValueError("Simulated JSON error")
 

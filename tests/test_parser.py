@@ -3,7 +3,6 @@ import json
 import sys
 from datetime import datetime as RealDateTime
 from pathlib import Path
-import uuid
 
 import pytest
 

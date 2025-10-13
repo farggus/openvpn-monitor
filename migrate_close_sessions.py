@@ -55,12 +55,14 @@ def close_incomplete_sessions():
                 closed_count += 1
 
                 print(
-                    f"Closed session: {session.get('name')} ({timestamp} -> {session['session_end']})"
+                    f"Closed session: {session.get('name')} "
+                    f"({timestamp} -> {session['session_end']})"
                 )
 
             except ValueError as e:
                 print(
-                    f"Warning: Invalid timestamp format for session {session.get('session_id')}: {e}"
+                    f"Warning: Invalid timestamp format "
+                    f"for session {session.get('session_id')}: {e}"
                 )
                 continue
 
@@ -82,7 +84,7 @@ def close_incomplete_sessions():
             json.dump(sessions, f, ensure_ascii=False, indent=2)
             f.write("\n")
 
-        print(f"✓ Migration completed successfully!")
+        print("✓ Migration completed successfully!")
         print(f"  - Backup saved to: {backup_file}")
         print(f"  - {closed_count} sessions closed")
     else:
