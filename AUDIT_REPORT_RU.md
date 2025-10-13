@@ -1202,7 +1202,6 @@ OPENVPN_DOMAIN=openvpn.example.com
    ```
    OPENVPN_DOMAIN=your-domain.com
    ```
-```
 
 #### Приоритет: НИЗКИЙ
 
