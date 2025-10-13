@@ -191,8 +191,8 @@ def _should_skip_undef_session(common_name, connected_at, session_end, rx, tx):
 
     Skip sessions that are:
     - Named "UNDEF"
-    - Duration < 60 seconds
-    - Traffic < 1 MB total
+    - Duration < 1 seconds
+    - Traffic < 0.1 MB total
     """
     if common_name != "UNDEF":
         return False
@@ -209,7 +209,7 @@ def _should_skip_undef_session(common_name, connected_at, session_end, rx, tx):
         duration_seconds = (end_dt - start_dt).total_seconds()
 
         # Check if session is short and has minimal traffic
-        if duration_seconds < 60 and (rx or 0) + (tx or 0) < 1:
+        if duration_seconds < 1 and (rx or 0) + (tx or 0) < 0.1:
             return True
     except (ValueError, TypeError):
         pass
