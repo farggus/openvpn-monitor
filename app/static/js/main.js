@@ -134,6 +134,12 @@ document.addEventListener("DOMContentLoaded", function () {
   const historyModalEl = document.getElementById('historyModal');
   const historyModal = new bootstrap.Modal(historyModalEl);
 
+  // History pagination state
+  let historyOffset = 0;
+  let historyHasMore = true;
+  let historyLoading = false;
+  const HISTORY_PAGE_SIZE = 500;
+
   // History filter controls
   const historyControls = [
     document.getElementById('filterDate'),
@@ -153,57 +159,133 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   };
 
-  // --- "Connection history" button - Open history modal ---
-  document.getElementById("historyBtn").addEventListener("click", () => {
-    // Reset data
-    fullHistoryData = [];
-    window.fullHistoryData = fullHistoryData;
-    document.getElementById("userList").innerHTML = "";
-    document.getElementById("cityList").innerHTML = "";
+  /**
+   * Loads a page of history data from API
+   * @param {boolean} resetData - If true, clears existing data and starts from offset 0
+   */
+  const loadHistoryPage = (resetData = false) => {
+    if (historyLoading) return;
+    if (!resetData && !historyHasMore) return;
+
+    historyLoading = true;
+
+    if (resetData) {
+      historyOffset = 0;
+      historyHasMore = true;
+      fullHistoryData = [];
+      window.fullHistoryData = fullHistoryData;
+    }
 
     // Show loading indicator
-    showHistoryStatus("Loading history...", { spinner: true });
-    setHistoryControlsDisabled(true);
+    if (resetData) {
+      showHistoryStatus("Loading history...", { spinner: true });
+      setHistoryControlsDisabled(true);
+    }
 
-    // Show modal
-    historyModal.show();
+    // Load history data from API with pagination
+    $.getJSON(`/api/history?limit=${HISTORY_PAGE_SIZE}&offset=${historyOffset}`)
+      .done(response => {
+        // Validate response - API now returns object with entries and pagination
+        if (!response || typeof response !== 'object') {
+          showHistoryStatus("Failed to load history", { tone: 'danger' });
+          return;
+        }
 
-    // Load history data from API
-    $.getJSON("/api/history")
-      .done(entries => {
-        // Validate response
+        // Extract entries from new API format
+        const entries = response.entries || response;
+        const pagination = response.pagination || {};
+
+        // Validate entries array
         if (!Array.isArray(entries)) {
-          const errorMessage = entries && entries.error ? entries.error : "Failed to load history";
+          const errorMessage = response.error || "Failed to load history";
           showHistoryStatus(errorMessage, { tone: 'danger' });
           return;
         }
 
-        // Filter entries with valid traffic data
-        fullHistoryData = entries.filter(e => e.rx !== null && e.tx !== null);
+        // Append entries to existing data
+        fullHistoryData = fullHistoryData.concat(entries);
         window.fullHistoryData = fullHistoryData;
 
-        // Extract unique client names for autocomplete
-        const names = [...new Set(fullHistoryData.map(e => e.name))];
-        document.getElementById("userList").innerHTML = names.map(n => `<option value="${n}">`).join("");
+        // Update pagination state
+        historyHasMore = pagination.has_more || false;
+        historyOffset = historyOffset + entries.length;
 
-        // Extract unique cities for autocomplete
-        const cities = [...new Set(fullHistoryData.map(e => e.location?.city).filter(c => c))];
-        document.getElementById("cityList").innerHTML = cities.map(c => `<option value="${c}">`).join("");
+        // Update autocomplete lists only on first load
+        if (historyOffset === entries.length) {
+          const names = [...new Set(fullHistoryData.map(e => e.name))];
+          document.getElementById("userList").innerHTML = names.map(n => `<option value="${n}">`).join("");
 
-        // Set current date in filter by default
-        document.getElementById("filterDate").value = new Date().toISOString().split('T')[0];
+          const cities = [...new Set(fullHistoryData.map(e => e.location?.city).filter(c => c))];
+          document.getElementById("cityList").innerHTML = cities.map(c => `<option value="${c}">`).join("");
+
+          // Set current date in filter by default
+          document.getElementById("filterDate").value = new Date().toISOString().split('T')[0];
+        } else {
+          // Update autocomplete with new entries
+          const existingNames = new Set(document.getElementById("userList").innerHTML.match(/value="([^"]+)"/g)?.map(m => m.slice(7, -1)) || []);
+          const newNames = fullHistoryData.map(e => e.name).filter(n => !existingNames.has(n));
+          if (newNames.length > 0) {
+            document.getElementById("userList").innerHTML += [...new Set(newNames)].map(n => `<option value="${n}">`).join("");
+          }
+
+          const existingCities = new Set(document.getElementById("cityList").innerHTML.match(/value="([^"]+)"/g)?.map(m => m.slice(7, -1)) || []);
+          const newCities = fullHistoryData.map(e => e.location?.city).filter(c => c && !existingCities.has(c));
+          if (newCities.length > 0) {
+            document.getElementById("cityList").innerHTML += [...new Set(newCities)].map(c => `<option value="${c}">`).join("");
+          }
+        }
 
         // Apply filters and display table
         applyFilters();
+
+        // Show "Load more" message if there are more entries
+        if (historyHasMore && !resetData) {
+          const tbody = document.getElementById('history-body');
+          const loadMoreRow = document.createElement('tr');
+          loadMoreRow.innerHTML = '<td colspan="11" class="text-center py-2 text-muted"><small>Scroll down to load more entries...</small></td>';
+          loadMoreRow.id = 'load-more-indicator';
+          tbody.appendChild(loadMoreRow);
+        }
       })
       .fail(() => {
         showHistoryStatus("Failed to load history", { tone: 'danger' });
       })
       .always(() => {
+        historyLoading = false;
         // Enable controls after load completes
         setHistoryControlsDisabled(false);
       });
+  };
+
+  // --- "Connection history" button - Open history modal ---
+  document.getElementById("historyBtn").addEventListener("click", () => {
+    // Reset data
+    document.getElementById("userList").innerHTML = "";
+    document.getElementById("cityList").innerHTML = "";
+
+    // Show modal
+    historyModal.show();
+
+    // Load first page of history
+    loadHistoryPage(true);
   });
+
+  // --- Infinite scroll for history table ---
+  const historyTableContainer = document.querySelector('.history-table-container');
+  if (historyTableContainer) {
+    historyTableContainer.addEventListener('scroll', () => {
+      // Check if scrolled near bottom (within 100px)
+      const scrollBottom = historyTableContainer.scrollHeight - historyTableContainer.scrollTop - historyTableContainer.clientHeight;
+      if (scrollBottom < 100 && historyHasMore && !historyLoading) {
+        // Remove load more indicator if present
+        const indicator = document.getElementById('load-more-indicator');
+        if (indicator) indicator.remove();
+
+        // Load next page
+        loadHistoryPage(false);
+      }
+    });
+  }
 
   // === CLIENTS MODAL SETUP ===
 
@@ -260,11 +342,19 @@ document.addEventListener("DOMContentLoaded", function () {
     setTimeout(tryRefreshOpenHistoryMap, 120);
   });
 
+  // Zero traffic checkbox change handler
+  document.getElementById("hideZeroTraffic").addEventListener("change", () => {
+    applyFilters();
+    // Auto-update history map if it's open
+    setTimeout(tryRefreshOpenHistoryMap, 120);
+  });
+
   // Reset filters button
   document.getElementById("resetFilters").addEventListener("click", () => {
     document.getElementById("filterDate").value = "";
     document.getElementById("filterUser").value = "";
     document.getElementById("filterCity").value = "";
+    document.getElementById("hideZeroTraffic").checked = false;
     renderHistoryTable(window.fullHistoryData);
 
     // Auto-update history map if it's open

@@ -22,6 +22,14 @@
             <input class="form-control" id="filterCity" list="cityList" type="text"/>
             <datalist id="cityList"></datalist>
           </div>
+          <div class="d-flex align-items-end">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="hideZeroTraffic">
+              <label class="form-check-label" for="hideZeroTraffic">
+                {{ _('Hide zero Rx/Tx values') }}
+              </label>
+            </div>
+          </div>
           <div class="ms-auto">
             <button class="btn btn-outline-secondary" id="resetFilters">{{ _('Clear filter') }}</button>
             <button class="btn btn-outline-success" id="viewOnMap">{{ _('View on map') }}</button>

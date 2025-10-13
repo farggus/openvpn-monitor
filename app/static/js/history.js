@@ -32,23 +32,32 @@ function showHistoryStatus(message, { spinner = false, tone = 'muted' } = {}) {
 
 /**
  * Applies filters to history data and updates the table
- * Filters by date and client name
+ * Filters by date, client name, city, and optionally zero traffic
  */
 function applyFilters() {
   // Get filter values
   const dateFilter = document.getElementById("filterDate").value;
   const userFilter = document.getElementById("filterUser").value.toLowerCase();
   const cityFilter = document.getElementById("filterCity").value.toLowerCase();
+  const hideZeroTraffic = document.getElementById("hideZeroTraffic")?.checked || false;
 
   // Filter data
-  const filtered = window.fullHistoryData.filter(entry =>
+  const filtered = window.fullHistoryData.filter(entry => {
     // Date filter: if not set or timestamp starts with date
-    (!dateFilter || entry.timestamp.startsWith(dateFilter)) &&
+    const matchesDate = !dateFilter || entry.timestamp.startsWith(dateFilter);
+
     // Name filter: if not set or name contains search string
-    (!userFilter || entry.name.toLowerCase().includes(userFilter)) &&
+    const matchesUser = !userFilter || entry.name.toLowerCase().includes(userFilter);
+
     // City filter: if not set or city contains search string
-    (!cityFilter || (entry.location?.city || "").toLowerCase().includes(cityFilter))
-  );
+    const matchesCity = !cityFilter || (entry.location?.city || "").toLowerCase().includes(cityFilter);
+
+    // Traffic filter: if checkbox is checked, hide entries where BOTH rx AND tx are zero or null
+    const matchesTraffic = !hideZeroTraffic ||
+      !((entry.rx === null || entry.rx === 0) && (entry.tx === null || entry.tx === 0));
+
+    return matchesDate && matchesUser && matchesCity && matchesTraffic;
+  });
 
   // Display filtered data
   renderHistoryTable(filtered);
