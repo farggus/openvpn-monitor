@@ -95,9 +95,7 @@ def test_save_metrics_success_leaves_no_temp_files(traffic_collector_module):
     assert saved_data == test_data
 
 
-def test_save_metrics_handles_write_error_during_json_dump(
-    traffic_collector_module, monkeypatch
-):
+def test_save_metrics_handles_write_error_during_json_dump(traffic_collector_module, monkeypatch):
     """Test cleanup when json.dump fails."""
     collector, metrics_path = traffic_collector_module
 

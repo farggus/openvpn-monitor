@@ -35,19 +35,19 @@ try:
 
     # Check that old duplicate logic in new sessions is removed
     # Old code had: entries.append(new_entry) with rx: None, tx: None
-    lines = content.split('\n')
+    lines = content.split("\n")
     problematic_lines = []
 
     for i, line in enumerate(lines, 1):
         if '"rx": None' in line or '"tx": None' in line:
             # This should only appear in comments or in specific contexts
             # Let's check the context around it
-            context_start = max(0, i-10)
-            context_end = min(len(lines), i+5)
-            context = '\n'.join(lines[context_start:context_end])
+            context_start = max(0, i - 10)
+            context_end = min(len(lines), i + 5)
+            context = "\n".join(lines[context_start:context_end])
 
             # If it's in new_sessions loop with history_log, that's bad
-            if 'for common_name in new_sessions:' in context and 'history_log()' in context:
+            if "for common_name in new_sessions:" in context and "history_log()" in context:
                 problematic_lines.append(i)
 
     if not problematic_lines:
@@ -67,6 +67,6 @@ except Exception as e:
     print(f"✗ ERROR: {e}")
     sys.exit(1)
 
-print("\n" + "="*60)
+print("\n" + "=" * 60)
 print("✓ All tests passed! Refactoring is successful.")
-print("="*60)
+print("=" * 60)

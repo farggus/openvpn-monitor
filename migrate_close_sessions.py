@@ -54,10 +54,14 @@ def close_incomplete_sessions():
 
                 closed_count += 1
 
-                print(f"Closed session: {session.get('name')} ({timestamp} -> {session['session_end']})")
+                print(
+                    f"Closed session: {session.get('name')} ({timestamp} -> {session['session_end']})"
+                )
 
             except ValueError as e:
-                print(f"Warning: Invalid timestamp format for session {session.get('session_id')}: {e}")
+                print(
+                    f"Warning: Invalid timestamp format for session {session.get('session_id')}: {e}"
+                )
                 continue
 
     print(f"\nFound {incomplete_count} incomplete sessions")

@@ -19,10 +19,7 @@ from datetime import datetime
 from pathlib import Path
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -30,13 +27,9 @@ def get_openvpn_pid():
     """Get OpenVPN process PID."""
     try:
         result = subprocess.run(
-            ['pgrep', '-f', 'openvpn'],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=5
+            ["pgrep", "-f", "openvpn"], capture_output=True, text=True, check=True, timeout=5
         )
-        pids = result.stdout.strip().split('\n')
+        pids = result.stdout.strip().split("\n")
         return pids[0] if pids and pids[0] else None
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return None
@@ -45,11 +38,11 @@ def get_openvpn_pid():
 def get_process_start_time(pid):
     """Get process start time from /proc filesystem."""
     try:
-        proc_path = Path(f'/proc/{pid}')
+        proc_path = Path(f"/proc/{pid}")
         if proc_path.exists():
             stat_result = proc_path.stat()
             start_time = datetime.fromtimestamp(stat_result.st_mtime)
-            return start_time.strftime('%Y-%m-%d %H:%M:%S')
+            return start_time.strftime("%Y-%m-%d %H:%M:%S")
     except Exception as e:
         logger.warning(f"Failed to get process start time: {e}")
     return "Unknown"
@@ -60,15 +53,12 @@ def get_local_ip():
     # Try tun0 first (VPN interface)
     try:
         result = subprocess.run(
-            ['ip', '-4', 'addr', 'show', 'tun0'],
-            capture_output=True,
-            text=True,
-            timeout=5
+            ["ip", "-4", "addr", "show", "tun0"], capture_output=True, text=True, timeout=5
         )
         if result.returncode == 0:
-            for line in result.stdout.split('\n'):
-                if 'inet ' in line:
-                    ip = line.strip().split()[1].split('/')[0]
+            for line in result.stdout.split("\n"):
+                if "inet " in line:
+                    ip = line.strip().split()[1].split("/")[0]
                     return ip
     except Exception as e:
         logger.debug(f"tun0 not available: {e}")
@@ -76,15 +66,12 @@ def get_local_ip():
     # Fallback to eth0
     try:
         result = subprocess.run(
-            ['ip', '-4', 'addr', 'show', 'eth0'],
-            capture_output=True,
-            text=True,
-            timeout=5
+            ["ip", "-4", "addr", "show", "eth0"], capture_output=True, text=True, timeout=5
         )
         if result.returncode == 0:
-            for line in result.stdout.split('\n'):
-                if 'inet ' in line:
-                    ip = line.strip().split()[1].split('/')[0]
+            for line in result.stdout.split("\n"):
+                if "inet " in line:
+                    ip = line.strip().split()[1].split("/")[0]
                     return ip
     except Exception as e:
         logger.warning(f"Failed to get local IP: {e}")
@@ -97,10 +84,10 @@ def get_public_ip():
     # Try OpenDNS resolver first
     try:
         result = subprocess.run(
-            ['dig', '+short', 'myip.opendns.com', '@resolver1.opendns.com'],
+            ["dig", "+short", "myip.opendns.com", "@resolver1.opendns.com"],
             capture_output=True,
             text=True,
-            timeout=10
+            timeout=10,
         )
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip()
@@ -110,10 +97,7 @@ def get_public_ip():
     # Fallback to ipify.org
     try:
         result = subprocess.run(
-            ['curl', '-s', 'https://api.ipify.org'],
-            capture_output=True,
-            text=True,
-            timeout=10
+            ["curl", "-s", "https://api.ipify.org"], capture_output=True, text=True, timeout=10
         )
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip()
@@ -129,11 +113,7 @@ def check_ping(ip):
         return "No"
 
     try:
-        result = subprocess.run(
-            ['ping', '-c1', '-W1', ip],
-            capture_output=True,
-            timeout=5
-        )
+        result = subprocess.run(["ping", "-c1", "-W1", ip], capture_output=True, timeout=5)
         return "Yes" if result.returncode == 0 else "No"
     except Exception:
         return "No"
@@ -168,7 +148,7 @@ def get_server_status():
         "uptime": uptime,
         "local_ip": local_ip,
         "public_ip": public_ip,
-        "pingable": pingable
+        "pingable": pingable,
     }
 
 
@@ -182,11 +162,11 @@ def atomic_write_json(data, output_path):
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Write to temporary file first
-    temp_path = output_path.with_suffix('.tmp')
+    temp_path = output_path.with_suffix(".tmp")
     try:
-        with open(temp_path, 'w') as f:
+        with open(temp_path, "w") as f:
             json.dump(data, f, indent=2)
-            f.write('\n')
+            f.write("\n")
             f.flush()
             os.fsync(f.fileno())
 
@@ -204,18 +184,17 @@ def atomic_write_json(data, output_path):
 def main():
     """Main entry point."""
     # Get output path from environment variable
-    output_file = os.getenv(
-        'OPENVPN_SERVER_STATUS',
-        '/app/data/server_status.json'
-    )
+    output_file = os.getenv("OPENVPN_SERVER_STATUS", "/app/data/server_status.json")
 
     try:
         logger.info("Collecting server status...")
         status_data = get_server_status()
 
-        logger.info(f"Status: {status_data['status']}, "
-                   f"Local IP: {status_data['local_ip']}, "
-                   f"Public IP: {status_data['public_ip']}")
+        logger.info(
+            f"Status: {status_data['status']}, "
+            f"Local IP: {status_data['local_ip']}, "
+            f"Public IP: {status_data['public_ip']}"
+        )
 
         atomic_write_json(status_data, output_file)
 
@@ -224,5 +203,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

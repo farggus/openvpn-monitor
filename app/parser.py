@@ -221,7 +221,9 @@ def _should_skip_undef_session(common_name, connected_at, session_end, rx, tx):
 
         # Check if session is short and has minimal traffic
         if duration_seconds < 10 and (rx or 0) + (tx or 0) < 0.1:
-            logger.info(f"Skipping UNDEF session: duration={duration_seconds}s, rx={rx}MB, tx={tx}MB")
+            logger.info(
+                f"Skipping UNDEF session: duration={duration_seconds}s, rx={rx}MB, tx={tx}MB"
+            )
             return True
     except (ValueError, TypeError) as e:
         logger.warning(f"Error parsing session times: {e}")
@@ -315,28 +317,30 @@ def _complete_session(session, common_name, disconnect_time):
 
     # Simply add completed session to history
     with history_log() as entries:
-        entries.append({
-            "timestamp": session["connected_at"],
-            "name": common_name,
-            "ip": session.get("ip"),
-            "session_id": session["session_id"],
-            "rx": rx,
-            "tx": tx,
-            "vpn_ip": vpn_ip or None,
-            "vpn_ipv4": vpn_ipv4 or None,
-            "vpn_ipv6": vpn_ipv6 or None,
-            "port": port or None,
-            "session_end": disconnect_time,
-            "location": session.get(
-                "location",
-                {
-                    "city": None,
-                    "country": None,
-                    "latitude": None,
-                    "longitude": None,
-                },
-            ),
-        })
+        entries.append(
+            {
+                "timestamp": session["connected_at"],
+                "name": common_name,
+                "ip": session.get("ip"),
+                "session_id": session["session_id"],
+                "rx": rx,
+                "tx": tx,
+                "vpn_ip": vpn_ip or None,
+                "vpn_ipv4": vpn_ipv4 or None,
+                "vpn_ipv6": vpn_ipv6 or None,
+                "port": port or None,
+                "session_end": disconnect_time,
+                "location": session.get(
+                    "location",
+                    {
+                        "city": None,
+                        "country": None,
+                        "latitude": None,
+                        "longitude": None,
+                    },
+                ),
+            }
+        )
 
     logger.info(f"Completed session for {common_name}: {rx}MB rx, {tx}MB tx")
 
