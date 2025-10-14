@@ -1,0 +1,43 @@
+# Docker build context exclusions
+
+# Data directory (runtime data, not needed for build)
+data/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Git
+.git/
+.gitignore
+
+# IDE and editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation (not needed in image)
+*.md
+!README.md
+
+# Environment files
+.env
+
+# Build artifacts
+*.egg-info/
+dist/
+build/

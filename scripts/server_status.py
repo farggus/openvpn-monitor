@@ -7,7 +7,7 @@ Replaces server_status.sh with secure implementation:
 - Uses json.dump() for safe JSON creation
 - Atomic file writes
 - Reads output path from environment variable
-- No server geolocation (security improvement)
+- Optional server geolocation (disabled by default for security)
 """
 
 import json
@@ -15,6 +15,7 @@ import logging
 import os
 import subprocess
 import sys
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -119,6 +120,36 @@ def check_ping(ip):
         return "No"
 
 
+def get_geolocation(ip):
+    """
+    Get geolocation for IP address using ip-api.com.
+
+    WARNING: This reveals the physical location of your server.
+    Only enable if absolutely necessary via OPENVPN_SERVER_GEOLOCATION=true.
+
+    Returns dict with city, country, latitude, longitude or None values on failure.
+    """
+    if ip == "Unknown":
+        return {"city": None, "country": None, "latitude": None, "longitude": None}
+
+    try:
+        url = f"http://ip-api.com/json/{ip}"
+        with urllib.request.urlopen(url, timeout=10) as response:
+            data = json.loads(response.read().decode())
+
+            if data.get("status") == "success":
+                return {
+                    "city": data.get("city"),
+                    "country": data.get("country"),
+                    "latitude": data.get("lat"),
+                    "longitude": data.get("lon"),
+                }
+    except Exception as e:
+        logger.warning(f"Failed to get geolocation: {e}")
+
+    return {"city": None, "country": None, "latitude": None, "longitude": None}
+
+
 def get_server_status():
     """
     Collect server status information.
@@ -129,6 +160,7 @@ def get_server_status():
     - local_ip: Local IP address
     - public_ip: Public IP address
     - pingable: Whether local IP is pingable
+    - location: Optional geolocation (only if OPENVPN_SERVER_GEOLOCATION=true)
     """
     pid = get_openvpn_pid()
 
@@ -143,13 +175,24 @@ def get_server_status():
     public_ip = get_public_ip()
     pingable = check_ping(local_ip)
 
-    return {
+    result = {
         "status": status,
         "uptime": uptime,
         "local_ip": local_ip,
         "public_ip": public_ip,
         "pingable": pingable,
     }
+
+    # Optional: Add geolocation if enabled (disabled by default for security)
+    geolocation_enabled = os.getenv("OPENVPN_SERVER_GEOLOCATION", "false").lower() == "true"
+    if geolocation_enabled:
+        logger.info("Server geolocation is enabled - fetching location data...")
+        location = get_geolocation(public_ip)
+        result["location"] = location
+    else:
+        logger.debug("Server geolocation is disabled (security best practice)")
+
+    return result
 
 
 def atomic_write_json(data, output_path):

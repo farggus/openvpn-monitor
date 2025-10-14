@@ -60,7 +60,12 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
    status-version 3
    ```
 
-   Verify permissions: Docker/service user must be able to read `status.log`
+   **Set read permissions on status.log** (required for non-root container):
+   ```bash
+   sudo chmod 644 /var/log/openvpn/status.log
+   ```
+
+   This allows the container (running as UID 1000) to read the OpenVPN status file. The file contains only monitoring data (IP addresses, traffic stats, connection times) - no sensitive credentials.
 
 2. **Directory Structure**
 
@@ -118,26 +123,46 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
    cd openvpn-monitor
    ```
 
-2. **Create Data Directory**
+2. **Configure Environment Variables**
+
+   Create `.env` file from template:
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edit `.env` and configure your domain:
+   ```bash
+   # Required: Set your domain for Traefik routing
+   OPENVPN_DOMAIN=your-domain.com
+
+   # Optional: Server geolocation (disabled by default for security)
+   # OPENVPN_SERVER_GEOLOCATION=false
+   ```
+
+3. **Create Data Directory**
    ```bash
    sudo mkdir -p /var/www/openvpn-monitor/data
    sudo chown -R 1000:1000 /var/www/openvpn-monitor
    ```
 
-3. **Configure Environment Variables**
+   **Note:** The container runs as non-root user (UID 1000) for security. Ensure the data directory is owned by UID 1000.
+
+4. **Configure Additional Environment Variables (Optional)**
 
    Edit `docker-compose.yml` environment block if needed. Available variables:
 
    | Variable | Purpose | Default |
    |----------|---------|---------|
+   | `OPENVPN_DOMAIN` | Domain name for Traefik routing (set in .env file) | `localhost` |
    | `OPENVPN_MONITOR_TZ` | Timezone for session duration calculations | `Europe/Bucharest` |
    | `OPENVPN_STATUS_LOG` | Path to OpenVPN status file (inside container) | `/var/log/openvpn/status.log` |
    | `OPENVPN_HISTORY_LOG` | Session history JSON | `/app/data/session_history.json` |
    | `OPENVPN_ACTIVE_SESSIONS` | Active sessions JSON | `/app/data/active_sessions.json` |
    | `OPENVPN_SERVER_STATUS` | Server status JSON | `/app/data/server_status.json` |
    | `OPENVPN_TRAFFIC_METRICS` | Traffic metrics JSON | `/app/data/traffic_metrics.json` |
+   | `OPENVPN_SERVER_GEOLOCATION` | Enable server geolocation (security risk) | `false` |
 
-4. **Verify Volume Mounts**
+5. **Verify Volume Mounts**
 
    Ensure `volumes` section includes:
    ```yaml
@@ -145,23 +170,23 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
    - ./data:/app/data:rw
    ```
 
-5. **Build and Start**
+6. **Build and Start**
    ```bash
    docker compose up --build -d
    ```
 
-6. **Check Container Status**
+7. **Check Container Status**
    ```bash
    docker compose logs -f
    ```
 
    Look for `OpenVPN background logger started...` message and no `status.log` read errors
 
-7. **Access UI**
+8. **Access UI**
    - With Traefik: `https://<your-domain>`
    - Direct port mapping: Uncomment `ports: - "5000:5000"` in docker-compose.yml and access `http://<host>:5000`
 
-8. **Rebuild from Scratch**
+9. **Rebuild from Scratch**
    ```bash
    docker compose down
    docker compose build --no-cache
@@ -556,7 +581,8 @@ time.sleep(5)  # 5 seconds
 
 | Symptom | Solution |
 |---------|----------|
-| **Empty client table** | Verify container can read `/var/log/openvpn/status.log` with correct permissions |
+| **Empty client table** | Run `sudo chmod 644 /var/log/openvpn/status.log` to allow container (UID 1000) read access. Also verify `docker logs openvpn-admin` shows no permission errors |
+| **Permission denied errors** | Ensure data directory is owned by UID 1000: `sudo chown -R 1000:1000 ./data` and verify OpenVPN log permissions: `sudo chmod 644 /var/log/openvpn/status.log` |
 | **"Unknown" server status** | Ensure `scripts/server_status.py` is running via cron and path to JSON matches `OPENVPN_SERVER_STATUS` |
 | **No client map** | Check ip-api.com availability and rate limit (45/min). Geolocation is added automatically on first client connection |
 | **Timezone errors** | Verify `OPENVPN_MONITOR_TZ` is a valid IANA timezone (e.g., `Europe/Moscow`, not `MSK`) |
@@ -591,6 +617,71 @@ When updating from older versions:
 - Data directory (host, default): `./data`
 - Templates: `app/templates/`
 - Configuration: `app/config.py`
+
+## Security
+
+This application implements several security best practices:
+
+### Non-Root Container Execution
+
+The Docker container runs as a non-root user (UID 1000) to minimize security risks:
+
+- **User:** `appuser` (UID 1000, GID 1000)
+- **Benefit:** Limits potential damage if the container is compromised
+- **Implementation:** Configured in `Dockerfile` and `supervisord.conf`
+
+**Important:** Ensure the host data directory has correct permissions:
+```bash
+sudo chown -R 1000:1000 /path/to/data
+```
+
+### Optional Server Geolocation
+
+Server geolocation is **disabled by default** to prevent information disclosure:
+
+- **Default:** Server location is NOT collected or displayed
+- **Risk:** Revealing server's physical location can aid attackers
+- **Enable only if necessary:** Set `OPENVPN_SERVER_GEOLOCATION=true` in environment
+
+Client geolocation (for connected VPN users) remains enabled and is a core feature of the monitoring dashboard.
+
+### Domain Configuration
+
+Use environment variables instead of hardcoded values:
+
+- **Variable:** `OPENVPN_DOMAIN` in `.env` file
+- **Benefit:** Prevents accidental exposure of production domains in public repositories
+- **Example:** See `.env.example` for configuration template
+
+### Container Restart Policy
+
+Docker Compose includes `restart: unless-stopped` policy:
+
+- Automatically restarts container on failure
+- Survives host reboots
+- Can be manually stopped when needed
+
+### Recommended Additional Security Measures
+
+1. **Enable Authentication:**
+   - Use Traefik Basic Auth or OAuth middleware
+   - Never expose dashboard without authentication
+
+2. **Use HTTPS:**
+   - Configure TLS certificates via Traefik
+   - Redirect HTTP to HTTPS automatically
+
+3. **Limit Network Access:**
+   - Run container in isolated Docker network
+   - Use firewall rules to restrict access
+
+4. **Regular Updates:**
+   - Keep base images and dependencies updated
+   - Monitor security advisories for Python packages
+
+5. **Audit Logs:**
+   - Monitor container logs for suspicious activity
+   - Integrate with centralized logging system
 
 ## License
 

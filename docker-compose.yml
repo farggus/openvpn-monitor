@@ -4,28 +4,30 @@ services:
   openvpn-admin:
     build: .
     container_name: openvpn-admin
+    restart: unless-stopped
 #    environment:
 #      OPENVPN_MONITOR_TZ: "Europe/Bucharest"
 #      OPENVPN_STATUS_LOG: "/var/log/openvpn/status.log"
 #      OPENVPN_HISTORY_LOG: "./data/session_history.json"
 #      OPENVPN_ACTIVE_SESSIONS: "./data/active_sessions.json"
 #      OPENVPN_SERVER_STATUS: "./data/server_status.json"
+#      OPENVPN_SERVER_GEOLOCATION: "false"  # Set to "true" to enable server geolocation
     volumes:
       - /var/log/openvpn:/var/log/openvpn:rw  # Mounting OpenVPN logs into a container
-      - ./data:/app/data:rw  # Persist application state files
+      - ./data:/app/data:rw  # Persist application state files (ensure UID 1000 has write access)
     #ports:
     #  - 5000:5000
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.openvpn.entrypoints=http"
-      - "traefik.http.routers.openvpn.rule=Host(`openvpn.nuvosys.eu`)"
+      - "traefik.http.routers.openvpn.rule=Host(`${OPENVPN_DOMAIN:-localhost}`)"
 #      - "traefik.http.middlewares.openvpn-auth.basicauth.users=scuruci:$$apr1$$x.lN5PaD$$bKTbjAv.Z0KLTKA.VMFNp/" # Auth
 #      - "traefik.http.middlewares.openvpn-auth.basicauth.users=openvpn:$$apr1$$AxHp9Acv$$so9EImC8Jv7YULdyknjHQ., scuruci:$$apr1$$x.lN5PaD$$bKTbjAv.Z0KLTKA.VMFNp/"
       - "traefik.http.middlewares.openvpn-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.openvpn-auth.basicauth.removeheader=false"
       - "traefik.http.routers.openvpn.middlewares=openvpn-https-redirect"
       - "traefik.http.routers.openvpn-secure.entrypoints=https"
-      - "traefik.http.routers.openvpn-secure.rule=Host(`openvpn.nuvosys.eu`)"
+      - "traefik.http.routers.openvpn-secure.rule=Host(`${OPENVPN_DOMAIN:-localhost}`)"
       - "traefik.http.routers.openvpn-secure.middlewares=traefik-auth"   # Authentification
       - "traefik.http.routers.openvpn-secure.tls=true"
       - "traefik.http.routers.openvpn-secure.service=openvpn"
