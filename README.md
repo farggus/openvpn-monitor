@@ -24,9 +24,9 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
 | **Configuration Layer** | Loads timezone, log paths, and JSON file paths from environment variables; creates directories and initializes empty JSON files on first run | `app/config.py` |
 | **Status Parser** | Parses OpenVPN's `status.log` (version 3 format), maintains session data, normalizes IPv4/IPv6 addresses, uses file locking (`fcntl`) to prevent race conditions, and atomically updates files | `app/parser.py` |
 | **Traffic Collector** | Collects and stores traffic metrics every 10 seconds, maintains 24-hour history, calculates speeds (MB/s) | `app/traffic_collector.py` |
-| **Background Logger** | Runs parser and traffic collector in a loop every 10 seconds to keep data fresh | `logger.py` |
+| **Background Logger** | Runs parser, traffic collector, and server status collector in a loop to keep data fresh | `logger.py` |
 | **Internationalization** | Flask-Babel for Python/Jinja2 templates, custom API endpoint for JavaScript translations | `app/routes.py` (`/api/translations`), `translations/`, `app/static/js/i18n.js` |
-| **Server Status Script** | Python script that captures OpenVPN server operational status (PID, local/public IP, ping check); should run via cron every minute | `scripts/server_status.py` |
+| **Server Status Collector** | Collects OpenVPN server operational status (status, uptime, local/public IP, ping check) directly from within the Docker container - no cron required | `app/server_status_collector.py` |
 | **Containerization** | Python 3.12 Docker image with supervisord managing both Flask web server and background logger | `Dockerfile`, `docker-compose.yml`, `supervisord.conf` |
 
 ### Data Flow
@@ -36,9 +36,9 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
 3. Parser reads active clients and routing table, calculates session durations
 4. For new clients, automatically fetches geolocation from ip-api.com (45 req/min limit)
 5. Traffic collector captures current traffic metrics and calculates speeds
-6. Updates `active_sessions.json`, `session_history.json`, and `traffic_metrics.json` under file lock
-7. API endpoints read cached/persisted data and serve to UI
-8. Cron script updates `server_status.json` with server metadata
+6. Server status collector checks `status.log` freshness and fetches public IP (runs every 60 seconds)
+7. Updates `active_sessions.json`, `session_history.json`, `traffic_metrics.json`, and `server_status.json` under file lock
+8. API endpoints read cached/persisted data and serve to UI
 
 ## Prerequisites
 
@@ -46,7 +46,7 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
 - Linux host with Docker 24+ and Docker Compose v2, OR Python ≥3.11 for manual setup
 - Directory on host for state files (`active_sessions.json`, `session_history.json`, `server_status.json`, `traffic_metrics.json`)
 - (Optional) Traefik v2 reverse proxy with external network `proxy` for publishing the dashboard
-- (Optional) Internet access for `server_status.py` script and parser to determine public IP and client geolocation
+- (Optional) Internet access for server status collector and parser to determine public IP and client geolocation
 
 ## Installation
 
@@ -82,30 +82,7 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
    sudo chown -R 1000:1000 /home/app_data/openvpn-monitor
    ```
 
-3. **Cron for Server Status**
-
-   Install required packages:
-   ```bash
-   apt update
-   apt install curl iproute2 dnsutils
-   ```
-
-   Copy script and make executable:
-   ```bash
-   chmod +x /var/www/openvpn-monitor/scripts/server_status.py
-   ```
-
-   Add cron job (every minute):
-   ```cron
-   * * * * * root /usr/bin/python3 /var/www/openvpn-monitor/scripts/server_status.py
-   ```
-
-   Verify JSON is being updated:
-   ```bash
-   cat /var/www/openvpn-monitor/data/server_status.json
-   ```
-
-4. **Traefik (Optional)**
+3. **Traefik (Optional)**
 
    If publishing via Traefik, create external network:
    ```bash
@@ -123,7 +100,15 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
    cd openvpn-monitor
    ```
 
-2. **Configure Environment Variables**
+2. **Prepare Data Directory and Set Permissions**
+
+   The container runs as non-root user (UID 1000) for security:
+   ```bash
+   sudo mkdir -p /var/www/openvpn-monitor/data
+   sudo chown -R 1000:1000 /var/www/openvpn-monitor
+   ```
+
+3. **Configure Environment Variables**
 
    Create `.env` file from template:
    ```bash
@@ -137,15 +122,10 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
 
    # Optional: Server geolocation (disabled by default for security)
    # OPENVPN_SERVER_GEOLOCATION=false
-   ```
 
-3. **Create Data Directory**
-   ```bash
-   sudo mkdir -p /var/www/openvpn-monitor/data
-   sudo chown -R 1000:1000 /var/www/openvpn-monitor
+   # Optional: Set local IP address manually (auto-detected from container if not set)
+   # OPENVPN_LOCAL_IP=10.8.0.1
    ```
-
-   **Note:** The container runs as non-root user (UID 1000) for security. Ensure the data directory is owned by UID 1000.
 
 4. **Configure Additional Environment Variables (Optional)**
 
@@ -161,6 +141,7 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
    | `OPENVPN_SERVER_STATUS` | Server status JSON | `/app/data/server_status.json` |
    | `OPENVPN_TRAFFIC_METRICS` | Traffic metrics JSON | `/app/data/traffic_metrics.json` |
    | `OPENVPN_SERVER_GEOLOCATION` | Enable server geolocation (security risk) | `false` |
+   | `OPENVPN_LOCAL_IP` | Server local IP (auto-detected if not set) | (auto) |
 
 5. **Verify Volume Mounts**
 
@@ -170,7 +151,7 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
    - ./data:/app/data:rw
    ```
 
-6. **Build and Start**
+6. **Build and Start Container**
    ```bash
    docker compose up --build -d
    ```
@@ -583,7 +564,7 @@ time.sleep(5)  # 5 seconds
 |---------|----------|
 | **Empty client table** | Run `sudo chmod 644 /var/log/openvpn/status.log` to allow container (UID 1000) read access. Also verify `docker logs openvpn-admin` shows no permission errors |
 | **Permission denied errors** | Ensure data directory is owned by UID 1000: `sudo chown -R 1000:1000 ./data` and verify OpenVPN log permissions: `sudo chmod 644 /var/log/openvpn/status.log` |
-| **"Unknown" server status** | Ensure `scripts/server_status.py` is running via cron and path to JSON matches `OPENVPN_SERVER_STATUS` |
+| **"Unknown" server status** | Server status is collected automatically from `status.log`. Wait 60 seconds for first update. Check container logs: `docker compose logs -f` for errors. Verify status.log is accessible and being updated by OpenVPN server |
 | **No client map** | Check ip-api.com availability and rate limit (45/min). Geolocation is added automatically on first client connection |
 | **Timezone errors** | Verify `OPENVPN_MONITOR_TZ` is a valid IANA timezone (e.g., `Europe/Moscow`, not `MSK`) |
 | **File lock timeouts** | Check for stale `.lock` files in data directory |

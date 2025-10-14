@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 from app.parser import parse_status_log
 from app.traffic_collector import collect_traffic_metrics, cleanup_old_traffic_metrics
+from app.server_status_collector import update_server_status
 
 # Configure logging to stdout for Docker container
 logging.basicConfig(
@@ -18,10 +19,20 @@ logger = logging.getLogger(__name__)
 if __name__ == "__main__":
     logger.info("OpenVPN background logger started...")
 
+    # Initialize server status immediately on startup
+    logger.info("Initializing server status...")
+    try:
+        update_server_status()
+        logger.info("Server status initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize server status: {e}")
+
     error_count = 0
     max_consecutive_errors = 10
     last_cleanup = datetime.now()
+    last_server_status_update = datetime.now()
     CLEANUP_INTERVAL_SECONDS = 3600  # 1 hour
+    SERVER_STATUS_INTERVAL_SECONDS = 60  # 1 minute
     COLLECTION_INTERVAL = 10  # seconds
 
     while True:
@@ -40,6 +51,12 @@ if __name__ == "__main__":
                 logger.info("Running metrics cleanup...")
                 cleanup_old_traffic_metrics()
                 last_cleanup = now
+
+            # Update server status once per minute
+            if (now - last_server_status_update).total_seconds() >= SERVER_STATUS_INTERVAL_SECONDS:
+                logger.info("Updating server status...")
+                update_server_status()
+                last_server_status_update = now
 
             # Reset error counter on successful iteration
             error_count = 0

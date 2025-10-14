@@ -1,5 +1,16 @@
 FROM python:3.12-slim
 
+# Install system utilities needed for server status collection
+# - iputils-ping: for ping command (network connectivity checks)
+# - iproute2: for ip command (network interface inspection)
+# - curl: for HTTP requests (fallback if requests library fails)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    iputils-ping \
+    iproute2 \
+    curl && \
+    rm -rf /var/lib/apt/lists/*
+
 # Create non-root user
 RUN groupadd -r appuser && useradd -r -g appuser -u 1000 appuser
 
