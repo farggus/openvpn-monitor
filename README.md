@@ -570,7 +570,7 @@ https://vpn-monitor.example.com/?lang=en  # Force English
 - **API Endpoint:** `/api/translations` provides translations to JavaScript
 - **Translation Files:** `translations/{lang}/LC_MESSAGES/messages.po`
 
-For adding new languages, see [I18N.md](I18N.md).
+For adding new languages, see [I18N.md](translations/I18N.md).
 
 ### Server Status Monitoring
 
@@ -917,14 +917,14 @@ pybabel update -i translations/messages.pot -d translations
 # 4. Edit translations/ru/LC_MESSAGES/messages.po
 
 # 5. Compile translations
-python compile_translations.py
+python archive/compile_translations.py
 
 # 6. Rebuild container
 docker compose build
 docker compose up -d
 ```
 
-See [I18N.md](I18N.md) for detailed localization guide.
+See [I18N.md](translations/I18N.md) for detailed localization guide.
 
 ### Docker Development Workflow
 
@@ -1295,7 +1295,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ### Getting Help
 
 - **Issues:** [GitHub Issue Tracker](https://github.com/farggus/openvpn-monitor/issues)
-- **Documentation:** [I18N.md](I18N.md), [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Documentation:** [I18N.md](translations/I18N.md), [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Discussions:** GitHub Discussions for questions and ideas
 
 ### Supporting Development

@@ -160,7 +160,7 @@ We welcome contributions in these areas:
 - **Translation improvements** - Fix or improve existing translations
 - **Translation tools** - Scripts to help with translation management
 
-See [I18N.md](I18N.md) for translation guidelines.
+See [I18N.md](translations/I18N.md) for translation guidelines.
 
 #### 4. Testing
 
@@ -358,8 +358,9 @@ Create realistic mock data for testing:
 When adding new features, update:
 
 - **README.md** - Installation, features, API endpoints
-- **CLAUDE.md** - Developer reference, architecture details
-- **I18N.md** - Translation and internationalization guide
+- **translations/I18N.md** - Translation and internationalization guide
+
+**Note:** CLAUDE.md is a developer-only file (excluded from git via .gitignore)
 
 ### Commit Messages
 
@@ -500,7 +501,7 @@ Be patient and responsive to feedback. Reviews help maintain code quality.
 
 - **GitHub Discussions** - Ask questions, share ideas
 - **GitHub Issues** - Report bugs, request features
-- **Documentation** - Check README.md, CLAUDE.md, I18N.md
+- **Documentation** - Check README.md, translations/I18N.md
 
 ### Recognition
 
