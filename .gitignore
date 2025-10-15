@@ -1,8 +1,3 @@
-
----
-
-### ? `.gitignore`
-```gitignore
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -40,6 +35,3 @@ instance/
 
 # Application runtime data
 data/
-
-# Files
-CLAUDE.md
