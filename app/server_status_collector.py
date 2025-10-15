@@ -3,7 +3,7 @@ Server status collection module that works from inside Docker container.
 
 Collects server status information without requiring host access:
 - Status: Determined by checking status.log freshness
-- Up Since: Parsed from status.log Updated timestamp
+- Up Since: Container start time (from /proc/1)
 - Public IP: Fetched via external APIs
 - Pingable: Pings public IP
 - Local IP: From environment variable or container network interface
@@ -18,7 +18,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-from .config import SERVER_STATUS_PATH, STATUS_LOG_PATH
+from .config import LOCAL_TZ, SERVER_STATUS_PATH, STATUS_LOG_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +61,41 @@ def get_status_log_modified_time():
     return None
 
 
+def get_container_start_time():
+    """
+    Get container start time by checking /proc/1/ (PID 1 = supervisord).
+
+    This gives us the exact time when the Docker container started.
+    Time is converted from UTC to configured timezone (LOCAL_TZ).
+
+    Returns:
+        datetime object in LOCAL_TZ or None
+    """
+    try:
+        import pytz
+
+        # PID 1 is supervisord, which starts when container starts
+        stat_result = os.stat("/proc/1")
+
+        # /proc/1 timestamp is in UTC
+        start_time_utc = datetime.fromtimestamp(stat_result.st_mtime, tz=pytz.UTC)
+
+        # Convert to configured timezone
+        start_time_local = start_time_utc.astimezone(LOCAL_TZ)
+
+        # Return as naive datetime (without timezone info) for consistency
+        return start_time_local.replace(tzinfo=None)
+    except Exception as e:
+        logger.warning(f"Failed to get container start time from /proc/1: {e}")
+        return None
+
+
 def check_server_status():
     """
     Check if OpenVPN server is running by checking status.log freshness.
 
     If status.log was updated in the last 30 seconds, consider server CONNECTED.
+    Uses container start time (from /proc/1) as uptime.
 
     Returns:
         tuple: (status_string, uptime_string)
@@ -88,8 +118,17 @@ def check_server_status():
         # Status log is stale - server likely down
         return "DISCONNECTED", "Unknown"
 
-    # Server is running - use Updated timestamp as "Up Since"
-    uptime = updated_time.strftime("%Y-%m-%d %H:%M:%S")
+    # Server is running - get container start time
+    container_start = get_container_start_time()
+
+    if container_start:
+        uptime = container_start.strftime("%Y-%m-%d %H:%M:%S")
+        logger.debug(f"Server uptime based on container start: {uptime}")
+        return "CONNECTED", uptime
+
+    # Fallback: unable to get container start time
+    logger.warning("Unable to determine container start time, using current time")
+    uptime = now.strftime("%Y-%m-%d %H:%M:%S")
     return "CONNECTED", uptime
 
 
