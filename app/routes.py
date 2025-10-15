@@ -42,16 +42,16 @@ def get_locale():
     """
     # Check URL parameter
     lang = request.args.get("lang")
-    if lang in ["en", "ru"]:
+    if lang in ["en", "ru", "ro", "de"]:
         return lang
 
     # Check cookie
     lang = request.cookies.get("lang")
-    if lang in ["en", "ru"]:
+    if lang in ["en", "ru", "ro", "de"]:
         return lang
 
     # Check Accept-Language header
-    return request.accept_languages.best_match(["en", "ru"]) or "en"
+    return request.accept_languages.best_match(["en", "ru", "ro", "de"]) or "en"
 
 
 # Configure Flask-Babel (Flask-Babel 4.0+ uses locale_selector parameter)

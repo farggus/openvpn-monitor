@@ -34,12 +34,12 @@
     </div>
     <div class="d-flex gap-2">
       <button class="btn btn-outline-secondary" id="themeToggle">{{ _('Switch Theme') }}</button>
-      <!-- Language switcher - commented out for future feature
       <select class="form-select" id="languageSelector" style="width: auto;">
         <option value="en" {% if get_locale() == 'en' %}selected{% endif %}>English</option>
         <option value="ru" {% if get_locale() == 'ru' %}selected{% endif %}>Русский</option>
+        <option value="ro" {% if get_locale() == 'ro' %}selected{% endif %}>Română</option>
+        <option value="de" {% if get_locale() == 'de' %}selected{% endif %}>Deutsch</option>
       </select>
-      -->
     </div>
   </div>
 </div>
@@ -145,7 +145,6 @@
 <!-- 4. Application initialization (must be last) -->
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
-<!-- Language selector handler - commented out for future feature
 <script>
 document.getElementById('languageSelector').addEventListener('change', function(e) {
   const lang = e.target.value;
@@ -155,7 +154,6 @@ document.getElementById('languageSelector').addEventListener('change', function(
   window.location.reload();
 });
 </script>
--->
 
 <script>
 function updateViewCounter() {

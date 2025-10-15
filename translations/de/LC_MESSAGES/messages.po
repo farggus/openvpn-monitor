@@ -1,0 +1,368 @@
+# German translations for OpenVPN Monitor.
+# Copyright (C) 2025
+# This file is distributed under the same license as the OpenVPN Monitor project.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-01 00:00+0000\n"
+"PO-Revision-Date: 2025-01-01 00:00+0000\n"
+"Last-Translator: \n"
+"Language: de\n"
+"Language-Team: German\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Manual\n"
+
+# Application title
+msgid "OpenVPN Management panel"
+msgstr "OpenVPN Verwaltungsoberfläche"
+
+# Navigation buttons
+msgid "Map View"
+msgstr "Kartenansicht"
+
+msgid "Charts"
+msgstr "Diagramme"
+
+msgid "Connection history"
+msgstr "Verbindungsverlauf"
+
+msgid "Clients"
+msgstr "Clients"
+
+msgid "Switch Theme"
+msgstr "Design wechseln"
+
+# Server table headers
+msgid "OpenVPN - Server"
+msgstr "OpenVPN - Server"
+
+msgid "VPN Mode"
+msgstr "VPN-Modus"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Pingable"
+msgstr "Ping möglich"
+
+msgid "Total Bytes In"
+msgstr "Bytes empfangen gesamt"
+
+msgid "Total Bytes Out"
+msgstr "Bytes gesendet gesamt"
+
+msgid "Up Since"
+msgstr "Aktiv seit"
+
+msgid "Local IP"
+msgstr "Lokale IP"
+
+msgid "Public IP"
+msgstr "Öffentliche IP"
+
+# Clients table
+msgid "OpenVPN - Clients"
+msgstr "OpenVPN - Clients"
+
+msgid "Client"
+msgstr "Client"
+
+msgid "VPN IPv4"
+msgstr "VPN IPv4"
+
+msgid "VPN IPv6"
+msgstr "VPN IPv6"
+
+msgid "Client IP"
+msgstr "Client-IP"
+
+msgid "Port"
+msgstr "Port"
+
+msgid "Session Opened"
+msgstr "Sitzung geöffnet"
+
+msgid "Time Online"
+msgstr "Online-Zeit"
+
+msgid "Speed (Rx / Tx)"
+msgstr "Geschwindigkeit (Rx / Tx)"
+
+msgid "Bytes Received"
+msgstr "Bytes empfangen"
+
+msgid "Bytes Sent"
+msgstr "Bytes gesendet"
+
+msgid "Total"
+msgstr "Gesamt"
+
+# Common messages
+msgid "Loading..."
+msgstr "Laden..."
+
+msgid "Close"
+msgstr "Schließen"
+
+msgid "Unknown"
+msgstr "Unbekannt"
+
+msgid "Error"
+msgstr "Fehler"
+
+msgid "Yes"
+msgstr "Ja"
+
+msgid "No"
+msgstr "Nein"
+
+# Modal titles
+msgid "Client Locations"
+msgstr "Client-Standorte"
+
+msgid "Traffic Charts"
+msgstr "Verkehrsdiagramme"
+
+msgid "History — View on map"
+msgstr "Verlauf — Auf Karte anzeigen"
+
+# History modal
+msgid "Date"
+msgstr "Datum"
+
+msgid "City"
+msgstr "Stadt"
+
+msgid "Clear filter"
+msgstr "Filter löschen"
+
+msgid "View on map"
+msgstr "Auf Karte anzeigen"
+
+msgid "Session Closed"
+msgstr "Sitzung geschlossen"
+
+msgid "Duration"
+msgstr "Dauer"
+
+msgid "Rx (MB)"
+msgstr "Rx (MB)"
+
+msgid "Tx (MB)"
+msgstr "Tx (MB)"
+
+# Charts modal
+msgid "Display mode"
+msgstr "Anzeigemodus"
+
+msgid "All clients"
+msgstr "Alle Clients"
+
+msgid "Individual"
+msgstr "Einzeln"
+
+msgid "Client:"
+msgstr "Client:"
+
+msgid "Select client"
+msgstr "Client auswählen"
+
+msgid "Period:"
+msgstr "Zeitraum:"
+
+msgid "Display period"
+msgstr "Anzeigezeitraum"
+
+msgid "30 min"
+msgstr "30 Min"
+
+msgid "1 hour"
+msgstr "1 Stunde"
+
+msgid "3 hours"
+msgstr "3 Stunden"
+
+msgid "6 hours"
+msgstr "6 Stunden"
+
+msgid "12 hours"
+msgstr "12 Stunden"
+
+msgid "Hide zero Rx/Tx values"
+msgstr "Rx/Tx-Nullwerte ausblenden"
+
+msgid "Show detailed view"
+msgstr "Detailansicht anzeigen"
+
+msgid "Current Rx"
+msgstr "Aktueller Rx"
+
+msgid "Current Tx"
+msgstr "Aktueller Tx"
+
+msgid "Peak Rx"
+msgstr "Spitzen-Rx"
+
+msgid "Peak Tx"
+msgstr "Spitzen-Tx"
+
+# API translations
+msgid "Failed to load"
+msgstr "Laden fehlgeschlagen"
+
+msgid "Invalid response format"
+msgstr "Ungültiges Antwortformat"
+
+msgid "Failed to load clients list"
+msgstr "Client-Liste konnte nicht geladen werden"
+
+msgid "No clients connected yet"
+msgstr "Noch keine Clients verbunden"
+
+msgid "Unknown"
+msgstr "Unbekannt"
+
+msgid "Client details"
+msgstr "Client-Details"
+
+msgid "session"
+msgstr "Sitzung"
+
+msgid "sessions"
+msgstr "Sitzungen"
+
+msgid "Traffic"
+msgstr "Datenverkehr"
+
+msgid "Last seen"
+msgstr "Zuletzt gesehen"
+
+msgid "Last seen:"
+msgstr "Zuletzt gesehen:"
+
+msgid "Current session"
+msgstr "Aktuelle Sitzung"
+
+msgid "Connected since"
+msgstr "Verbunden seit"
+
+msgid "Connected since:"
+msgstr "Verbunden seit:"
+
+msgid "Time online:"
+msgstr "Online-Zeit:"
+
+msgid "Client IP:"
+msgstr "Client-IP:"
+
+msgid "Received"
+msgstr "Empfangen"
+
+msgid "Received:"
+msgstr "Empfangen:"
+
+msgid "Sent"
+msgstr "Gesendet"
+
+msgid "Sent:"
+msgstr "Gesendet:"
+
+msgid "Total connection time"
+msgstr "Gesamte Verbindungszeit"
+
+msgid "Data received"
+msgstr "Daten empfangen"
+
+msgid "Data sent"
+msgstr "Daten gesendet"
+
+msgid "Last activity"
+msgstr "Letzte Aktivität"
+
+msgid "Running"
+msgstr "Läuft"
+
+msgid "Stopped"
+msgstr "Gestoppt"
+
+msgid "No location data available"
+msgstr "Keine Standortdaten verfügbar"
+
+msgid "Active connections"
+msgstr "Aktive Verbindungen"
+
+msgid "Historical connections"
+msgstr "Verbindungsverlauf"
+
+msgid "Failed to load connection history"
+msgstr "Verbindungsverlauf konnte nicht geladen werden"
+
+msgid "No connection history"
+msgstr "Kein Verbindungsverlauf"
+
+msgid "Filter by name..."
+msgstr "Nach Name filtern..."
+
+msgid "Speed (MB/s)"
+msgstr "Geschwindigkeit (MB/s)"
+
+msgid "Receive"
+msgstr "Empfang"
+
+msgid "Transmit"
+msgstr "Übertragung"
+
+msgid "No data available"
+msgstr "Keine Daten verfügbar"
+
+msgid "Loading chart data..."
+msgstr "Diagrammdaten werden geladen..."
+
+msgid "Failed to load chart data"
+msgstr "Diagrammdaten konnten nicht geladen werden"
+
+msgid "30 minutes"
+msgstr "30 Minuten"
+
+msgid "Aggregated"
+msgstr "Aggregiert"
+
+msgid "Per client"
+msgstr "Pro Client"
+
+# Error messages
+msgid "Failed to fetch clients"
+msgstr "Clients konnten nicht abgerufen werden"
+
+msgid "Failed to read history log"
+msgstr "Verlaufsprotokoll konnte nicht gelesen werden"
+
+msgid "Failed to build clients summary"
+msgstr "Client-Übersicht konnte nicht erstellt werden"
+
+msgid "Invalid period parameter"
+msgstr "Ungültiger Zeitraum-Parameter"
+
+#, python-format
+msgid "Period must be one of %(periods)s"
+msgstr "Zeitraum muss einer von %(periods)s sein"
+
+msgid "Failed to fetch traffic metrics"
+msgstr "Verkehrsmetriken konnten nicht abgerufen werden"
+
+msgid "Invalid limit or offset parameter"
+msgstr "Ungültiger Limit- oder Offset-Parameter"
+
+msgid "Limit must be >= 1 and offset must be >= 0"
+msgstr "Limit muss >= 1 und Offset muss >= 0 sein"
+
+msgid "Failed to fetch view counter"
+msgstr "Ansichtszähler konnte nicht abgerufen werden"
+
+msgid "Failed to get archive statistics"
+msgstr "Archivstatistiken konnten nicht abgerufen werden"

@@ -1,0 +1,368 @@
+# Romanian translations for OpenVPN Monitor.
+# Copyright (C) 2025
+# This file is distributed under the same license as the OpenVPN Monitor project.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-01 00:00+0000\n"
+"PO-Revision-Date: 2025-01-01 00:00+0000\n"
+"Last-Translator: \n"
+"Language: ro\n"
+"Language-Team: Romanian\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : (n==0 || (n%100>0 && n%100<20)) ? 1 : 2)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Manual\n"
+
+# Application title
+msgid "OpenVPN Management panel"
+msgstr "Panou de administrare OpenVPN"
+
+# Navigation buttons
+msgid "Map View"
+msgstr "Vizualizare hartă"
+
+msgid "Charts"
+msgstr "Grafice"
+
+msgid "Connection history"
+msgstr "Istoric conexiuni"
+
+msgid "Clients"
+msgstr "Clienți"
+
+msgid "Switch Theme"
+msgstr "Schimbă tema"
+
+# Server table headers
+msgid "OpenVPN - Server"
+msgstr "OpenVPN - Server"
+
+msgid "VPN Mode"
+msgstr "Mod VPN"
+
+msgid "Status"
+msgstr "Stare"
+
+msgid "Pingable"
+msgstr "Accesibil ping"
+
+msgid "Total Bytes In"
+msgstr "Total octeți primiți"
+
+msgid "Total Bytes Out"
+msgstr "Total octeți trimiși"
+
+msgid "Up Since"
+msgstr "Activ de la"
+
+msgid "Local IP"
+msgstr "IP local"
+
+msgid "Public IP"
+msgstr "IP public"
+
+# Clients table
+msgid "OpenVPN - Clients"
+msgstr "OpenVPN - Clienți"
+
+msgid "Client"
+msgstr "Client"
+
+msgid "VPN IPv4"
+msgstr "VPN IPv4"
+
+msgid "VPN IPv6"
+msgstr "VPN IPv6"
+
+msgid "Client IP"
+msgstr "IP client"
+
+msgid "Port"
+msgstr "Port"
+
+msgid "Session Opened"
+msgstr "Sesiune deschisă"
+
+msgid "Time Online"
+msgstr "Timp online"
+
+msgid "Speed (Rx / Tx)"
+msgstr "Viteză (Rx / Tx)"
+
+msgid "Bytes Received"
+msgstr "Octeți primiți"
+
+msgid "Bytes Sent"
+msgstr "Octeți trimiși"
+
+msgid "Total"
+msgstr "Total"
+
+# Common messages
+msgid "Loading..."
+msgstr "Se încarcă..."
+
+msgid "Close"
+msgstr "Închide"
+
+msgid "Unknown"
+msgstr "Necunoscut"
+
+msgid "Error"
+msgstr "Eroare"
+
+msgid "Yes"
+msgstr "Da"
+
+msgid "No"
+msgstr "Nu"
+
+# Modal titles
+msgid "Client Locations"
+msgstr "Locații clienți"
+
+msgid "Traffic Charts"
+msgstr "Grafice trafic"
+
+msgid "History — View on map"
+msgstr "Istoric — Vizualizare pe hartă"
+
+# History modal
+msgid "Date"
+msgstr "Dată"
+
+msgid "City"
+msgstr "Oraș"
+
+msgid "Clear filter"
+msgstr "Șterge filtrul"
+
+msgid "View on map"
+msgstr "Vizualizare pe hartă"
+
+msgid "Session Closed"
+msgstr "Sesiune închisă"
+
+msgid "Duration"
+msgstr "Durată"
+
+msgid "Rx (MB)"
+msgstr "Rx (MB)"
+
+msgid "Tx (MB)"
+msgstr "Tx (MB)"
+
+# Charts modal
+msgid "Display mode"
+msgstr "Mod afișare"
+
+msgid "All clients"
+msgstr "Toți clienții"
+
+msgid "Individual"
+msgstr "Individual"
+
+msgid "Client:"
+msgstr "Client:"
+
+msgid "Select client"
+msgstr "Selectează client"
+
+msgid "Period:"
+msgstr "Perioadă:"
+
+msgid "Display period"
+msgstr "Perioadă afișare"
+
+msgid "30 min"
+msgstr "30 min"
+
+msgid "1 hour"
+msgstr "1 oră"
+
+msgid "3 hours"
+msgstr "3 ore"
+
+msgid "6 hours"
+msgstr "6 ore"
+
+msgid "12 hours"
+msgstr "12 ore"
+
+msgid "Hide zero Rx/Tx values"
+msgstr "Ascunde valorile Rx/Tx zero"
+
+msgid "Show detailed view"
+msgstr "Afișare detalii"
+
+msgid "Current Rx"
+msgstr "Rx curent"
+
+msgid "Current Tx"
+msgstr "Tx curent"
+
+msgid "Peak Rx"
+msgstr "Vârf Rx"
+
+msgid "Peak Tx"
+msgstr "Vârf Tx"
+
+# API translations
+msgid "Failed to load"
+msgstr "Eroare la încărcare"
+
+msgid "Invalid response format"
+msgstr "Format răspuns invalid"
+
+msgid "Failed to load clients list"
+msgstr "Nu s-a putut încărca lista clienților"
+
+msgid "No clients connected yet"
+msgstr "Niciun client conectat încă"
+
+msgid "Unknown"
+msgstr "Necunoscut"
+
+msgid "Client details"
+msgstr "Detalii client"
+
+msgid "session"
+msgstr "sesiune"
+
+msgid "sessions"
+msgstr "sesiuni"
+
+msgid "Traffic"
+msgstr "Trafic"
+
+msgid "Last seen"
+msgstr "Văzut ultima dată"
+
+msgid "Last seen:"
+msgstr "Văzut ultima dată:"
+
+msgid "Current session"
+msgstr "Sesiune curentă"
+
+msgid "Connected since"
+msgstr "Conectat de la"
+
+msgid "Connected since:"
+msgstr "Conectat de la:"
+
+msgid "Time online:"
+msgstr "Timp online:"
+
+msgid "Client IP:"
+msgstr "IP client:"
+
+msgid "Received"
+msgstr "Primit"
+
+msgid "Received:"
+msgstr "Primit:"
+
+msgid "Sent"
+msgstr "Trimis"
+
+msgid "Sent:"
+msgstr "Trimis:"
+
+msgid "Total connection time"
+msgstr "Timp total de conexiune"
+
+msgid "Data received"
+msgstr "Date primite"
+
+msgid "Data sent"
+msgstr "Date trimise"
+
+msgid "Last activity"
+msgstr "Ultima activitate"
+
+msgid "Running"
+msgstr "Activ"
+
+msgid "Stopped"
+msgstr "Oprit"
+
+msgid "No location data available"
+msgstr "Nu există date de locație disponibile"
+
+msgid "Active connections"
+msgstr "Conexiuni active"
+
+msgid "Historical connections"
+msgstr "Istoric conexiuni"
+
+msgid "Failed to load connection history"
+msgstr "Nu s-a putut încărca istoricul conexiunilor"
+
+msgid "No connection history"
+msgstr "Nu există istoric conexiuni"
+
+msgid "Filter by name..."
+msgstr "Filtrare după nume..."
+
+msgid "Speed (MB/s)"
+msgstr "Viteză (MB/s)"
+
+msgid "Receive"
+msgstr "Primire"
+
+msgid "Transmit"
+msgstr "Transmitere"
+
+msgid "No data available"
+msgstr "Nu există date disponibile"
+
+msgid "Loading chart data..."
+msgstr "Se încarcă datele graficului..."
+
+msgid "Failed to load chart data"
+msgstr "Nu s-a putut încărca datele graficului"
+
+msgid "30 minutes"
+msgstr "30 minute"
+
+msgid "Aggregated"
+msgstr "Agregate"
+
+msgid "Per client"
+msgstr "Per client"
+
+# Error messages
+msgid "Failed to fetch clients"
+msgstr "Nu s-a putut obține lista clienților"
+
+msgid "Failed to read history log"
+msgstr "Nu s-a putut citi jurnalul istoric"
+
+msgid "Failed to build clients summary"
+msgstr "Nu s-a putut crea sumarul clienților"
+
+msgid "Invalid period parameter"
+msgstr "Parametru perioadă invalid"
+
+#, python-format
+msgid "Period must be one of %(periods)s"
+msgstr "Perioada trebuie să fie una din %(periods)s"
+
+msgid "Failed to fetch traffic metrics"
+msgstr "Nu s-a putut obține metricile de trafic"
+
+msgid "Invalid limit or offset parameter"
+msgstr "Parametru limit sau offset invalid"
+
+msgid "Limit must be >= 1 and offset must be >= 0"
+msgstr "Limit trebuie să fie >= 1 și offset trebuie să fie >= 0"
+
+msgid "Failed to fetch view counter"
+msgstr "Nu s-a putut obține contorul de vizualizări"
+
+msgid "Failed to get archive statistics"
+msgstr "Nu s-a putut obține statisticile arhivei"
