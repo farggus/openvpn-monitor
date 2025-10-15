@@ -49,7 +49,7 @@ export OPENVPN_HISTORY_LOG=$(pwd)/data/session_history.json
 export OPENVPN_ACTIVE_SESSIONS=$(pwd)/data/active_sessions.json
 export OPENVPN_SERVER_STATUS=$(pwd)/data/server_status.json
 export OPENVPN_TRAFFIC_METRICS=$(pwd)/data/traffic_metrics.json
-export OPENVPN_MONITOR_TZ=Europe/Moscow
+export OPENVPN_MONITOR_TZ=Europe/Bucharest
 mkdir -p data
 
 # Run Flask and logger (option 1: two terminals)
@@ -252,7 +252,7 @@ The parser handles both IPv4 and IPv6:
 
 - **Empty client table**: Verify container can read `/var/log/openvpn/status.log` with correct permissions
 - **Unknown server status**: Wait 60 seconds for first collection. Server status determined by `status.log` freshness. Check container logs for errors and verify `status.log` is being updated by OpenVPN
-- **Timezone errors**: `OPENVPN_MONITOR_TZ` must be valid IANA timezone (e.g., `Europe/Moscow`, not `MSK`)
+- **Timezone errors**: `OPENVPN_MONITOR_TZ` must be valid IANA timezone (e.g., `Europe/Bucharest`, not `EET`)
 - **Geolocation not working**: Parser fetches geolocation from ip-api.com when clients connect (45 req/min limit). Check network access and API availability
 - **File lock timeouts**: If parser hangs, check for stale `.lock` files in data directory
 - **Empty charts**: Wait 10-20 seconds for metrics to be collected. Check `traffic_metrics.json` exists

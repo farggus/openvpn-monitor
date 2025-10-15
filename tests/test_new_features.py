@@ -409,10 +409,10 @@ def test_validate_active_sessions_preserves_location(parser_module):
             "bytes_sent": 2048,
             "session_id": "test-session",
             "location": {
-                "city": "Moscow",
-                "country": "Russia",
-                "latitude": 55.7558,
-                "longitude": 37.6173,
+                "city": "Bucharest",
+                "country": "Romania",
+                "latitude": 44.4268,
+                "longitude": 26.1025,
             },
         }
     }
@@ -420,5 +420,5 @@ def test_validate_active_sessions_preserves_location(parser_module):
     validated = parser.validate_active_sessions(sessions)
 
     assert "alice" in validated
-    assert validated["alice"]["location"]["city"] == "Moscow"
-    assert validated["alice"]["location"]["country"] == "Russia"
+    assert validated["alice"]["location"]["city"] == "Bucharest"
+    assert validated["alice"]["location"]["country"] == "Romania"

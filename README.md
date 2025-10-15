@@ -191,7 +191,7 @@ A Flask-based web dashboard for real-time monitoring of OpenVPN server activity 
    export OPENVPN_ACTIVE_SESSIONS=$(pwd)/data/active_sessions.json
    export OPENVPN_SERVER_STATUS=$(pwd)/data/server_status.json
    export OPENVPN_TRAFFIC_METRICS=$(pwd)/data/traffic_metrics.json
-   export OPENVPN_MONITOR_TZ=Europe/Moscow
+   export OPENVPN_MONITOR_TZ=Europe/Bucharest
    mkdir -p data
    ```
 
@@ -297,10 +297,10 @@ The system automatically fetches and stores geolocation data for client IP addre
        "port": "60877",
        "session_id": "uuid",
        "location": {
-         "city": "Moscow",
-         "country": "Russia",
-         "latitude": 55.7558,
-         "longitude": 37.6173
+         "city": "Bucharest",
+         "country": "Romania",
+         "latitude": 44.4268,
+         "longitude": 26.1025
        }
      }
    }
@@ -566,7 +566,7 @@ time.sleep(5)  # 5 seconds
 | **Permission denied errors** | Ensure data directory is owned by UID 1000: `sudo chown -R 1000:1000 ./data` and verify OpenVPN log permissions: `sudo chmod 644 /var/log/openvpn/status.log` |
 | **"Unknown" server status** | Server status is collected automatically from `status.log`. Wait 60 seconds for first update. Check container logs: `docker compose logs -f` for errors. Verify status.log is accessible and being updated by OpenVPN server |
 | **No client map** | Check ip-api.com availability and rate limit (45/min). Geolocation is added automatically on first client connection |
-| **Timezone errors** | Verify `OPENVPN_MONITOR_TZ` is a valid IANA timezone (e.g., `Europe/Moscow`, not `MSK`) |
+| **Timezone errors** | Verify `OPENVPN_MONITOR_TZ` is a valid IANA timezone (e.g., `Europe/Bucharest`, not `EET`) |
 | **File lock timeouts** | Check for stale `.lock` files in data directory |
 | **Empty charts on open** | Wait 10-20 seconds for first data points to be collected. Verify background logger is running: `docker compose logs -f` |
 | **No historical traffic data** | Check `data/traffic_metrics.json` exists and has correct permissions. Restart container if needed |

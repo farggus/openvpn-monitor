@@ -73,7 +73,7 @@ Before you begin contributing, ensure you have:
    export OPENVPN_ACTIVE_SESSIONS=$(pwd)/data/active_sessions.json
    export OPENVPN_SERVER_STATUS=$(pwd)/data/server_status.json
    export OPENVPN_TRAFFIC_METRICS=$(pwd)/data/traffic_metrics.json
-   export OPENVPN_MONITOR_TZ=Europe/Moscow
+   export OPENVPN_MONITOR_TZ=Europe/Bucharest
    mkdir -p data
    ```
 
