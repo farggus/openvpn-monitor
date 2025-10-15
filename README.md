@@ -1,4 +1,4 @@
-[![Ko-fi](https://img.shields.io/badge/Ko-fi-Donate-orange?logo=ko-fi)](https://ko-fi.com/scuruci)
+[![Ko-fi](https://storage.ko-fi.com/cdn/kofi3.png?v=3)](https://ko-fi.com/scuruci)
 [![Buy Me a Coffee](https://img.shields.io/badge/☕-Buy%20Me%20a%20Coffee-yellow)](https://buymeacoffee.com/scuruci)
 [![Revolut](https://img.shields.io/badge/💸-Revolut-blue)](https://revolut.me/s_curuci)
 
@@ -724,7 +724,7 @@ For issues and feature requests, please use the GitHub issue tracker.
 
 If you find this project useful and want to support further development, you can do so via:
 
-[![Ko-fi](https://img.shields.io/badge/Ko-fi-Donate-orange?logo=ko-fi)](https://ko-fi.com/scuruci)
+[![Ko-fi](https://storage.ko-fi.com/cdn/kofi3.png?v=3)](https://ko-fi.com/scuruci)
 [![Buy Me a Coffee](https://img.shields.io/badge/☕-Buy%20Me%20a%20Coffee-yellow)](https://buymeacoffee.com/scuruci)
 [![Revolut](https://img.shields.io/badge/💸-Revolut-blue)](https://revolut.me/s_curuci)
 
