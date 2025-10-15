@@ -705,7 +705,7 @@ Docker Compose includes `restart: unless-stopped` policy:
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details
+MIT License - see [LICENSE file](LICENSE) for details
 
 ## Contributing
 
