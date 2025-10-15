@@ -702,7 +702,17 @@ MIT License - see LICENSE file for details
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! We appreciate bug reports, feature requests, code contributions, and documentation improvements.
+
+Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started. The guide covers:
+
+- Setting up your development environment
+- Coding standards and best practices
+- Testing guidelines
+- Pull request process
+- How to report bugs and suggest features
+
+For quick questions, feel free to open a GitHub issue or discussion.
 
 ## Support
 
