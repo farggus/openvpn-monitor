@@ -9,8 +9,10 @@ from typing import Any, Dict, List, Optional
 
 from flask import Flask, g, jsonify, render_template, request
 from flask_babel import Babel, gettext
+from flask_caching import Cache
 
 from .config import HISTORY_LOG_PATH, SERVER_STATUS_PATH
+from .history_manager import get_archive_stats
 from .parser import parse_status_log
 from .traffic_collector import get_metrics_for_period
 from .view_counter import get_view_counter, increment_view_counter
@@ -23,6 +25,13 @@ app = Flask(
     template_folder=os.path.join(os.path.dirname(__file__), "templates"),
     static_folder=os.path.join(os.path.dirname(__file__), "static"),
 )
+
+# Configure Flask-Caching
+# Using SimpleCache (in-memory) for production
+# Cache timeout: 10 seconds (data is updated every 10 seconds by logger.py)
+app.config["CACHE_TYPE"] = "SimpleCache"
+app.config["CACHE_DEFAULT_TIMEOUT"] = 10
+cache = Cache(app)
 
 
 # Locale selector function (must be defined before Babel initialization)
@@ -320,6 +329,7 @@ def index():
 
 
 @app.route("/api/clients")
+@cache.cached(timeout=10, query_string=False)
 def api_clients():
     try:
         clients, active_sessions = _get_cached_data()
@@ -427,6 +437,7 @@ def get_history():
 
 
 @app.route("/api/server-status")
+@cache.cached(timeout=10, query_string=False)
 def get_server_status():
     data = _load_server_status()
 
@@ -452,6 +463,7 @@ def get_server_status():
 
 
 @app.route("/api/clients/summary")
+@cache.cached(timeout=10, query_string=False)
 def get_clients_summary():
     try:
         clients = _aggregate_client_stats()
@@ -463,6 +475,7 @@ def get_clients_summary():
 
 
 @app.route("/api/traffic-metrics")
+@cache.cached(timeout=10, query_string=True)
 def get_traffic_metrics():
     """
     Get historical traffic metrics for charts.
@@ -513,6 +526,41 @@ def api_view_counter():
     except Exception:
         logger.exception("[view-counter] Failed to fetch view counter")
         return _json_error(gettext("Failed to fetch view counter"))
+
+
+@app.route("/api/history/archive-stats")
+def get_archive_stats_api():
+    """
+    Get statistics about archived history data.
+
+    Returns:
+        JSON object with:
+        - archive_dir: Path to archive directory
+        - archive_files: List of archive files with metadata
+        - total_archived_entries: Total number of archived sessions
+        - total_archive_size_mb: Total size of all archives
+
+    Example response:
+        {
+          "archive_dir": "data/history_archive",
+          "archive_files": [
+            {
+              "file": "session_history_2025-09.json.gz",
+              "month": "2025-09",
+              "entries": 1234,
+              "size_mb": 0.45
+            }
+          ],
+          "total_archived_entries": 1234,
+          "total_archive_size_mb": 0.45
+        }
+    """
+    try:
+        stats = get_archive_stats()
+        return jsonify(stats)
+    except Exception:
+        logger.exception("[archive-stats] Failed to get archive statistics")
+        return _json_error(gettext("Failed to get archive statistics"))
 
 
 @app.route("/api/translations")

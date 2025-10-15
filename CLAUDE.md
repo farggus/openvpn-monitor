@@ -14,8 +14,9 @@ For comprehensive documentation including installation, features, and usage, see
 - `app/routes.py` - Flask application and API endpoints
 - `app/parser.py` - OpenVPN status.log parser with session tracking
 - `app/traffic_collector.py` - Traffic metrics collection and storage
+- `app/history_manager.py` - Automatic history rotation and archival (keeps last 90 days, archives older data)
 - `app/server_status_collector.py` - Server status collection from within container (no cron needed)
-- `logger.py` - Background daemon that runs parser, traffic collector, and server status collector
+- `logger.py` - Background daemon that runs parser, traffic collector, server status collector, and history rotation
 - `app/config.py` - Configuration and environment variables
 
 ## Development Commands
@@ -102,8 +103,16 @@ flake8
 - Automatically cleans up data older than 24 hours
 
 **Background Logger** (`logger.py`)
-- Simple loop that calls `parse_status_log()` every 10 seconds and `update_server_status()` every 60 seconds
+- Simple loop that calls `parse_status_log()` every 10 seconds, `update_server_status()` every 60 seconds, and `rotate_history_if_needed()` every 24 hours
 - Runs alongside Flask via `supervisord`
+
+**History Manager** (`app/history_manager.py`)
+- Automatically rotates `session_history.json` to prevent unlimited growth
+- Keeps last 90 days in main file, archives older entries by month
+- Archives compressed as `.json.gz` (10x compression ratio)
+- Archive location: `data/history_archive/session_history_YYYY-MM.json.gz`
+- Provides `/api/history/archive-stats` endpoint for monitoring
+- Helper function `load_month_from_archive()` for retrieving old data
 
 **Server Status Collector** (`app/server_status_collector.py`)
 - Python module that captures OpenVPN server operational status from within Docker container
@@ -124,8 +133,9 @@ flake8
 4. For new clients, fetches geolocation from ip-api.com and stores in session data
 5. Traffic collector captures metrics and calculates speeds
 6. Server status collector checks `status.log` freshness and fetches public IP (every 60 seconds)
-7. Updates `active_sessions.json`, `session_history.json`, `traffic_metrics.json`, and `server_status.json` under file lock
-8. API endpoints read cached/persisted data and serve to UI
+7. History manager rotates old sessions to compressed archives (every 24 hours)
+8. Updates `active_sessions.json`, `session_history.json`, `traffic_metrics.json`, and `server_status.json` under file lock
+9. API endpoints read cached/persisted data and serve to UI
 
 ## Key Implementation Details
 
@@ -161,6 +171,15 @@ The parser and traffic collector use `fcntl.flock()` to prevent concurrent modif
 - Local IP from `OPENVPN_LOCAL_IP` env var or container's eth0 interface
 - No cron or host access required - fully containerized solution
 
+### History Rotation
+- Automatically runs once per day (24-hour interval)
+- Keeps last 90 days in `session_history.json` for fast API access
+- Archives older entries to `data/history_archive/session_history_YYYY-MM.json.gz`
+- Archives grouped by month and compressed with gzip (~10x compression)
+- Prevents duplicate entries when archiving
+- Idempotent - safe to run multiple times
+- Configuration: `MAX_HISTORY_DAYS = 90` in `app/history_manager.py`
+
 ### IP Address Normalization
 The parser handles both IPv4 and IPv6:
 - `_split_real_address()` extracts IP and port from various formats (e.g., `[::1]:1234`, `192.168.1.1:1234`)
@@ -168,9 +187,24 @@ The parser handles both IPv4 and IPv6:
 - IPv4 and IPv6 are stored separately (`vpn_ipv4`, `vpn_ipv6`) but also combined into `vpn_ip`
 
 ### API Caching Strategy
-Routes use `_get_cached_clients()` which stores parsed results in Flask's `g` object. This ensures:
-- Single parse per request even when multiple endpoints are called
-- Fresh data on each HTTP request (g is cleared after response)
+
+**Two-Level Caching:**
+
+1. **Request-Level Caching** (Flask `g` object):
+   - `_get_cached_data()` stores parsed results in Flask's `g` object
+   - Single parse per HTTP request even when multiple endpoints are called
+   - Fresh data on each HTTP request (g is cleared after response)
+
+2. **Response-Level Caching** (Flask-Caching):
+   - Enabled for performance-critical API endpoints
+   - Uses in-memory SimpleCache with 10-second TTL
+   - Matches data update frequency (logger runs every 10 seconds)
+   - Cached endpoints:
+     - `/api/clients` - Client list with locations
+     - `/api/server-status` - Server status and traffic totals
+     - `/api/clients/summary` - Aggregated client statistics
+     - `/api/traffic-metrics` - Historical traffic charts (with query string caching)
+   - Benefits: Reduced disk I/O, lower CPU usage, faster response times
 
 ## Testing Notes
 

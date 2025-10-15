@@ -634,6 +634,38 @@ Use environment variables instead of hardcoded values:
 - **Benefit:** Prevents accidental exposure of production domains in public repositories
 - **Example:** See `.env.example` for configuration template
 
+### Basic Authentication
+
+The application includes built-in Traefik Basic Auth support for password protection:
+
+**Setup:**
+
+1. **Generate password hash:**
+   ```bash
+   htpasswd -nbB openvpn YourSecurePassword
+   ```
+
+2. **Add to `.env` file** (escape `$` with `$$`):
+   ```bash
+   # Example output: openvpn:$2y$05$abc123...
+   # In .env file:
+   OPENVPN_BASIC_AUTH=openvpn:$$2y$$05$$abc123...
+   ```
+
+3. **For multiple users:**
+   ```bash
+   OPENVPN_BASIC_AUTH=user1:$$2y$$05$$...,user2:$$2y$$05$$...
+   ```
+
+**IMPORTANT:** The `.env.example` file contains a default password (`openvpn123`) for testing purposes. **You MUST change this** before deploying to production:
+
+```bash
+cp .env.example .env
+# Edit .env and replace OPENVPN_BASIC_AUTH with your own hash
+```
+
+**Security Note:** Basic Auth credentials are configured via environment variables to prevent hardcoding in `docker-compose.yml`. Never commit your `.env` file to version control.
+
 ### Container Restart Policy
 
 Docker Compose includes `restart: unless-stopped` policy:

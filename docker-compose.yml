@@ -25,8 +25,8 @@ services:
       - "traefik.http.routers.openvpn-secure.service=openvpn"
       - "traefik.http.services.openvpn.loadbalancer.server.port=5000"
 
-      # NEW: local middleware
-      - "traefik.http.middlewares.openvpn-user-auth.basicauth.users=openvpn:$$apr1$$AxHp9Acv$$so9EImC8Jv7YULdyknjHQ."
+      # NEW: local middleware (credentials from .env)
+      - "traefik.http.middlewares.openvpn-user-auth.basicauth.users=${OPENVPN_BASIC_AUTH}"
       # attach it to https router
       - "traefik.http.routers.openvpn-secure.middlewares=openvpn-user-auth"
 
