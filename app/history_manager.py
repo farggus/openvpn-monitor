@@ -45,9 +45,7 @@ def rotate_history_if_needed() -> None:
         ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
 
         # Calculate cutoff date
-        cutoff_date = (datetime.now() - timedelta(days=MAX_HISTORY_DAYS)).strftime(
-            "%Y-%m-%d"
-        )
+        cutoff_date = (datetime.now() - timedelta(days=MAX_HISTORY_DAYS)).strftime("%Y-%m-%d")
 
         # Load all entries using the existing context manager (with file locking)
         with history_log() as entries:
@@ -56,17 +54,11 @@ def rotate_history_if_needed() -> None:
                 return
 
             # Split entries into old and recent
-            old_entries = [
-                e for e in entries if e.get("timestamp", "9999-99-99") < cutoff_date
-            ]
-            recent_entries = [
-                e for e in entries if e.get("timestamp", "0000-00-00") >= cutoff_date
-            ]
+            old_entries = [e for e in entries if e.get("timestamp", "9999-99-99") < cutoff_date]
+            recent_entries = [e for e in entries if e.get("timestamp", "0000-00-00") >= cutoff_date]
 
             if not old_entries:
-                logger.debug(
-                    f"No entries older than {MAX_HISTORY_DAYS} days, rotation not needed"
-                )
+                logger.debug(f"No entries older than {MAX_HISTORY_DAYS} days, rotation not needed")
                 return
 
             logger.info(
@@ -95,17 +87,13 @@ def rotate_history_if_needed() -> None:
                             try:
                                 existing = json.load(f)
                             except json.JSONDecodeError:
-                                logger.warning(
-                                    f"Corrupted archive {archive_file}, will recreate"
-                                )
+                                logger.warning(f"Corrupted archive {archive_file}, will recreate")
                                 existing = []
 
                     # Merge with new entries (avoid duplicates by session_id)
                     existing_ids = {e.get("session_id") for e in existing}
                     new_entries = [
-                        e
-                        for e in month_entries
-                        if e.get("session_id") not in existing_ids
+                        e for e in month_entries if e.get("session_id") not in existing_ids
                     ]
 
                     if new_entries:
