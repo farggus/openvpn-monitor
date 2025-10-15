@@ -101,8 +101,8 @@ Before installing, ensure you have:
 Edit your OpenVPN server configuration (`/etc/openvpn/server.conf`):
 
 ```conf
+...
 status /var/log/openvpn/status.log
-status-version 3
 ```
 
 Restart OpenVPN server:
