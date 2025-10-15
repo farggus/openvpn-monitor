@@ -65,8 +65,7 @@ def rotate_history_if_needed() -> None:
 
             if not old_entries:
                 logger.debug(
-                    f"No entries older than {MAX_HISTORY_DAYS} days, "
-                    "rotation not needed"
+                    f"No entries older than {MAX_HISTORY_DAYS} days, rotation not needed"
                 )
                 return
 
@@ -121,7 +120,7 @@ def rotate_history_if_needed() -> None:
                         archived_count += len(new_entries)
                         logger.info(
                             f"Archived {len(new_entries)} entries to {archive_file.name} "
-                            f"(total in archive: {len(combined)})"
+                            f"(total: {len(combined)})"
                         )
 
                 except Exception as e:
