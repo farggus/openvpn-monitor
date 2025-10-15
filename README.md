@@ -714,6 +714,16 @@ Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started. The g
 
 For quick questions, feel free to open a GitHub issue or discussion.
 
-## Support
 
+## Support the project
 For issues and feature requests, please use the GitHub issue tracker.
+
+If you find this project useful and want to support further development, you can do so via:
+
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-blue?logo=github)](https://github.com/sponsors/scuruci)
+[![Ko-fi](https://img.shields.io/badge/Ko-fi-Donate-orange?logo=ko-fi)](https://ko-fi.com/scuruci)
+[![Buy Me a Coffee](https://img.shields.io/badge/☕-Buy%20Me%20a%20Coffee-yellow)](https://buymeacoffee.com/scuruci)
+[![Revolut](https://img.shields.io/badge/💸-Revolut-blue)](https://revolut.me/s_curuci)
+
+Your support helps keep the open-source projects alive and evolving 🚀
+
