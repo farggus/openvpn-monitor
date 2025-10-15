@@ -285,13 +285,13 @@ The following migration scripts were successfully executed and moved to archive 
   - **Executed:** 2025-10-13
   - **Purpose:** Closed 110 incomplete sessions in session_history.json
   - **Result:** All sessions now have `session_end` set
-  - **Documentation:** See REFACTORING_SUMMARY.md
+  - **Documentation:** See Docs/REFACTORING_SUMMARY.md
 
 - **`archive/migrations/test_refactoring.py`**
   - **Executed:** 2025-10-13
   - **Purpose:** Validated refactoring results (no incomplete sessions, correct parser.py structure)
   - **Result:** All tests passed
-  - **Documentation:** See REFACTORING_SUMMARY.md
+  - **Documentation:** See Docs/REFACTORING_SUMMARY.md
 
 ### Removed Files (Replaced by Containerized Solution)
 
@@ -331,6 +331,6 @@ All server status collection is now handled by **`app/server_status_collector.py
 ### Documentation
 
 For complete details about the cleanup, see:
-- `PROJECT_AUDIT_OCT_2025.md` - Full project audit report
-- `CLEANUP_PLAN.md` - Step-by-step cleanup execution plan
-- `REFACTORING_SUMMARY.md` - Session management refactoring details
+- `Docs/PROJECT_AUDIT_OCT_2025.md` - Full project audit report
+- `Docs/CLEANUP_PLAN.md` - Step-by-step cleanup execution plan
+- `Docs/REFACTORING_SUMMARY.md` - Session management refactoring details
