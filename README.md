@@ -1,6 +1,6 @@
 # OpenVPN Monitor
 
-A modern web dashboard for real-time monitoring of OpenVPN server activity. Track active connections, analyze traffic patterns, view session history with geolocation, and visualize traffic metrics — all through an intuitive web interface.
+Inspired by [furlongm/openvpn-monitor](https://github.com/furlongm/openvpn-monitor) written from scratch a modern web dashboard for real-time monitoring of OpenVPN server activity. Track active connections, analyze traffic patterns, view session history with geolocation, and visualize traffic metrics — all through an intuitive web interface.
 
 [![Buy Me a Coffee](https://img.shields.io/badge/☕-Buy%20Me%20a%20Coffee-yellow)](https://buymeacoffee.com/scuruci)
 [![Revolut](https://img.shields.io/badge/💸-Revolut-blue)](https://revolut.me/s_curuci)
@@ -718,28 +718,28 @@ Two-level caching for optimal performance:
 │                    Docker Container                         │
 │                  (runs as UID 1000)                         │
 │                                                             │
-│  ┌───────────────────────────────────────────────────────┐ │
-│  │              Supervisord Process Manager              │ │
-│  │                                                       │ │
-│  │  ┌─────────────────┐      ┌─────────────────────┐   │ │
-│  │  │  Flask Web App  │      │  Background Logger  │   │ │
-│  │  │   (port 5000)   │      │   (logger.py)       │   │ │
-│  │  │                 │      │                     │   │ │
-│  │  │ - Routes        │      │ - Parser (10s)      │   │ │
-│  │  │ - API Endpoints │      │ - Traffic (10s)     │   │ │
-│  │  │ - Templates     │      │ - Server Status(60s)│   │ │
-│  │  │ - Caching       │      │ - History Rotate(24h)│  │ │
-│  │  └─────────────────┘      └─────────────────────┘   │ │
-│  └───────────────────────────────────────────────────────┘ │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │              Supervisord Process Manager              │  │
+│  │                                                       │  │
+│  │  ┌─────────────────┐      ┌──────────────────────┐    │  │
+│  │  │  Flask Web App  │      │  Background Logger   │    │  │
+│  │  │   (port 5000)   │      │   (logger.py)        │    │  │
+│  │  │                 │      │                      │    │  │
+│  │  │ - Routes        │      │ - Parser (10s)       │    │  │
+│  │  │ - API Endpoints │      │ - Traffic (10s)      │    │  │
+│  │  │ - Templates     │      │ - Server Status(60s) │    │  │
+│  │  │ - Caching       │      │ - History Rotate(24h)│    │  │
+│  │  └─────────────────┘      └──────────────────────┘    │  │
+│  └───────────────────────────────────────────────────────┘  │
 │                                                             │
-│  ┌───────────────────────────────────────────────────────┐ │
-│  │                    Data Files                         │ │
-│  │  - active_sessions.json                               │ │
-│  │  - session_history.json (last 90 days)                │ │
-│  │  - traffic_metrics.json (24 hours)                    │ │
-│  │  - server_status.json                                 │ │
-│  │  - history_archive/*.json.gz (monthly archives)       │ │
-│  └───────────────────────────────────────────────────────┘ │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │                    Data Files                         │  │
+│  │  - active_sessions.json                               │  │
+│  │  - session_history.json (last 90 days)                │  │
+│  │  - traffic_metrics.json (24 hours)                    │  │
+│  │  - server_status.json                                 │  │
+│  │  - history_archive/*.json.gz (monthly archives)       │  │
+│  └───────────────────────────────────────────────────────┘  │
 └────────────┬────────────────────────────────────────────────┘
              │ Read-only mount
              ▼
