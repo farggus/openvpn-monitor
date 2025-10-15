@@ -78,7 +78,7 @@ Before installing, ensure you have:
 ### Required
 - **OpenVPN Server** - Running instance with status logging enabled
 - **Docker & Docker Compose** - Docker 24+ and Compose v2
-- **Status Log Permissions** - Readable by UID 1000 (see Pre-installation Steps)
+- **Status Log Permissions** - Readable by UID 1000 (see [Pre-installation Steps](README.md#pre-installation-steps))
 
 ### Optional
 - **Traefik v2** - For reverse proxy and HTTPS (recommended)
