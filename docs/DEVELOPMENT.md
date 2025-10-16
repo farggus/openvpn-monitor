@@ -352,7 +352,7 @@ t('your_key')  // Returns translated string based on user's language
 
 ```bash
 # 1. Extract new strings to messages.pot
-pybabel extract -F babel.cfg -o translations/messages.pot .
+pybabel extract -F translations/babel.cfg -o translations/messages.pot .
 
 # 2. Update existing .po files with new strings
 pybabel update -i translations/messages.pot -d translations
