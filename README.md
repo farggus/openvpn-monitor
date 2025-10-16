@@ -60,14 +60,21 @@ sudo chown -R 1000:1000 .
 cp .env.example .env
 nano .env  # Set OPENVPN_DOMAIN and change default password
 
-# 4. Start container
+# 4. Start container (choose one):
+
+# Option A: With Traefik (default)
 docker compose up --build -d
 
+# Option B: Standalone on port 5000
+docker compose -f docker-compose.standalone.yml up --build -d
+
 # 5. Check logs
-docker compose logs -f
+docker compose logs -f  # or: docker compose -f docker-compose.standalone.yml logs -f
 ```
 
-Access dashboard at `https://your-domain.com` (with Traefik) or `http://localhost:5000` (direct port).
+Access dashboard at:
+- **With Traefik:** `https://your-domain.com`
+- **Standalone:** `http://your-server-ip:5000`
 
 ---
 
@@ -80,10 +87,10 @@ Before installing, ensure you have:
 - **Docker & Docker Compose** - Docker 24+ and Compose v2
 - **Status Log Permissions** - Readable by UID 1000 (see [Pre-installation Steps](README.md#pre-installation-steps))
 
-### Optional
-- **Traefik v2** - For reverse proxy and HTTPS (recommended)
+### Optional (depends on deployment mode)
+- **Traefik v2** - For reverse proxy and HTTPS (required for `docker-compose.yml`, not needed for `docker-compose.standalone.yml`)
 - **Internet Access** - For geolocation (ip-api.com) and public IP detection
-- **Domain Name** - For production deployment with HTTPS
+- **Domain Name** - For production deployment with HTTPS via Traefik
 
 ### Minimum System Requirements
 - **RAM:** 256 MB
@@ -224,10 +231,11 @@ volumes:
 
 ##### Option A: With Traefik (Recommended for Production)
 
-Default `docker-compose.yml` includes Traefik labels. Ensure:
+Use default `docker-compose.yml` with Traefik integration. Ensure:
 - Traefik is running
-- Network `proxy` exists
+- Network `proxy` exists (`docker network create proxy`)
 - DNS points to your server
+- Domain configured in `.env` file
 
 Start container:
 ```bash
@@ -236,21 +244,18 @@ docker compose up --build -d
 
 Access at: `https://vpn-monitor.example.com`
 
-##### Option B: Direct Port Access (Development/Testing)
+##### Option B: Standalone (Direct Port Access)
 
-Uncomment `ports` section in `docker-compose.yml`:
-
-```yaml
-ports:
-  - "5000:5000"
-```
+Use `docker-compose.standalone.yml` for simple deployment without Traefik:
 
 Start container:
 ```bash
-docker compose up --build -d
+docker compose -f docker-compose.standalone.yml up --build -d
 ```
 
 Access at: `http://your-server-ip:5000`
+
+**Note:** This mode does not include HTTPS or Basic Auth. Consider using nginx or Apache as a reverse proxy for production deployments.
 
 #### Step 6: Verify Installation
 
@@ -928,6 +933,7 @@ See [I18N.md](translations/I18N.md) for detailed localization guide.
 
 ### Docker Development Workflow
 
+**With Traefik (docker-compose.yml):**
 ```bash
 # Build and start
 docker compose up --build -d
@@ -941,10 +947,30 @@ docker compose build --no-cache
 docker compose up -d
 
 # Access container shell
-docker compose exec openvpn-monitor bash
+docker compose exec openvpn-admin bash
 
 # Restart single service (after code change)
-docker compose restart openvpn-monitor
+docker compose restart openvpn-admin
+```
+
+**Standalone (docker-compose.standalone.yml):**
+```bash
+# Build and start
+docker compose -f docker-compose.standalone.yml up --build -d
+
+# View logs
+docker compose -f docker-compose.standalone.yml logs -f
+
+# Rebuild from scratch
+docker compose -f docker-compose.standalone.yml down
+docker compose -f docker-compose.standalone.yml build --no-cache
+docker compose -f docker-compose.standalone.yml up -d
+
+# Access container shell
+docker compose -f docker-compose.standalone.yml exec openvpn-admin bash
+
+# Restart single service (after code change)
+docker compose -f docker-compose.standalone.yml restart openvpn-admin
 ```
 
 ### Common Development Tasks
@@ -1097,6 +1123,7 @@ If you're still stuck:
 
 ### Updating Application
 
+**With Traefik (docker-compose.yml):**
 ```bash
 # Stop container
 docker compose down
@@ -1113,6 +1140,25 @@ docker compose up -d
 
 # Check logs
 docker compose logs -f
+```
+
+**Standalone (docker-compose.standalone.yml):**
+```bash
+# Stop container
+docker compose -f docker-compose.standalone.yml down
+
+# Backup data directory
+sudo cp -r data data.backup.$(date +%Y%m%d)
+
+# Pull latest code
+git pull
+
+# Rebuild and start
+docker compose -f docker-compose.standalone.yml build --no-cache
+docker compose -f docker-compose.standalone.yml up -d
+
+# Check logs
+docker compose -f docker-compose.standalone.yml logs -f
 ```
 
 ### Backing Up Data

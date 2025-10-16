@@ -1,0 +1,14 @@
+---
+
+services:
+  openvpn-admin:
+    build: .
+    container_name: openvpn-admin
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - /var/log/openvpn:/var/log/openvpn:rw  # Mounting OpenVPN logs into a container
+      - ./data:/app/data:rw  # Persist application state files (ensure UID 1000 has write access)
+    ports:
+      - "5000:5000"
