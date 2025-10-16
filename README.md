@@ -2,10 +2,39 @@
 
 Inspired by [furlongm/openvpn-monitor](https://github.com/furlongm/openvpn-monitor) written from scratch a modern web dashboard for real-time monitoring of OpenVPN server activity. Track active connections, analyze traffic patterns, view session history with geolocation, and visualize traffic metrics — all through an intuitive web interface.
 
+![OpenVPN Monitor Dashboard](docs/images/main_page.jpg)
+
 If you find this project useful, consider supporting continued development:
 
 [![Buy Me a Coffee](https://img.shields.io/badge/☕-Buy%20Me%20a%20Coffee-yellow)](https://buymeacoffee.com/scuruci)
 [![Revolut](https://img.shields.io/badge/💸-Revolut-blue)](https://revolut.me/s_curuci)
+
+---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/images/clients.jpg" alt="Active Clients Dashboard"/>
+      <p align="center"><b>Real-time Client Monitoring</b></p>
+    </td>
+    <td width="50%">
+      <img src="docs/images/chart.jpg" alt="Traffic Analytics"/>
+      <p align="center"><b>Traffic Analytics & Charts</b></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/images/map_current.jpg" alt="Live Geolocation Map"/>
+      <p align="center"><b>Interactive Geolocation Map</b></p>
+    </td>
+    <td width="50%">
+      <img src="docs/images/session_history.jpg" alt="Session History"/>
+      <p align="center"><b>Complete Session History</b></p>
+    </td>
+  </tr>
+</table>
 
 ---
 
