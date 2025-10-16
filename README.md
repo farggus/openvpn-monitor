@@ -1,13 +1,15 @@
+If you find this project useful, consider supporting continued development:
+
+[![Buy Me a Coffee](https://img.shields.io/badge/☕-Buy%20Me%20a%20Coffee-yellow)](https://buymeacoffee.com/scuruci)
+[![Revolut](https://img.shields.io/badge/💸-Revolut-blue)](https://revolut.me/s_curuci)
+
+---
+
 # OpenVPN Monitor
 
 Inspired by [furlongm/openvpn-monitor](https://github.com/furlongm/openvpn-monitor) written from scratch a modern web dashboard for real-time monitoring of OpenVPN server activity. Track active connections, analyze traffic patterns, view session history with geolocation, and visualize traffic metrics — all through an intuitive web interface.
 
 ![OpenVPN Monitor Dashboard](docs/images/main_page.jpg)
-
-If you find this project useful, consider supporting continued development:
-
-[![Buy Me a Coffee](https://img.shields.io/badge/☕-Buy%20Me%20a%20Coffee-yellow)](https://buymeacoffee.com/scuruci)
-[![Revolut](https://img.shields.io/badge/💸-Revolut-blue)](https://revolut.me/s_curuci)
 
 ---
 
