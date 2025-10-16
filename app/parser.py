@@ -465,7 +465,9 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
 
                             # Convert UTC time from status.log to LOCAL_TZ
                             # status.log always contains UTC timestamps
-                            utc_dt = datetime.datetime.strptime(connected_since, "%Y-%m-%d %H:%M:%S")
+                            utc_dt = datetime.datetime.strptime(
+                                connected_since, "%Y-%m-%d %H:%M:%S"
+                            )
                             utc_dt = pytz.UTC.localize(utc_dt)
                             connected_dt = utc_dt.astimezone(LOCAL_TZ)
                             time_online = format_duration(int((now - connected_dt).total_seconds()))
