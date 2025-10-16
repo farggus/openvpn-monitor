@@ -49,23 +49,27 @@ Get OpenVPN Monitor running in under 5 minutes:
 > **Note:** These commands use `docker compose` (Compose v2). If you have Compose v1, replace `docker compose` with `docker-compose` (with hyphen) in all commands below.
 
 ```bash
-# 1. Create directory and set permissions
+# 1. Add current user to docker group (if not already done)
+sudo usermod -aG docker $USER
+newgrp docker  # Apply changes without logout
+
+# 2. Create directory and set permissions
 sudo mkdir -p /var/www/openvpn-monitor
 sudo chown -R $USER:$USER /var/www/openvpn-monitor
 
-# 2. Clone repository directly into the directory
+# 3. Clone repository directly into the directory
 git clone https://github.com/farggus/openvpn-monitor.git /var/www/openvpn-monitor
 cd /var/www/openvpn-monitor
 
-# 3. Set permissions for container user
+# 4. Set permissions for container user
 sudo mkdir -p data
 sudo chown -R 1000:1000 .
 
-# 4. Configure environment
+# 5. Configure environment
 cp .env.example .env
 nano .env  # Set OPENVPN_DOMAIN for Option A and change default password
 
-# 5. Start container (choose one):
+# 6. Start container (choose one):
 
 # Option A: With Traefik (default)
 docker compose up --build -d
@@ -75,7 +79,7 @@ docker compose up --build -d
 docker compose -f docker-compose.standalone.yml up --build -d
 # For Compose v1: docker-compose -f docker-compose.standalone.yml up --build -d
 
-# 6. Check logs
+# 7. Check logs
 docker compose logs -f
 # For Compose v1: docker-compose logs -f
 # For standalone: docker compose -f docker-compose.standalone.yml logs -f
@@ -94,6 +98,7 @@ Before installing, ensure you have:
 ### Required
 - **OpenVPN Server** - Running instance with status logging enabled
 - **Docker & Docker Compose** - Docker 20+ with Compose v1.29+ (`docker-compose`) or Compose v2 (`docker compose`)
+- **Docker Permissions** - Current user must be in `docker` group (see [Pre-installation Steps](README.md#pre-installation-steps))
 - **Status Log Permissions** - Readable by UID 1000 (see [Pre-installation Steps](README.md#pre-installation-steps))
 
 > **Note:** This documentation uses `docker compose` (Compose v2) syntax. If you have Compose v1, replace `docker compose` with `docker-compose` (with hyphen) in all commands.
@@ -114,7 +119,28 @@ Before installing, ensure you have:
 
 ### Pre-installation Steps
 
-#### 1. Configure OpenVPN Status Logging
+#### 1. Configure Docker Permissions
+
+Add your user to the `docker` group to run Docker commands without sudo:
+
+```bash
+# Add current user to docker group
+sudo usermod -aG docker $USER
+
+# Apply group changes (choose one):
+# Option A: Log out and log back in
+exit  # then reconnect via SSH
+
+# Option B: Apply changes without logout
+newgrp docker
+
+# Verify docker access (should work without sudo)
+docker ps
+```
+
+**Note:** If you get "Permission denied" errors when running Docker commands, this step is required.
+
+#### 2. Configure OpenVPN Status Logging
 
 Edit your OpenVPN server configuration (`/etc/openvpn/server.conf`):
 
@@ -128,7 +154,7 @@ Restart OpenVPN server:
 sudo systemctl restart openvpn@server
 ```
 
-#### 2. Set Status Log Permissions
+#### 3. Set Status Log Permissions
 
 The container runs as non-root user (UID 1000) and needs read access to `status.log`:
 
@@ -138,7 +164,7 @@ sudo chmod 644 /var/log/openvpn/status.log
 
 **Security Note:** The status log contains only monitoring data (IP addresses, traffic stats, connection times) — no credentials or sensitive keys.
 
-#### 3. Create Traefik Network (Optional)
+#### 4. Create Traefik Network (Optional)
 
 If using Traefik for reverse proxy:
 
@@ -1046,6 +1072,7 @@ while True:
 
 | Symptom | Cause | Solution |
 |---------|-------|----------|
+| **Permission denied (Docker socket)** | User not in `docker` group | `sudo usermod -aG docker $USER` then logout/login |
 | **Empty client table** | Container can't read `status.log` | `sudo chmod 644 /var/log/openvpn/status.log` |
 | **Permission denied on data files** | Data directory not owned by UID 1000 | `sudo chown -R 1000:1000 ./data` |
 | **"Unknown" server status** | Status collector not yet run | Wait 60 seconds for first collection |
