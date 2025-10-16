@@ -46,6 +46,8 @@ If you find this project useful, consider supporting continued development:
 
 Get OpenVPN Monitor running in under 5 minutes:
 
+> **Note:** These commands use `docker compose` (Compose v2). If you have Compose v1, replace `docker compose` with `docker-compose` (with hyphen) in all commands below.
+
 ```bash
 # 1. Create directory and set permissions
 sudo mkdir -p /var/www/openvpn-monitor
@@ -67,12 +69,16 @@ nano .env  # Set OPENVPN_DOMAIN for Option A and change default password
 
 # Option A: With Traefik (default)
 docker compose up --build -d
+# For Compose v1: docker-compose up --build -d
 
 # Option B: Standalone on port 5000
 docker compose -f docker-compose.standalone.yml up --build -d
+# For Compose v1: docker-compose -f docker-compose.standalone.yml up --build -d
 
 # 6. Check logs
-docker compose logs -f  # or: docker compose -f docker-compose.standalone.yml logs -f
+docker compose logs -f
+# For Compose v1: docker-compose logs -f
+# For standalone: docker compose -f docker-compose.standalone.yml logs -f
 ```
 
 Access dashboard at:
@@ -245,6 +251,7 @@ Use default `docker-compose.yml` with Traefik integration. Ensure:
 Start container:
 ```bash
 docker compose up --build -d
+# For Compose v1: docker-compose up --build -d
 ```
 
 Access at: `https://vpn-monitor.example.com`
@@ -256,6 +263,7 @@ Use `docker-compose.standalone.yml` for simple deployment without Traefik:
 Start container:
 ```bash
 docker compose -f docker-compose.standalone.yml up --build -d
+# For Compose v1: docker-compose -f docker-compose.standalone.yml up --build -d
 ```
 
 Access at: `http://your-server-ip:5000`
@@ -267,6 +275,8 @@ Access at: `http://your-server-ip:5000`
 Check container status:
 ```bash
 docker compose logs -f
+# For Compose v1: docker-compose logs -f
+# For standalone: docker compose -f docker-compose.standalone.yml logs -f
 ```
 
 Look for:
@@ -938,6 +948,8 @@ See [I18N.md](translations/I18N.md) for detailed localization guide.
 
 ### Docker Development Workflow
 
+> **Note:** For Compose v1, replace `docker compose` with `docker-compose` (with hyphen) in all commands.
+
 **With Traefik (docker-compose.yml):**
 ```bash
 # Build and start
@@ -1050,7 +1062,8 @@ while True:
 
 #### Check Container Logs
 ```bash
-docker compose logs -f openvpn-monitor
+docker compose logs -f openvpn-admin
+# For Compose v1: docker-compose logs -f openvpn-admin
 ```
 
 Look for:
@@ -1076,7 +1089,8 @@ All files should be owned by UID 1000.
 
 #### Test Parser Directly
 ```bash
-docker compose exec openvpn-monitor python -c "from app.parser import parse_status_log; print(parse_status_log())"
+docker compose exec openvpn-admin python -c "from app.parser import parse_status_log; print(parse_status_log())"
+# For Compose v1: docker-compose exec openvpn-admin python -c "from app.parser import parse_status_log; print(parse_status_log())"
 ```
 
 Should output current client data without errors.
@@ -1104,11 +1118,13 @@ curl https://api.ipify.org
 #### Check File Locks
 ```bash
 # Inside container
-docker compose exec openvpn-monitor ls -lh data/*.lock
+docker compose exec openvpn-admin ls -lh data/*.lock
+# For Compose v1: docker-compose exec openvpn-admin ls -lh data/*.lock
 
 # If stale locks exist
-docker compose exec openvpn-monitor rm data/*.lock
-docker compose restart openvpn-monitor
+docker compose exec openvpn-admin rm data/*.lock
+docker compose restart openvpn-admin
+# For Compose v1: docker-compose exec openvpn-admin rm data/*.lock && docker-compose restart openvpn-admin
 ```
 
 ### Getting Help
@@ -1117,7 +1133,7 @@ If you're still stuck:
 
 1. **Check existing issues:** [GitHub Issues](https://github.com/farggus/openvpn-monitor/issues)
 2. **Create new issue:** Include:
-   - Container logs (`docker compose logs`)
+   - Container logs (`docker compose logs` or `docker-compose logs`)
    - Environment configuration (redact sensitive values)
    - OpenVPN status.log sample (first 20 lines)
    - Steps to reproduce
@@ -1132,6 +1148,7 @@ If you're still stuck:
 ```bash
 # Stop container
 docker compose down
+# For Compose v1: docker-compose down
 
 # Backup data directory
 sudo cp -r data data.backup.$(date +%Y%m%d)
@@ -1142,15 +1159,18 @@ git pull
 # Rebuild and start
 docker compose build --no-cache
 docker compose up -d
+# For Compose v1: docker-compose build --no-cache && docker-compose up -d
 
 # Check logs
 docker compose logs -f
+# For Compose v1: docker-compose logs -f
 ```
 
 **Standalone (docker-compose.standalone.yml):**
 ```bash
 # Stop container
 docker compose -f docker-compose.standalone.yml down
+# For Compose v1: docker-compose -f docker-compose.standalone.yml down
 
 # Backup data directory
 sudo cp -r data data.backup.$(date +%Y%m%d)
@@ -1161,9 +1181,11 @@ git pull
 # Rebuild and start
 docker compose -f docker-compose.standalone.yml build --no-cache
 docker compose -f docker-compose.standalone.yml up -d
+# For Compose v1: docker-compose -f docker-compose.standalone.yml build --no-cache && docker-compose -f docker-compose.standalone.yml up -d
 
 # Check logs
 docker compose -f docker-compose.standalone.yml logs -f
+# For Compose v1: docker-compose -f docker-compose.standalone.yml logs -f
 ```
 
 ### Backing Up Data
