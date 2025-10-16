@@ -67,7 +67,7 @@ sudo chown -R 1000:1000 .
 
 # 5. Configure environment
 cp .env.example .env
-nano .env  # Set OPENVPN_DOMAIN for Option A and change default password
+nano .env  # IMPORTANT: Set timezone (OPENVPN_MONITOR_TZ) and change default password
 
 # 6. Start container (choose one):
 
@@ -212,19 +212,25 @@ Create `.env` file from template:
 cp .env.example .env
 ```
 
-**Edit `.env` file** (minimum required configuration):
+**Edit `.env` file** (required configuration):
 
 ```bash
-# Required: Your domain name
+# Required: Your domain name (for Traefik mode)
 OPENVPN_DOMAIN=vpn-monitor.example.com
 
-# Required: Change default Basic Auth password
+# Required: Change default Basic Auth password (for Traefik mode)
 # Generate with: htpasswd -nbB openvpn YourSecurePassword
 # Remember to escape $ as $$ in .env file
 OPENVPN_BASIC_AUTH=openvpn:$$2y$$05$$your_hashed_password_here
+
+# IMPORTANT: Set your timezone to display correct session times
+# Use your server's timezone or the timezone where you want times displayed
+OPENVPN_MONITOR_TZ=Europe/Bucharest
 ```
 
-**Important:** The `.env.example` contains a default password (`openvpn123`) for testing. **You MUST change this before production deployment.**
+**⚠️ Important Notes:**
+- The `.env.example` contains a default password (`openvpn123`) for testing. **You MUST change this before production deployment.**
+- **Timezone is critical**: If not set correctly, session times will be wrong (e.g., +3 hours offset). Check your server's timezone with `timedatectl` and use the corresponding IANA timezone name.
 
 <details>
 <summary><b>Optional Environment Variables (click to expand)</b></summary>
@@ -294,7 +300,11 @@ docker compose -f docker-compose.standalone.yml up --build -d
 
 Access at: `http://your-server-ip:5000`
 
-**Note:** This mode does not include HTTPS or Basic Auth. Consider using nginx or Apache as a reverse proxy for production deployments.
+**⚠️ Important Security Notes:**
+- This mode does **NOT** include HTTPS or Basic Authentication
+- The web interface is publicly accessible without password protection
+- **For production:** Use Option A (with Traefik) or add nginx/Apache reverse proxy with authentication
+- See [Adding Basic Auth to Standalone](#adding-basic-auth-to-standalone-deployment) section below
 
 #### Step 6: Verify Installation
 
@@ -323,10 +333,89 @@ Should contain:
 
 #### Step 7: First Login
 
+**For Traefik deployment (Option A):**
 1. Open dashboard URL
 2. Enter Basic Auth credentials (username: `openvpn`, password from `.env`)
 3. Wait 10-20 seconds for initial data collection
 4. Client table should populate with active VPN connections
+
+**For Standalone deployment (Option B):**
+1. Open `http://your-server-ip:5000` (no authentication required by default)
+2. Wait 10-20 seconds for initial data collection
+3. Client table should populate with active VPN connections
+4. **Important:** Consider adding nginx/Apache reverse proxy with authentication (see below)
+
+---
+
+### Adding Basic Auth to Standalone Deployment
+
+If you deployed with `docker-compose.standalone.yml`, the application is accessible without authentication. For production use, add nginx as a reverse proxy with Basic Auth:
+
+#### Install and Configure nginx
+
+```bash
+# Install nginx and htpasswd tool
+sudo apt update
+sudo apt install nginx apache2-utils
+
+# Create password file
+sudo htpasswd -c /etc/nginx/.htpasswd openvpn
+# Enter password when prompted
+
+# Create nginx configuration
+sudo nano /etc/nginx/sites-available/openvpn-monitor
+```
+
+Add this configuration:
+
+```nginx
+server {
+    listen 80;
+    server_name your-server-ip-or-domain;
+
+    # Basic Authentication
+    auth_basic "OpenVPN Monitor";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+
+    location / {
+        proxy_pass http://localhost:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Enable and test configuration:
+
+```bash
+# Enable site
+sudo ln -s /etc/nginx/sites-available/openvpn-monitor /etc/nginx/sites-enabled/
+
+# Test configuration
+sudo nginx -t
+
+# Reload nginx
+sudo systemctl reload nginx
+
+# Check status
+sudo systemctl status nginx
+```
+
+Now access the application at `http://your-server-ip` (port 80) instead of port 5000. You will be prompted for username and password.
+
+#### Optional: Add HTTPS with Let's Encrypt
+
+```bash
+# Install certbot
+sudo apt install certbot python3-certbot-nginx
+
+# Get certificate (requires domain name pointing to server)
+sudo certbot --nginx -d your-domain.com
+
+# Certbot will automatically configure HTTPS
+```
 
 ---
 
@@ -1078,6 +1167,7 @@ while True:
 | **"Unknown" server status** | Status collector not yet run | Wait 60 seconds for first collection |
 | **No geolocation on map** | ip-api.com unavailable or rate limited | Check internet access, wait for rate limit reset |
 | **Timezone errors** | Invalid timezone format | Use IANA names: `Europe/Bucharest`, not `EET` |
+| **Wrong session times (+3h offset)** | `OPENVPN_MONITOR_TZ` not set or incorrect | Set correct timezone in `.env`, restart container |
 | **File lock timeouts** | Stale lock files | Remove `.lock` files in data directory |
 | **Empty traffic charts** | Not enough data collected yet | Wait 10-20 seconds for initial data points |
 | **No historical traffic** | `traffic_metrics.json` missing | Check file permissions and container logs |
@@ -1152,6 +1242,43 @@ docker compose exec openvpn-admin ls -lh data/*.lock
 docker compose exec openvpn-admin rm data/*.lock
 docker compose restart openvpn-admin
 # For Compose v1: docker-compose exec openvpn-admin rm data/*.lock && docker-compose restart openvpn-admin
+```
+
+#### Fix Timezone Issues
+
+If session times are incorrect (e.g., showing +3 hours offset):
+
+```bash
+# 1. Check server timezone
+timedatectl
+
+# 2. Edit .env file
+nano .env
+
+# 3. Add or update timezone (use IANA timezone name from timedatectl output)
+# Examples:
+OPENVPN_MONITOR_TZ=Europe/Bucharest  # Romania (UTC+2/+3)
+OPENVPN_MONITOR_TZ=Europe/Moscow     # Moscow (UTC+3)
+OPENVPN_MONITOR_TZ=Europe/Kiev       # Kiev (UTC+2/+3)
+OPENVPN_MONITOR_TZ=America/New_York  # New York (UTC-5/-4)
+
+# 4. Restart container to apply changes
+docker compose -f docker-compose.standalone.yml down
+docker compose -f docker-compose.standalone.yml up -d
+
+# 5. Verify timezone is applied
+docker exec openvpn-admin python -c "import os; print('Timezone:', os.environ.get('OPENVPN_MONITOR_TZ', 'NOT SET'))"
+
+# 6. Check logs for any timezone errors
+docker compose -f docker-compose.standalone.yml logs | grep -i timezone
+```
+
+**Common timezone mistakes:**
+- ❌ `OPENVPN_MONITOR_TZ=EET` (abbreviation not supported)
+- ❌ `OPENVPN_MONITOR_TZ=UTC+3` (offset notation not supported)
+- ✅ `OPENVPN_MONITOR_TZ=Europe/Bucharest` (correct IANA format)
+
+[List of all IANA timezones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
 ```
 
 ### Getting Help
