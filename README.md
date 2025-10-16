@@ -61,7 +61,7 @@ sudo chown -R 1000:1000 .
 
 # 4. Configure environment
 cp .env.example .env
-nano .env  # Set OPENVPN_DOMAIN and change default password
+nano .env  # Set OPENVPN_DOMAIN for Option A and change default password
 
 # 5. Start container (choose one):
 
