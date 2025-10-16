@@ -360,8 +360,6 @@ When adding new features, update:
 - **README.md** - Installation, features, API endpoints
 - **translations/I18N.md** - Translation and internationalization guide
 
-**Note:** CLAUDE.md is a developer-only file (excluded from git via .gitignore)
-
 ### Commit Messages
 
 Follow these guidelines for commit messages:
