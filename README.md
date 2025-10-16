@@ -87,8 +87,10 @@ Before installing, ensure you have:
 
 ### Required
 - **OpenVPN Server** - Running instance with status logging enabled
-- **Docker & Docker Compose** - Docker 24+ and Compose v2
+- **Docker & Docker Compose** - Docker 20+ with Compose v1.29+ (`docker-compose`) or Compose v2 (`docker compose`)
 - **Status Log Permissions** - Readable by UID 1000 (see [Pre-installation Steps](README.md#pre-installation-steps))
+
+> **Note:** This documentation uses `docker compose` (Compose v2) syntax. If you have Compose v1, replace `docker compose` with `docker-compose` (with hyphen) in all commands.
 
 ### Optional (depends on deployment mode)
 - **Traefik v2** - For reverse proxy and HTTPS (required for `docker-compose.yml`, not needed for `docker-compose.standalone.yml`)
