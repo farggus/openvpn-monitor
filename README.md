@@ -47,20 +47,23 @@ If you find this project useful, consider supporting continued development:
 Get OpenVPN Monitor running in under 5 minutes:
 
 ```bash
-# 1. Clone repository
-cd /var/www
-git clone https://github.com/farggus/openvpn-monitor.git
-cd openvpn-monitor
+# 1. Create directory and set permissions
+sudo mkdir -p /var/www/openvpn-monitor
+sudo chown -R $USER:$USER /var/www/openvpn-monitor
 
-# 2. Set permissions
+# 2. Clone repository directly into the directory
+git clone https://github.com/farggus/openvpn-monitor.git /var/www/openvpn-monitor
+cd /var/www/openvpn-monitor
+
+# 3. Set permissions for container user
 sudo mkdir -p data
 sudo chown -R 1000:1000 .
 
-# 3. Configure environment
+# 4. Configure environment
 cp .env.example .env
 nano .env  # Set OPENVPN_DOMAIN and change default password
 
-# 4. Start container (choose one):
+# 5. Start container (choose one):
 
 # Option A: With Traefik (default)
 docker compose up --build -d
@@ -68,7 +71,7 @@ docker compose up --build -d
 # Option B: Standalone on port 5000
 docker compose -f docker-compose.standalone.yml up --build -d
 
-# 5. Check logs
+# 6. Check logs
 docker compose logs -f  # or: docker compose -f docker-compose.standalone.yml logs -f
 ```
 
