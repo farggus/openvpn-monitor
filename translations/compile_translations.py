@@ -9,7 +9,7 @@ from pathlib import Path
 
 def compile_translations():
     """Compile all .po files to .mo files in the translations directory"""
-    translations_dir = Path(__file__).parent / "translations"
+    translations_dir = Path(__file__).parent
 
     if not translations_dir.exists():
         print(f"Error: Translations directory not found: {translations_dir}")

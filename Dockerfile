@@ -27,10 +27,9 @@ COPY supervisord.conf /etc/supervisord.conf
 
 # Copy translations
 COPY translations ./translations
-COPY compile_translations.py .
 
 # Compile translations
-RUN python compile_translations.py
+RUN python translations/compile_translations.py
 
 # Install supervisor
 RUN pip install supervisor

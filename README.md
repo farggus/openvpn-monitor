@@ -75,9 +75,9 @@ Inspired by [furlongm/openvpn-monitor](https://github.com/furlongm/openvpn-monit
 
 ## Quick Start
 
-Get OpenVPN Monitor running in under 5 minutes:
+Get OpenVPN Monitor running in under 5 minutes.
 
-> **Note:** These commands use `docker compose` (Compose v2). If you have Compose v1, replace `docker compose` with `docker-compose` (with hyphen) in all commands below.
+> **Note:** All commands use `docker compose` (Compose v2 syntax). For Compose v1, replace `docker compose` with `docker-compose` throughout this guide.
 
 ```bash
 # 1. Add current user to docker group (if not already done)
@@ -104,16 +104,12 @@ nano .env  # IMPORTANT: Set timezone (OPENVPN_MONITOR_TZ) and change default pas
 
 # Option A: With Traefik (default)
 docker compose up --build -d
-# For Compose v1: docker-compose up --build -d
 
 # Option B: Standalone on port 5000
 docker compose -f docker-compose.standalone.yml up --build -d
-# For Compose v1: docker-compose -f docker-compose.standalone.yml up --build -d
 
 # 7. Check logs
 docker compose logs -f
-# For Compose v1: docker-compose logs -f
-# For standalone: docker compose -f docker-compose.standalone.yml logs -f
 ```
 
 Access dashboard at:
@@ -128,11 +124,9 @@ Before installing, ensure you have:
 
 ### Required
 - **OpenVPN Server** - Running instance with status logging enabled
-- **Docker & Docker Compose** - Docker 20+ with Compose v1.29+ (`docker-compose`) or Compose v2 (`docker compose`)
-- **Docker Permissions** - Current user must be in `docker` group (see [Pre-installation Steps](README.md#pre-installation-steps))
-- **Status Log Permissions** - Readable by UID 1000 (see [Pre-installation Steps](README.md#pre-installation-steps))
-
-> **Note:** This documentation uses `docker compose` (Compose v2) syntax. If you have Compose v1, replace `docker compose` with `docker-compose` (with hyphen) in all commands.
+- **Docker & Docker Compose** - Docker 20+ with Compose v1.29+ or v2
+- **Docker Permissions** - Current user must be in `docker` group (see [Pre-installation Steps](#pre-installation-steps))
+- **Status Log Permissions** - Readable by UID 1000 (see [Pre-installation Steps](#pre-installation-steps))
 
 ### Optional (depends on deployment mode)
 - **Traefik v2** - For reverse proxy and HTTPS (required for `docker-compose.yml`, not needed for `docker-compose.standalone.yml`)
@@ -314,7 +308,6 @@ Use default `docker-compose.yml` with Traefik integration. Ensure:
 Start container:
 ```bash
 docker compose up --build -d
-# For Compose v1: docker-compose up --build -d
 ```
 
 Access at: `https://vpn-monitor.example.com`
@@ -323,10 +316,8 @@ Access at: `https://vpn-monitor.example.com`
 
 Use `docker-compose.standalone.yml` for simple deployment without Traefik:
 
-Start container:
 ```bash
 docker compose -f docker-compose.standalone.yml up --build -d
-# For Compose v1: docker-compose -f docker-compose.standalone.yml up --build -d
 ```
 
 Access at: `http://your-server-ip:5000`
@@ -335,15 +326,13 @@ Access at: `http://your-server-ip:5000`
 - This mode does **NOT** include HTTPS or Basic Authentication
 - The web interface is publicly accessible without password protection
 - **For production:** Use Option A (with Traefik) or add nginx/Apache reverse proxy with authentication
-- See [Adding Basic Auth to Standalone](#adding-basic-auth-to-standalone-deployment) section below
+- See [docs/NGINX_SETUP.md](docs/NGINX_SETUP.md) for adding authentication
 
 #### Step 6: Verify Installation
 
 Check container status:
 ```bash
 docker compose logs -f
-# For Compose v1: docker-compose logs -f
-# For standalone: docker compose -f docker-compose.standalone.yml logs -f
 ```
 
 Look for:
@@ -374,127 +363,18 @@ Should contain:
 1. Open `http://your-server-ip:5000` (no authentication required by default)
 2. Wait 10-20 seconds for initial data collection
 3. Client table should populate with active VPN connections
-4. **Important:** Consider adding nginx/Apache reverse proxy with authentication (see below)
-
----
-
-### Adding Basic Auth to Standalone Deployment
-
-If you deployed with `docker-compose.standalone.yml`, the application is accessible without authentication. For production use, add nginx as a reverse proxy with Basic Auth:
-
-#### Install and Configure nginx
-
-```bash
-# Install nginx and htpasswd tool
-sudo apt update
-sudo apt install nginx apache2-utils
-
-# Create password file
-sudo htpasswd -c /etc/nginx/.htpasswd openvpn
-# Enter password when prompted
-
-# Create nginx configuration
-sudo nano /etc/nginx/sites-available/openvpn-monitor
-```
-
-Add this configuration:
-
-```nginx
-server {
-    listen 80;
-    server_name your-server-ip-or-domain;
-
-    # Basic Authentication
-    auth_basic "OpenVPN Monitor";
-    auth_basic_user_file /etc/nginx/.htpasswd;
-
-    location / {
-        proxy_pass http://localhost:5000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-Enable and test configuration:
-
-```bash
-# Enable site
-sudo ln -s /etc/nginx/sites-available/openvpn-monitor /etc/nginx/sites-enabled/
-
-# Test configuration
-sudo nginx -t
-
-# Reload nginx
-sudo systemctl reload nginx
-
-# Check status
-sudo systemctl status nginx
-```
-
-Now access the application at `http://your-server-ip` (port 80) instead of port 5000. You will be prompted for username and password.
-
-#### Optional: Add HTTPS with Let's Encrypt
-
-```bash
-# Install certbot
-sudo apt install certbot python3-certbot-nginx
-
-# Get certificate (requires domain name pointing to server)
-sudo certbot --nginx -d your-domain.com
-
-# Certbot will automatically configure HTTPS
-```
+4. **Important:** Consider adding nginx/Apache reverse proxy with authentication (see [docs/NGINX_SETUP.md](docs/NGINX_SETUP.md))
 
 ---
 
 ### Manual Installation (Development)
 
-For development without Docker:
+For local development without Docker, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed setup instructions including:
 
-#### Step 1: Setup Python Environment
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-#### Step 2: Set Environment Variables
-
-```bash
-export OPENVPN_STATUS_LOG=/var/log/openvpn/status.log
-export OPENVPN_HISTORY_LOG=$(pwd)/data/session_history.json
-export OPENVPN_ACTIVE_SESSIONS=$(pwd)/data/active_sessions.json
-export OPENVPN_SERVER_STATUS=$(pwd)/data/server_status.json
-export OPENVPN_TRAFFIC_METRICS=$(pwd)/data/traffic_metrics.json
-export OPENVPN_MONITOR_TZ=Europe/Bucharest
-mkdir -p data
-```
-
-#### Step 3: Run Services
-
-**Option 1 - Two Terminals:**
-```bash
-# Terminal 1: Flask web server
-flask --app app run --host 0.0.0.0 --port 5000
-
-# Terminal 2: Background logger
-python logger.py
-```
-
-**Option 2 - Supervisord:**
-```bash
-pip install supervisor
-supervisord -c supervisord.conf
-```
-
-#### Step 4: Access Dashboard
-
-Open browser at `http://localhost:5000`
+- Python virtual environment setup
+- Running Flask and background logger
+- Working with tests and code formatting
+- Debugging tips and common development tasks
 
 ---
 
@@ -556,222 +436,6 @@ OPENVPN_MONITOR_TZ=UTC-5  # Use America/New_York instead
 
 ---
 
-## Features Deep Dive
-
-### Real-time Client Monitoring
-
-Dashboard displays all active VPN connections with:
-
-- **Client Information:** Common name, real IP address, VPN IP address
-- **Connection Details:** Connected since, session duration, port number
-- **Traffic Statistics:** Bytes received/sent, current speed (MB/s)
-- **Geolocation:** City, country, coordinates (fetched automatically on first connection)
-- **Session ID:** UUID for tracking across disconnections
-
-**Update Frequency:** Every 10 seconds (background logger)
-
-**Data Source:** OpenVPN `status.log` (version 3 format)
-
-### Session History & Archival
-
-Complete tracking of all VPN sessions with smart data management:
-
-#### Active Session Tracking
-- New clients get UUID `session_id` when first detected
-- Sessions tracked in `active_sessions.json` with real-time traffic updates
-- Geolocation fetched automatically from ip-api.com (45 requests/min limit)
-
-#### Disconnection Handling
-- When client disconnects, session appended to `session_history.json`
-- Final traffic statistics and total session duration calculated
-- Geolocation data preserved for historical analysis
-
-#### Automatic Archival
-- **Retention Policy:** Last 90 days in main file for fast API access
-- **Monthly Archives:** Older sessions compressed to `data/history_archive/session_history_YYYY-MM.json.gz`
-- **Compression Ratio:** ~10x (e.g., 5 MB → 500 KB)
-- **Automatic Cleanup:** Runs once every 24 hours via background logger
-- **No Duplicates:** Idempotent process safe to run multiple times
-
-#### Archive API
-```bash
-# Get archive statistics
-curl http://localhost:5000/api/history/archive-stats
-
-# Response example
-{
-  "total_archives": 3,
-  "archives": [
-    {"month": "2025-09", "count": 1523, "size_mb": 0.42},
-    {"month": "2025-08", "count": 2156, "size_mb": 0.58},
-    {"month": "2025-07", "count": 1891, "size_mb": 0.51}
-  ]
-}
-```
-
-**Configuration:**
-- Archive age: `MAX_HISTORY_DAYS = 90` in `app/history_manager.py`
-- Archive location: `data/history_archive/`
-
-### Traffic Analytics
-
-Real-time traffic monitoring with historical data visualization:
-
-#### Collection
-- **Frequency:** Every 10 seconds (background collection)
-- **Retention:** 24 hours of historical data
-- **Storage:** `traffic_metrics.json` (~50-100 KB for 5 clients)
-- **Automatic Cleanup:** Data older than 24 hours removed automatically
-
-#### Metrics Collected
-- Timestamp (ISO 8601 with timezone)
-- Bytes received (cumulative)
-- Bytes sent (cumulative)
-- RX speed (MB/s)
-- TX speed (MB/s)
-
-#### Display Modes
-1. **Aggregated View** - All clients on one chart with individual colors
-2. **Individual View** - Single client with detailed statistics
-
-#### Time Periods
-- 30 minutes
-- 1 hour
-- 3 hours
-- 6 hours
-- 12 hours
-- 24 hours (full retention)
-
-#### Statistics Shown
-- Current RX/TX speed
-- Peak RX/TX speed (for selected period)
-- Average speed (calculated from all data points in period)
-
-#### Speed Calculation
-```python
-speed_mb_per_sec = (current_bytes - previous_bytes) / (1024 * 1024) / time_delta_seconds
-```
-
-**Features:**
-- Instant loading (no delay when opening charts)
-- Smooth real-time updates without page refresh
-- Dynamic Y-axis scaling based on traffic patterns
-- Chart.js visualization with zoom and pan support
-
-### Geolocation & Mapping
-
-Automatic IP geolocation for connected clients:
-
-#### How It Works
-1. New client connects to VPN
-2. Parser detects physical IP address
-3. API request to ip-api.com for geolocation
-4. Data stored in session JSON with coordinates
-
-#### Data Collected
-- City
-- Country
-- Latitude
-- Longitude
-- Country code
-
-#### API Service
-- **Provider:** ip-api.com (free tier)
-- **Rate Limit:** 45 requests per minute
-- **No API Key Required**
-- **Fallback:** Sessions created with null location if API unavailable
-
-#### Map Display
-- **Library:** Leaflet with OpenStreetMap tiles
-- **Markers:** Show all active client locations
-- **Popups:** Display client name and connection details
-- **Clustering:** Groups nearby markers automatically
-
-#### Data Structure Example
-```json
-{
-  "client-name": {
-    "ip": "109.185.9.154",
-    "vpn_ip": "10.8.0.10",
-    "location": {
-      "city": "Bucharest",
-      "country": "Romania",
-      "latitude": 44.4268,
-      "longitude": 26.1025
-    }
-  }
-}
-```
-
-**Server Geolocation:** Disabled by default for security (prevents exposing server location to attackers). Enable with `OPENVPN_SERVER_GEOLOCATION=true` only if necessary.
-
-### Multi-language Support (i18n)
-
-Seamless language switching with persistent preference:
-
-#### Supported Languages
-- **English (en)** - Default
-- **Russian (ru)** - Full translation
-
-#### Language Selection
-- Dropdown selector in top-right corner
-- Preference saved in browser cookie
-- Persists across sessions
-
-#### Detection Priority
-1. URL parameter: `?lang=en` or `?lang=ru`
-2. Browser cookie: `lang`
-3. HTTP Accept-Language header
-4. Default: English
-
-#### Force Language
-```
-https://vpn-monitor.example.com/?lang=ru  # Force Russian
-https://vpn-monitor.example.com/?lang=en  # Force English
-```
-
-#### Technical Implementation
-- **Backend:** Flask-Babel for server-side translations
-- **Frontend:** Custom i18n module (`app/static/js/i18n.js`)
-- **API Endpoint:** `/api/translations` provides translations to JavaScript
-- **Translation Files:** `translations/{lang}/LC_MESSAGES/messages.po`
-
-For adding new languages, see [I18N.md](translations/I18N.md).
-
-### Server Status Monitoring
-
-Automatic collection of OpenVPN server operational status:
-
-#### Metrics Collected
-- **Status:** CONNECTED / DISCONNECTED (based on `status.log` freshness)
-- **Uptime:** Server running time
-- **Client Count:** Number of active connections
-- **Traffic Totals:** Total bytes received/sent across all clients
-- **Public IP:** Fetched from ipify.org or icanhazip.com
-- **Local IP:** Auto-detected from container's eth0 interface (or manual via `OPENVPN_LOCAL_IP`)
-- **Ping Check:** Connectivity test
-
-#### Collection Method
-- **Frequency:** Every 60 seconds (via `logger.py`)
-- **Status Determination:** `status.log` modified in last 30 seconds = CONNECTED
-- **Fully Containerized:** No host access or cron required
-- **File:** `app/server_status_collector.py`
-
-#### API Response
-```json
-{
-  "status": "CONNECTED",
-  "uptime": "5 days, 3 hours",
-  "clients_connected": 12,
-  "total_bytes_received": 5368709120,
-  "total_bytes_sent": 1073741824,
-  "public_ip": "203.0.113.42",
-  "local_ip": "10.8.0.1"
-}
-```
-
----
-
 ## API Reference
 
 ### Endpoints
@@ -788,62 +452,24 @@ Automatic collection of OpenVPN server operational status:
 
 ### Examples
 
-#### Get Active Clients
 ```bash
+# Get active clients
 curl http://localhost:5000/api/clients
-```
 
-Response:
-```json
-{
-  "client1": {
-    "ip": "109.185.9.154",
-    "vpn_ip": "10.8.0.10",
-    "connected_at": "2025-10-15 12:30:45",
-    "bytes_received": 12345678,
-    "bytes_sent": 87654321,
-    "location": {
-      "city": "Bucharest",
-      "country": "Romania",
-      "latitude": 44.4268,
-      "longitude": 26.1025
-    }
-  }
-}
-```
-
-#### Get Session History
-```bash
+# Get session history (last 90 days)
 curl http://localhost:5000/api/history
-```
 
-Returns array of completed sessions (last 90 days).
+# Get server status
+curl http://localhost:5000/api/server-status
 
-#### Get Archive Statistics
-```bash
+# Get traffic metrics for last hour
+curl http://localhost:5000/api/traffic-metrics?period=60
+
+# Get archive statistics
 curl http://localhost:5000/api/history/archive-stats
 ```
 
-#### Get Server Status
-```bash
-curl http://localhost:5000/api/server-status
-```
-
-#### Get Traffic Metrics
-```bash
-# Last hour
-curl http://localhost:5000/api/traffic-metrics?period=60
-
-# Last 30 minutes for specific client
-curl "http://localhost:5000/api/traffic-metrics?period=30&client=client1"
-
-# Period values: 30 (30m), 60 (1h), 180 (3h), 360 (6h), 720 (12h)
-```
-
-#### Get Translations
-```bash
-curl http://localhost:5000/api/translations?lang=ru
-```
+**Period values for traffic metrics:** 30 (30m), 60 (1h), 180 (3h), 360 (6h), 720 (12h)
 
 ### API Caching Strategy
 
@@ -869,320 +495,40 @@ Two-level caching for optimal performance:
 
 ### System Overview
 
+**Components:**
+- **Flask Web Application** - API endpoints and web UI (port 5000)
+- **Background Logger** - Parses status.log, collects metrics (10s interval)
+- **Data Storage** - JSON files with atomic updates and file locking
+- **Optional Traefik** - Reverse proxy with HTTPS and Basic Auth
+
+**Data Flow:**
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        User Browser                         │
-│                  (React-like SPA interface)                 │
-└────────────┬────────────────────────────────────────────────┘
-             │ HTTP/HTTPS
-             ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Traefik (Optional)                       │
-│              Reverse Proxy + Basic Auth + TLS               │
-└────────────┬────────────────────────────────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Docker Container                         │
-│                  (runs as UID 1000)                         │
-│                                                             │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │              Supervisord Process Manager              │  │
-│  │                                                       │  │
-│  │  ┌─────────────────┐      ┌──────────────────────┐    │  │
-│  │  │  Flask Web App  │      │  Background Logger   │    │  │
-│  │  │   (port 5000)   │      │   (logger.py)        │    │  │
-│  │  │                 │      │                      │    │  │
-│  │  │ - Routes        │      │ - Parser (10s)       │    │  │
-│  │  │ - API Endpoints │      │ - Traffic (10s)      │    │  │
-│  │  │ - Templates     │      │ - Server Status(60s) │    │  │
-│  │  │ - Caching       │      │ - History Rotate(24h)│    │  │
-│  │  └─────────────────┘      └──────────────────────┘    │  │
-│  └───────────────────────────────────────────────────────┘  │
-│                                                             │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │                    Data Files                         │  │
-│  │  - active_sessions.json                               │  │
-│  │  - session_history.json (last 90 days)                │  │
-│  │  - traffic_metrics.json (24 hours)                    │  │
-│  │  - server_status.json                                 │  │
-│  │  - history_archive/*.json.gz (monthly archives)       │  │
-│  └───────────────────────────────────────────────────────┘  │
-└────────────┬────────────────────────────────────────────────┘
-             │ Read-only mount
-             ▼
-┌─────────────────────────────────────────────────────────────┐
-│               OpenVPN Server (Host System)                  │
-│                /var/log/openvpn/status.log                  │
-└─────────────────────────────────────────────────────────────┘
+OpenVPN Server → status.log → Background Logger → JSON Files → Flask API → Web Browser
 ```
 
-### Core Components
+**Key Features:**
+- Non-root container (UID 1000)
+- Two-level API caching (request + response)
+- Automatic session archival (90 days retention)
+- IPv4/IPv6 support with geolocation
 
-| Component | File(s) | Purpose |
-|-----------|---------|---------|
-| **Flask Application** | `app/routes.py`, `app/templates/` | Serves web UI and REST API endpoints |
-| **Configuration Layer** | `app/config.py` | Loads environment variables, initializes directories |
-| **Status Parser** | `app/parser.py` | Parses `status.log`, maintains sessions, fetches geolocation |
-| **Traffic Collector** | `app/traffic_collector.py` | Collects traffic metrics every 10 seconds |
-| **History Manager** | `app/history_manager.py` | Rotates old sessions to monthly compressed archives |
-| **Server Status Collector** | `app/server_status_collector.py` | Monitors server health and connectivity |
-| **Background Logger** | `logger.py` | Orchestrates periodic tasks (parse, collect, rotate) |
-| **i18n System** | `app/routes.py`, `translations/`, `app/static/js/i18n.js` | Multi-language support (Flask-Babel + custom JS) |
-
-### Data Flow
-
-```
-1. OpenVPN writes to status.log (every ~10s)
-2. Background logger triggers parse_status_log() (every 10s)
-3. Parser reads client list and routing table
-4. New clients: fetch geolocation from ip-api.com
-5. Traffic collector captures current metrics and calculates speeds
-6. Server status collector checks status.log freshness (every 60s)
-7. History manager archives old sessions (every 24h)
-8. All data written atomically with file locking:
-   - active_sessions.json
-   - session_history.json
-   - traffic_metrics.json
-   - server_status.json
-9. API endpoints read cached/persisted data
-10. Web UI fetches data via AJAX and updates charts/tables
-```
-
-### File Locking & Atomic Updates
-
-All JSON files use safe concurrent access:
-
-- **File Locking:** `fcntl.flock()` prevents race conditions
-- **Context Managers:** `active_sessions_lock()`, `history_log()`, `traffic_metrics_lock()`
-- **Atomic Updates:** Write to temp file → `os.replace()` → original file
-- **Lock Files:** `.lock` files in data directory
-
-This ensures data integrity even with concurrent reads/writes.
-
-### Session Tracking
-
-- **New Connection:** Assign UUID `session_id`, store in `active_sessions.json`
-- **Active Session:** Update bytes_received/sent every 10 seconds
-- **Disconnection:** Append final session data to `session_history.json`
-- **Duration Calculation:** Timezone-aware datetime objects
-- **Geolocation:** Fetched once on connection, stored permanently
-
-### IP Address Handling
-
-Parser supports both IPv4 and IPv6:
-
-- **Function:** `_split_real_address()` extracts IP and port
-- **Formats:** `192.168.1.1:1234`, `[::1]:1234`, `[2001:db8::1]:1234`
-- **Routing Table:** Parsed separately to map common names to VPN IPs
-- **Storage:** `vpn_ipv4`, `vpn_ipv6`, and combined `vpn_ip` fields
+For detailed architecture documentation, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ---
 
 ## Development
 
-### Setting Up Development Environment
+For development setup, testing, code formatting, and detailed technical documentation, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
-```bash
-# Clone repository
-git clone https://github.com/farggus/openvpn-monitor.git
-cd openvpn-monitor
-
-# Create virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install --upgrade pip
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-
-# Set environment variables
-export OPENVPN_STATUS_LOG=/var/log/openvpn/status.log
-export OPENVPN_HISTORY_LOG=$(pwd)/data/session_history.json
-export OPENVPN_ACTIVE_SESSIONS=$(pwd)/data/active_sessions.json
-export OPENVPN_SERVER_STATUS=$(pwd)/data/server_status.json
-export OPENVPN_TRAFFIC_METRICS=$(pwd)/data/traffic_metrics.json
-export OPENVPN_MONITOR_TZ=Europe/Bucharest
-mkdir -p data
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=app --cov-report=html
-
-# Run specific test file
-pytest tests/test_parser.py
-
-# Run with verbose output
-pytest -v
-```
-
-Test files:
-- `tests/test_parser.py` - Status log parsing logic
-- `tests/test_routes.py` - API endpoint integration tests
-
-### Code Formatting
-
-```bash
-# Format code
-black .
-
-# Check linting
-flake8
-
-# Type checking (if using mypy)
-mypy app/
-```
-
-Configuration in `pyproject.toml`.
-
-### Working with Translations
-
-#### Add New Translatable String
-
-**Python:**
-```python
-from flask_babel import gettext as _
-message = _("Your translatable text")
-```
-
-**Jinja2 Templates:**
-```html
-<h1>{{ _('Page Title') }}</h1>
-```
-
-**JavaScript:**
-```javascript
-// 1. Add to /api/translations endpoint in app/routes.py
-@app.route("/api/translations")
-def translations():
-    return jsonify({
-        "your_key": _("Your translatable text")
-    })
-
-// 2. Use in JavaScript
-t('your_key')  // Returns translated string
-```
-
-#### Update Translation Files
-
-```bash
-# 1. Extract new strings to messages.pot
-pybabel extract -F babel.cfg -o translations/messages.pot .
-
-# 2. Update existing .po files
-pybabel update -i translations/messages.pot -d translations
-
-# 3. Edit translations/en/LC_MESSAGES/messages.po
-# 4. Edit translations/ru/LC_MESSAGES/messages.po
-
-# 5. Compile translations
-python archive/compile_translations.py
-
-# 6. Rebuild container
-docker compose build
-docker compose up -d
-```
-
-See [I18N.md](translations/I18N.md) for detailed localization guide.
-
-### Docker Development Workflow
-
-> **Note:** For Compose v1, replace `docker compose` with `docker-compose` (with hyphen) in all commands.
-
-**With Traefik (docker-compose.yml):**
-```bash
-# Build and start
-docker compose up --build -d
-
-# View logs
-docker compose logs -f
-
-# Rebuild from scratch
-docker compose down
-docker compose build --no-cache
-docker compose up -d
-
-# Access container shell
-docker compose exec openvpn-admin bash
-
-# Restart single service (after code change)
-docker compose restart openvpn-admin
-```
-
-**Standalone (docker-compose.standalone.yml):**
-```bash
-# Build and start
-docker compose -f docker-compose.standalone.yml up --build -d
-
-# View logs
-docker compose -f docker-compose.standalone.yml logs -f
-
-# Rebuild from scratch
-docker compose -f docker-compose.standalone.yml down
-docker compose -f docker-compose.standalone.yml build --no-cache
-docker compose -f docker-compose.standalone.yml up -d
-
-# Access container shell
-docker compose -f docker-compose.standalone.yml exec openvpn-admin bash
-
-# Restart single service (after code change)
-docker compose -f docker-compose.standalone.yml restart openvpn-admin
-```
-
-### Common Development Tasks
-
-#### Adding New API Endpoint
-
-1. Add route function in `app/routes.py`:
-```python
-@app.route("/api/your-endpoint")
-def your_endpoint():
-    data = _get_cached_clients()  # Use cached data
-    # Process data
-    return jsonify(result)
-```
-
-2. Add tests in `tests/test_routes.py`
-3. Update API documentation in README.md
-
-#### Modifying Status Parser
-
-1. Edit `app/parser.py`
-2. Maintain backwards compatibility with JSON structure
-3. Use file locking for any file operations
-4. Add unit tests in `tests/test_parser.py`
-5. Test with sample `status.log` files
-
-#### Changing Data Retention
-
-**Traffic Metrics (default: 24 hours):**
-```python
-# app/traffic_collector.py
-MAX_METRIC_AGE_SECONDS = 48 * 60 * 60  # 48 hours
-```
-
-**Session History (default: 90 days):**
-```python
-# app/history_manager.py
-MAX_HISTORY_DAYS = 180  # 180 days
-```
-
-#### Adjusting Collection Intervals
-
-```python
-# logger.py
-while True:
-    parse_status_log()
-    collect_traffic_metrics()
-    time.sleep(5)  # Change from 10s to 5s
-```
+**Development Topics:**
+- Setting up local environment
+- Running tests with pytest
+- Code formatting (black, flake8)
+- Working with translations (i18n)
+- Docker development workflow
+- Adding API endpoints
+- Modifying parsers and collectors
+- Debugging tips
 
 ---
 
@@ -1211,7 +557,6 @@ while True:
 #### Check Container Logs
 ```bash
 docker compose logs -f openvpn-admin
-# For Compose v1: docker-compose logs -f openvpn-admin
 ```
 
 Look for:
@@ -1225,23 +570,12 @@ Look for:
 ls -lh data/
 ```
 
-Expected output:
-```
--rw-r--r-- 1 1000 1000  15K Oct 15 12:30 active_sessions.json
--rw-r--r-- 1 1000 1000 500K Oct 15 12:30 session_history.json
--rw-r--r-- 1 1000 1000  80K Oct 15 12:30 traffic_metrics.json
--rw-r--r-- 1 1000 1000 2.5K Oct 15 12:30 server_status.json
-```
-
 All files should be owned by UID 1000.
 
-#### Test Parser Directly
+#### Test Parser
 ```bash
 docker compose exec openvpn-admin python -c "from app.parser import parse_status_log; print(parse_status_log())"
-# For Compose v1: docker-compose exec openvpn-admin python -c "from app.parser import parse_status_log; print(parse_status_log())"
 ```
-
-Should output current client data without errors.
 
 #### Check Status Log
 ```bash
@@ -1249,68 +583,23 @@ sudo ls -lh /var/log/openvpn/status.log
 sudo tail /var/log/openvpn/status.log
 ```
 
-Verify:
-- File exists and is readable by UID 1000 (permissions: `644`)
-- File is being updated (check timestamp)
-- Contains `status-version 3` format
-
-#### Verify Network Connectivity
-```bash
-# Test geolocation API
-curl http://ip-api.com/json/8.8.8.8
-
-# Test public IP detection
-curl https://api.ipify.org
-```
+Verify: File is readable by UID 1000 (permissions: `644`), being updated, contains `status-version 3` format.
 
 #### Check File Locks
 ```bash
-# Inside container
-docker compose exec openvpn-admin ls -lh data/*.lock
-# For Compose v1: docker-compose exec openvpn-admin ls -lh data/*.lock
-
-# If stale locks exist
+# Remove stale locks if needed
 docker compose exec openvpn-admin rm data/*.lock
 docker compose restart openvpn-admin
-# For Compose v1: docker-compose exec openvpn-admin rm data/*.lock && docker-compose restart openvpn-admin
 ```
 
 #### Fix Timezone Issues
 
-If session times are incorrect (e.g., showing +3 hours offset):
+If session times are incorrect:
 
-```bash
-# 1. Check server timezone
-timedatectl
-
-# 2. Edit .env file
-nano .env
-
-# 3. Add or update timezone (use IANA timezone name from timedatectl output)
-# Examples:
-OPENVPN_MONITOR_TZ=Europe/Bucharest  # Romania (UTC+2/+3)
-OPENVPN_MONITOR_TZ=Europe/Moscow     # Moscow (UTC+3)
-OPENVPN_MONITOR_TZ=Europe/Kiev       # Kiev (UTC+2/+3)
-OPENVPN_MONITOR_TZ=America/New_York  # New York (UTC-5/-4)
-
-# 4. Restart container to apply changes
-docker compose -f docker-compose.standalone.yml down
-docker compose -f docker-compose.standalone.yml up -d
-
-# 5. Verify timezone is applied
-docker exec openvpn-admin python -c "import os; print('Timezone:', os.environ.get('OPENVPN_MONITOR_TZ', 'NOT SET'))"
-
-# 6. Check logs for any timezone errors
-docker compose -f docker-compose.standalone.yml logs | grep -i timezone
-```
-
-**Common timezone mistakes:**
-- ❌ `OPENVPN_MONITOR_TZ=EET` (abbreviation not supported)
-- ❌ `OPENVPN_MONITOR_TZ=UTC+3` (offset notation not supported)
-- ✅ `OPENVPN_MONITOR_TZ=Europe/Bucharest` (correct IANA format)
-
-[List of all IANA timezones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
-```
+1. Check server timezone: `timedatectl`
+2. Edit `.env` file: Set `OPENVPN_MONITOR_TZ` to IANA timezone (e.g., `Europe/Bucharest`, not `EET`)
+3. Restart container: `docker compose restart`
+4. [List of IANA timezones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
 
 ### Getting Help
 
@@ -1329,11 +618,9 @@ If you're still stuck:
 
 ### Updating Application
 
-**With Traefik (docker-compose.yml):**
 ```bash
 # Stop container
 docker compose down
-# For Compose v1: docker-compose down
 
 # Backup data directory
 sudo cp -r data data.backup.$(date +%Y%m%d)
@@ -1344,107 +631,30 @@ git pull
 # Rebuild and start
 docker compose build --no-cache
 docker compose up -d
-# For Compose v1: docker-compose build --no-cache && docker-compose up -d
 
 # Check logs
 docker compose logs -f
-# For Compose v1: docker-compose logs -f
-```
-
-**Standalone (docker-compose.standalone.yml):**
-```bash
-# Stop container
-docker compose -f docker-compose.standalone.yml down
-# For Compose v1: docker-compose -f docker-compose.standalone.yml down
-
-# Backup data directory
-sudo cp -r data data.backup.$(date +%Y%m%d)
-
-# Pull latest code
-git pull
-
-# Rebuild and start
-docker compose -f docker-compose.standalone.yml build --no-cache
-docker compose -f docker-compose.standalone.yml up -d
-# For Compose v1: docker-compose -f docker-compose.standalone.yml build --no-cache && docker-compose -f docker-compose.standalone.yml up -d
-
-# Check logs
-docker compose -f docker-compose.standalone.yml logs -f
-# For Compose v1: docker-compose -f docker-compose.standalone.yml logs -f
 ```
 
 ### Backing Up Data
 
-Include these files/directories in regular backups:
+Backup these directories regularly:
+- `data/` - All JSON files and archives
+- `.env` - Environment configuration
+- `docker-compose.yml` - Container configuration
 
+Example backup:
 ```bash
-# Essential data files
-data/active_sessions.json
-data/session_history.json
-data/traffic_metrics.json
-data/server_status.json
-
-# Archived sessions (if keeping long-term history)
-data/history_archive/*.json.gz
-
-# Configuration
-.env
-docker-compose.yml
-```
-
-Backup script example:
-```bash
-#!/bin/bash
-BACKUP_DIR="/backup/openvpn-monitor/$(date +%Y%m%d)"
-mkdir -p "$BACKUP_DIR"
-cp -r data/ "$BACKUP_DIR/"
-cp .env "$BACKUP_DIR/"
+sudo cp -r data/ /backup/openvpn-monitor-$(date +%Y%m%d)/
 ```
 
 ### Monitoring Health
 
-Add to monitoring system (Prometheus, Nagios, etc.):
-
+Check server status API:
 ```bash
-# Check server status endpoint
 curl -s http://localhost:5000/api/server-status | jq .status
-
 # Expected: "CONNECTED"
 ```
-
-Health check script:
-```bash
-#!/bin/bash
-STATUS=$(curl -s http://localhost:5000/api/server-status | jq -r .status)
-if [ "$STATUS" != "CONNECTED" ]; then
-    echo "OpenVPN Monitor: Server status is $STATUS"
-    exit 1
-fi
-```
-
-### Log Rotation
-
-Container logs to stdout/stderr. Configure Docker log rotation:
-
-```yaml
-# docker-compose.yml
-services:
-  openvpn-monitor:
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-```
-
-### Scaling Considerations
-
-For high-traffic deployments:
-
-- **Multiple Replicas:** Not supported (single-file state storage)
-- **High Availability:** Use Docker Swarm or Kubernetes with shared volume
-- **Database Backend:** Consider migrating from JSON to PostgreSQL for large installations
-- **Cache Layer:** Redis for distributed caching (requires code modification)
 
 ---
 
