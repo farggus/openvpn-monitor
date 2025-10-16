@@ -11,6 +11,7 @@ from ipaddress import ip_address
 from pathlib import Path
 
 import fcntl
+import pytz
 import requests
 from .config import (
     ACTIVE_SESSIONS_PATH,
@@ -462,10 +463,11 @@ def parse_status_log(filepath=STATUS_LOG_PATH):
                             if bytes_received < 0 or bytes_sent < 0:
                                 raise ValueError("Negative byte count")
 
-                            naive_dt = datetime.datetime.strptime(
-                                connected_since, "%Y-%m-%d %H:%M:%S"
-                            )
-                            connected_dt = LOCAL_TZ.localize(naive_dt)
+                            # Convert UTC time from status.log to LOCAL_TZ
+                            # status.log always contains UTC timestamps
+                            utc_dt = datetime.datetime.strptime(connected_since, "%Y-%m-%d %H:%M:%S")
+                            utc_dt = pytz.UTC.localize(utc_dt)
+                            connected_dt = utc_dt.astimezone(LOCAL_TZ)
                             time_online = format_duration(int((now - connected_dt).total_seconds()))
                         except (ValueError, IndexError) as e:
                             logger.warning(
