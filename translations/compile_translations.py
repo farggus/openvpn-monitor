@@ -3,6 +3,7 @@
 Compile .po files to .mo files for Flask-Babel
 This script uses the babel library to compile translations
 """
+
 import sys
 from pathlib import Path
 

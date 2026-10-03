@@ -20,7 +20,6 @@ from .config import (
     STATUS_LOG_PATH,
 )
 
-
 logger = logging.getLogger(__name__)
 
 # Geolocation cache with thread-safe lock

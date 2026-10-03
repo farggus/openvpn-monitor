@@ -8,7 +8,6 @@ from unittest.mock import Mock
 
 import pytest
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -128,8 +127,7 @@ def test_parser_handles_invalid_client_data(parser_module, monkeypatch):
     parser, status_path, history_path, active_path, _ = parser_module
 
     # Create status log with some invalid entries
-    status_path.write_text(
-        """
+    status_path.write_text("""
 Common Name,Real Address,Bytes Received,Bytes Sent,Connected Since
 alice,198.51.100.10:443,invalid_number,2048,2024-01-01 09:00:00
 bob,203.0.113.5:1194,1024,-999,2024-01-01 09:00:00
@@ -141,8 +139,7 @@ ROUTING TABLE
 10.8.0.2,dave
 
 GLOBAL STATS
-""".strip()
-    )
+""".strip())
 
     # Mock geolocation to avoid API calls
     monkeypatch.setattr(
@@ -169,15 +166,13 @@ def test_active_sessions_always_have_location(parser_module, monkeypatch):
     """Test that active sessions always include location field."""
     parser, status_path, _, active_path, _ = parser_module
 
-    status_path.write_text(
-        """
+    status_path.write_text("""
 Common Name,Real Address,Bytes Received,Bytes Sent,Connected Since
 alice,198.51.100.10:443,1024,2048,2024-01-01 09:00:00
 
 ROUTING TABLE
 10.8.0.1,alice
-""".strip()
-    )
+""".strip())
 
     # Mock geolocation
     monkeypatch.setattr(

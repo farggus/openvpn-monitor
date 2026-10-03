@@ -17,7 +17,6 @@ from .parser import parse_status_log
 from .traffic_collector import get_metrics_for_period
 from .view_counter import get_view_counter, increment_view_counter
 
-
 logger = logging.getLogger(__name__)
 
 app = Flask(

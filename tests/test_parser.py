@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pytest
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -70,13 +69,11 @@ def test_parse_status_log_records_disconnect(parser_module, monkeypatch):
         str(active_path),
     )
 
-    status_path.write_text(
-        """
+    status_path.write_text("""
 Common Name,Real Address,Bytes Received,Bytes Sent,Connected Since
 
 ROUTING TABLE
-""".strip()
-    )
+""".strip())
 
     _freeze_time(monkeypatch, parser, hour=13)
 
