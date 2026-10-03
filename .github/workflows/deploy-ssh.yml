@@ -1,7 +1,7 @@
 name: Deploy via SSH
 
 # Развёртывание на homeserver. Ключ PROD_SSH_KEY разрешён на сервере ровно для одной
-# команды: sudo /usr/local/sbin/deploy openvpn-monitor <режим>. Текст script ниже
+# команды: sudo /usr/local/sbin/homeserver-deploy openvpn-monitor <режим>. Текст script ниже
 # передаётся ей как режим: deploy — развернуть main, ping — только проверить связь.
 # Сервер сам делает git fetch + fast-forward и docker compose build/up; при расхождении
 # истории или правках в каталоге развёртывания — отказ.
